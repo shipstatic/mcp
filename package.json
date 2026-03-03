@@ -19,10 +19,13 @@
   ],
   "keywords": [
     "mcp",
-    "shipstatic",
+    "mcp-server",
     "model-context-protocol",
-    "ai",
-    "deploy"
+    "shipstatic",
+    "static-hosting",
+    "deploy",
+    "claude",
+    "ai"
   ],
   "homepage": "https://github.com/shipstatic/mcp",
   "repository": {
