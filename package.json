@@ -1,0 +1,51 @@
+{
+  "name": "@shipstatic/mcp",
+  "version": "0.1.0",
+  "description": "MCP server for Shipstatic — deploy and manage static sites from AI agents",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "shipstatic-mcp": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "test": "vitest"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "keywords": [
+    "mcp",
+    "shipstatic",
+    "model-context-protocol",
+    "ai",
+    "deploy"
+  ],
+  "homepage": "https://github.com/shipstatic/mcp",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shipstatic/mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/shipstatic/mcp/issues"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "author": "ShipStatic",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.27.0",
+    "@shipstatic/ship": "^0.7.2",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@shipstatic/types": "^0.7.1",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  }
+}
