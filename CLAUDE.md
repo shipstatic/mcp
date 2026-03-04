@@ -2,7 +2,7 @@
 
 Claude Code instructions for the **Shipstatic MCP Server**.
 
-**@shipstatic/mcp** — MCP server that exposes the Shipstatic SDK to AI agents via stdio. Thin wrapper over `@shipstatic/ship`. **Maturity:** v0.1.0 — Deployments + Domains only (12 tools).
+**@shipstatic/mcp** — MCP server that exposes the Shipstatic SDK to AI agents via stdio. Thin wrapper over `@shipstatic/ship`. Published to the MCP Registry as `com.shipstatic/mcp`. **Maturity:** v0.1.x — Deployments + Domains only (12 tools).
 
 ## Architecture
 
@@ -67,6 +67,12 @@ tests/
 ├── call.test.ts     # call() + error mapping (8 tests)
 └── server.test.ts   # Registration + wiring for all 12 tools (18 tests)
 ```
+
+## Publishing
+
+The CI workflow (`.github/workflows/npm-publish.yml`) publishes to both npm and the MCP Registry on every push to main. `package.json` is the single source of truth for the version — CI patches `server.json` with `jq` before registry publish. DNS authentication uses an Ed25519 key on `shipstatic.com`.
+
+**`server.json`** — MCP Registry metadata. `mcpName` in `package.json` must match `name` in `server.json` (`com.shipstatic/mcp`).
 
 ## Adding New Tools
 

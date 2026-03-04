@@ -14,7 +14,7 @@ const CONFIG_EXAMPLE = JSON.stringify({
 }, null, 2);
 
 if (process.stdin.isTTY) {
-  console.error('Shipstatic MCP server v0.1.2');
+  console.error('Shipstatic MCP server v0.1.3');
   console.error('This is a stdio server for MCP clients.\n');
   console.error('Add to your MCP client config:\n');
   console.error(CONFIG_EXAMPLE);
