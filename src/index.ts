@@ -13,18 +13,12 @@ const CONFIG_EXAMPLE = JSON.stringify({
   },
 }, null, 2);
 
-if (process.stdin.isTTY) {
-  console.error('Shipstatic MCP server v0.1.4');
-  console.error('This is a stdio server for MCP clients.\n');
-  console.error('Add to your MCP client config:\n');
-  console.error(CONFIG_EXAMPLE);
-  process.exit(0);
-}
-
 const apiKey = process.env.SHIP_API_KEY;
 if (!apiKey) {
-  console.error('Error: SHIP_API_KEY environment variable is required.\n');
-  console.error('Add it to your MCP client config:\n');
+  console.error('Shipstatic MCP server v0.1.5');
+  console.error('This is a stdio server for MCP clients.\n');
+  console.error('SHIP_API_KEY environment variable is required.\n');
+  console.error('Add to your MCP client config:\n');
   console.error(CONFIG_EXAMPLE);
   process.exit(1);
 }
