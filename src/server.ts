@@ -11,7 +11,7 @@ const DESTRUCTIVE = { destructiveHint: true, idempotentHint: true, ...OPEN_WORLD
 export function createServer(ship: Ship): McpServer {
   const server = new McpServer({
     name: 'shipstatic',
-    version: '0.1.1',
+    version: '0.1.7',
   }, {
     instructions: 'Deploy a static site to Shipstatic and link it to your domain. To deploy, call deployments_upload with the path to your build output directory. To set up a custom domain, first call domains_validate to check the name, then domains_set to link it to a deployment, then domains_records to get the required DNS records. After DNS is configured, call domains_verify to trigger verification.',
   });
@@ -118,6 +118,13 @@ export function createServer(ship: Ship): McpServer {
       domain: z.string().describe('Domain name to delete'),
     },
   }, ({ domain }) => call(() => ship.domains.remove(domain)));
+
+  // Debugging
+
+  server.registerTool('whoami', {
+    description: 'Show current account information',
+    annotations: READ,
+  }, () => call(() => ship.whoami()));
 
   return server;
 }

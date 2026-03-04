@@ -48,6 +48,12 @@ Get your API key at [my.shipstatic.com](https://my.shipstatic.com).
 | `domains_verify` | Trigger DNS verification for external domain |
 | `domains_remove` | Delete domain permanently |
 
+### Debugging
+
+| Tool | Description |
+|------|-------------|
+| `whoami` | Show current account information |
+
 ## Registry
 
 Published to the [MCP Registry](https://modelcontextprotocol.io) as [`com.shipstatic/mcp`](https://registry.modelcontextprotocol.io/v0.1/servers?search=com.shipstatic/mcp).

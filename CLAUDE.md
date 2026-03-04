@@ -2,14 +2,14 @@
 
 Claude Code instructions for the **Shipstatic MCP Server**.
 
-**@shipstatic/mcp** — MCP server that exposes the Shipstatic SDK to AI agents via stdio. Thin wrapper over `@shipstatic/ship`. Published to the MCP Registry as `com.shipstatic/mcp`. **Maturity:** v0.1.x — Deployments + Domains only (12 tools).
+**@shipstatic/mcp** — MCP server that exposes the Shipstatic SDK to AI agents via stdio. Thin wrapper over `@shipstatic/ship`. Published to the MCP Registry as `com.shipstatic/mcp`. **Maturity:** v0.1.x — Deployments + Domains only (13 tools).
 
 ## Architecture
 
 ```
 src/
 ├── index.ts     # Entry: env validation, Ship construction, stdio transport
-├── server.ts    # createServer(ship) — pure factory, all 12 tools
+├── server.ts    # createServer(ship) — pure factory, all 13 tools
 └── call.ts      # call() wrapper + error mapping
 ```
 
@@ -17,7 +17,7 @@ src/
 
 ```bash
 pnpm build          # TypeScript → dist/
-pnpm test --run     # All tests (26 tests, ~400ms)
+pnpm test --run     # All tests (27 tests, ~400ms)
 ```
 
 ## Core Patterns
@@ -65,7 +65,7 @@ server.registerTool('deployments_get', {
 ```
 tests/
 ├── call.test.ts     # call() + error mapping (8 tests)
-└── server.test.ts   # Registration + wiring for all 12 tools (18 tests)
+└── server.test.ts   # Registration + wiring for all 13 tools (19 tests)
 ```
 
 ## Publishing
