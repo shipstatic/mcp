@@ -1,0 +1,31 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "com.shipstatic/mcp",
+  "title": "Shipstatic",
+  "description": "Deploy and manage static sites from AI agents",
+  "repository": {
+    "url": "https://github.com/shipstatic/mcp",
+    "source": "github",
+    "id": "1171867838"
+  },
+  "websiteUrl": "https://shipstatic.com",
+  "version": "0.1.2",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@shipstatic/mcp",
+      "version": "0.1.2",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "SHIP_API_KEY",
+          "description": "Your Shipstatic API key",
+          "isRequired": true,
+          "isSecret": true
+        }
+      ]
+    }
+  ]
+}
