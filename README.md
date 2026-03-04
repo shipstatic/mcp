@@ -6,6 +6,14 @@ Works with Claude Code, Cursor, VS Code Copilot, and any MCP-compatible client.
 
 ## Setup
 
+### Claude Code
+
+```bash
+claude mcp add shipstatic -e SHIP_API_KEY=ship-... -- npx @shipstatic/mcp
+```
+
+### Other MCP clients
+
 Add to your MCP client configuration:
 
 ```json
