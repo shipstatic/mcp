@@ -4,6 +4,10 @@ MCP server for [Shipstatic](https://shipstatic.com) — deploy and manage static
 
 Works with Claude Code, Cursor, VS Code Copilot, and any MCP-compatible client.
 
+<a href="https://glama.ai/mcp/servers/@shipstatic/shipstatic">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/@shipstatic/shipstatic/badge" alt="shipstatic MCP server" />
+</a>
+
 ## Setup
 
 ### Claude Code
