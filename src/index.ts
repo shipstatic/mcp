@@ -14,7 +14,7 @@ const CONFIG_EXAMPLE = JSON.stringify({
 }, null, 2);
 
 if (process.stdin.isTTY) {
-  console.error('Shipstatic MCP server v0.1.3');
+  console.error('Shipstatic MCP server v0.1.4');
   console.error('This is a stdio server for MCP clients.\n');
   console.error('Add to your MCP client config:\n');
   console.error(CONFIG_EXAMPLE);
@@ -29,6 +29,10 @@ if (!apiKey) {
   process.exit(1);
 }
 
-const server = createServer(new Ship({ apiKey }));
-const transport = new StdioServerTransport();
-await server.connect(transport);
+async function main() {
+  const server = createServer(new Ship({ apiKey }));
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+}
+
+main().catch(console.error);
