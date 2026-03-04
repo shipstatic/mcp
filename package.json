@@ -1,6 +1,6 @@
 {
   "name": "@shipstatic/mcp",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "mcpName": "com.shipstatic/mcp",
   "description": "MCP server for Shipstatic — deploy and manage static sites from AI agents",
   "type": "module",
