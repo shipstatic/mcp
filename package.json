@@ -23,10 +23,14 @@
     "mcp-server",
     "model-context-protocol",
     "shipstatic",
-    "static-hosting",
     "deploy",
-    "claude",
-    "ai"
+    "static-hosting",
+    "hosting",
+    "static",
+    "cloud",
+    "ship",
+    "ai",
+    "claude"
   ],
   "homepage": "https://github.com/shipstatic/mcp",
   "repository": {
