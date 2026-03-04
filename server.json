@@ -9,12 +9,12 @@
     "id": "1171867838"
   },
   "websiteUrl": "https://shipstatic.com",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@shipstatic/mcp",
-      "version": "0.1.4",
+      "version": "0.1.5",
       "transport": {
         "type": "stdio"
       },
