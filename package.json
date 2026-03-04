@@ -12,6 +12,7 @@
   "scripts": {
     "build": "tsc",
     "clean": "rm -rf dist",
+    "prepare": "husky",
     "test": "vitest"
   },
   "files": [
@@ -54,6 +55,7 @@
     "@shipstatic/types": "^0.7.1",
     "@types/node": "^20.0.0",
     "typescript": "^5.9.3",
+    "husky": "^9.1.7",
     "vitest": "^3.2.4"
   }
 }
