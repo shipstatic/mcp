@@ -1,4 +1,4 @@
-import Ship from '@shipstatic/ship';
+import type Ship from '@shipstatic/ship';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { call } from './call.js';
@@ -8,10 +8,10 @@ const READ = { readOnlyHint: true, idempotentHint: true, ...OPEN_WORLD } as cons
 const WRITE = { idempotentHint: true, ...OPEN_WORLD } as const;
 const DESTRUCTIVE = { destructiveHint: true, idempotentHint: true, ...OPEN_WORLD } as const;
 
-export function createServer(ship = new Ship()): McpServer {
+export function createServer(ship: Ship): McpServer {
   const server = new McpServer({
     name: 'shipstatic',
-    version: '0.1.0',
+    version: '0.1.1',
   }, {
     instructions: 'Deploy a static site to Shipstatic and link it to your domain. To deploy, call deployments_upload with the path to your build output directory. To set up a custom domain, first call domains_validate to check the name, then domains_set to link it to a deployment, then domains_records to get the required DNS records. After DNS is configured, call domains_verify to trigger verification.',
   });

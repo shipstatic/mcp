@@ -8,9 +8,9 @@ Claude Code instructions for the **Shipstatic MCP Server**.
 
 ```
 src/
-├── index.ts     # Entry: TTY detection + stdio transport (~20 lines)
-├── server.ts    # createServer() — all 12 tools (~120 lines)
-└── call.ts      # call() wrapper + error mapping (~39 lines)
+├── index.ts     # Entry: env validation, Ship construction, stdio transport
+├── server.ts    # createServer(ship) — pure factory, all 12 tools
+└── call.ts      # call() wrapper + error mapping
 ```
 
 ## Quick Reference
@@ -50,7 +50,11 @@ server.registerTool('deployments_get', {
 
 ### Dependency Injection
 
-`createServer(ship?)` accepts an optional Ship instance. Defaults to `new Ship()` in production. Tests pass a mock directly.
+`index.ts` owns the process: validates `SHIP_API_KEY`, constructs `new Ship({ apiKey })`, passes it to `createServer(ship)`. The factory never touches `process.env` or constructs its own dependencies. Tests pass a mock directly.
+
+### Credential Isolation
+
+`SHIP_API_KEY` is **required** — the server exits with a clear error if missing. The API key is passed explicitly to the Ship constructor, bypassing the SDK's file-based config resolution (`~/.shiprc`). This prevents credential leakage from locally installed CLI credentials.
 
 ### Deployment Tracking
 
