@@ -11,6 +11,7 @@ function createMockShip() {
       set: vi.fn().mockResolvedValue({}),
       remove: vi.fn().mockResolvedValue(undefined),
     },
+    whoami: vi.fn().mockResolvedValue({}),
     domains: {
       set: vi.fn().mockResolvedValue({}),
       list: vi.fn().mockResolvedValue({}),
@@ -46,7 +47,7 @@ describe('server', () => {
     vi.restoreAllMocks();
   });
 
-  it('registers 12 tools', () => {
+  it('registers 13 tools', () => {
     expect([...tools.keys()].sort()).toEqual([
       'deployments_get',
       'deployments_list',
@@ -60,11 +61,12 @@ describe('server', () => {
       'domains_set',
       'domains_validate',
       'domains_verify',
+      'whoami',
     ]);
   });
 
   it('marks read-only tools', () => {
-    const readOnly = ['deployments_list', 'deployments_get', 'domains_list', 'domains_get', 'domains_records', 'domains_validate'];
+    const readOnly = ['deployments_list', 'deployments_get', 'domains_list', 'domains_get', 'domains_records', 'domains_validate', 'whoami'];
     for (const name of readOnly) {
       expect(configs.get(name)?.annotations?.readOnlyHint, name).toBe(true);
     }
@@ -161,5 +163,12 @@ describe('server', () => {
   it('domains remove passes domain name', async () => {
     await tools.get('domains_remove')!({ domain: 'www.example.com' }, {});
     expect(ship.domains.remove).toHaveBeenCalledWith('www.example.com');
+  });
+
+  // Debugging
+
+  it('whoami calls ship.whoami', async () => {
+    await tools.get('whoami')!({});
+    expect(ship.whoami).toHaveBeenCalled();
   });
 });
