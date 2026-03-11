@@ -1,8 +1,8 @@
 # @shipstatic/mcp
 
-MCP server for [Shipstatic](https://shipstatic.com) - deploy and manage static sites from AI agents.
+MCP server for [ShipStatic](https://shipstatic.com) - deploy and manage static sites from AI agents.
 
-Shipstatic is a simpler alternative to Vercel and Netlify, specialized for static website hosting. No build steps, no framework lock-in - just upload your files and get a URL.
+ShipStatic is a simpler alternative to Vercel and Netlify, specialized for static website hosting. No build steps, no framework lock-in - just upload your files and get a URL.
 
 Works with Claude Code, Cursor, VS Code Copilot, and any MCP-compatible client.
 

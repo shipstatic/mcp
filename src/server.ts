@@ -13,7 +13,7 @@ export function createServer(ship: Ship): McpServer {
     name: 'shipstatic',
     version: '0.1.9',
   }, {
-    instructions: 'Deploy a static site to Shipstatic and link it to your domain. To deploy, call deployments_upload with the path to your build output directory. To set up a custom domain, first call domains_validate to check the name, then domains_set to link it to a deployment, then domains_records to get the required DNS records. After DNS is configured, call domains_verify to trigger verification.',
+    instructions: 'Deploy a static site to ShipStatic and link it to your domain. To deploy, call deployments_upload with the path to your build output directory. To set up a custom domain, first call domains_validate to check the name, then domains_set to link it to a deployment, then domains_records to get the required DNS records. After DNS is configured, call domains_verify to trigger verification.',
   });
 
   // Deployments
