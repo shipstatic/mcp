@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "com.shipstatic/mcp",
   "title": "ShipStatic",
-  "description": "Deploy and manage static sites from AI agents",
+  "description": "Static hosting - deploy and manage sites from AI agents",
   "repository": {
     "url": "https://github.com/shipstatic/mcp",
     "source": "github",
