@@ -8,6 +8,13 @@
     "source": "github",
     "id": "1171867838"
   },
+  "icons": [
+    {
+      "src": "https://raw.githubusercontent.com/shipstatic/mcp/main/icon.svg",
+      "mimeType": "image/svg+xml",
+      "sizes": "480x480"
+    }
+  ],
   "websiteUrl": "https://shipstatic.com",
   "version": "0.1.7",
   "packages": [
