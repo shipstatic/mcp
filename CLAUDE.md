@@ -1,8 +1,8 @@
 # CLAUDE.md
 
-Claude Code instructions for the **Shipstatic MCP Server**.
+Claude Code instructions for the **ShipStatic MCP Server**.
 
-**@shipstatic/mcp** — MCP server that exposes the Shipstatic SDK to AI agents via stdio. Thin wrapper over `@shipstatic/ship`. Published to the MCP Registry as `com.shipstatic/mcp`. **Maturity:** v0.1.x — Deployments + Domains only (13 tools).
+**@shipstatic/mcp** — MCP server that exposes the ShipStatic SDK to AI agents via stdio. Thin wrapper over `@shipstatic/ship`. Published to the MCP Registry as `com.shipstatic/mcp`. **Maturity:** v0.1.x — Deployments + Domains only (13 tools).
 
 ## Architecture
 

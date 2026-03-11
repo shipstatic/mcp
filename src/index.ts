@@ -23,7 +23,7 @@ async function main() {
   const server = createServer(new Ship({ apiKey }));
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error('Shipstatic MCP Server running on stdio');
+  console.error('ShipStatic MCP Server running on stdio');
 }
 
 main().catch((error) => {
