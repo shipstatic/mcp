@@ -1,6 +1,6 @@
 {
   "name": "@shipstatic/mcp",
-  "version": "0.1.10",
+  "version": "0.1.11",
   "mcpName": "com.shipstatic/mcp",
   "description": "MCP server for ShipStatic — deploy and manage static sites from AI agents",
   "type": "module",
@@ -48,14 +48,14 @@
   "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.27.0",
-    "@shipstatic/ship": "^0.7.2",
+    "@shipstatic/ship": "^0.7.18",
     "zod": "^4.3.6"
   },
   "devDependencies": {
     "@shipstatic/types": "^0.7.1",
     "@types/node": "^20.0.0",
-    "typescript": "^5.9.3",
     "husky": "^9.1.7",
+    "typescript": "^5.9.3",
     "vitest": "^3.2.4"
   }
 }
