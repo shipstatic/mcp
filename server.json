@@ -12,7 +12,7 @@
     {
       "src": "https://raw.githubusercontent.com/shipstatic/mcp/main/icon.svg",
       "mimeType": "image/svg+xml",
-      "sizes": "480x480"
+      "sizes": ["480x480"]
     }
   ],
   "websiteUrl": "https://shipstatic.com",
