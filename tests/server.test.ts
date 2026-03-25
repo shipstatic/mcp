@@ -17,6 +17,8 @@ function createMockShip() {
       list: vi.fn().mockResolvedValue({}),
       get: vi.fn().mockResolvedValue({}),
       records: vi.fn().mockResolvedValue({}),
+      dns: vi.fn().mockResolvedValue({}),
+      share: vi.fn().mockResolvedValue({}),
       validate: vi.fn().mockResolvedValue({}),
       verify: vi.fn().mockResolvedValue({}),
       remove: vi.fn().mockResolvedValue(undefined),
@@ -47,18 +49,20 @@ describe('server', () => {
     vi.restoreAllMocks();
   });
 
-  it('registers 13 tools', () => {
+  it('registers 15 tools', () => {
     expect([...tools.keys()].sort()).toEqual([
       'deployments_get',
       'deployments_list',
       'deployments_remove',
       'deployments_set',
       'deployments_upload',
+      'domains_dns',
       'domains_get',
       'domains_list',
       'domains_records',
       'domains_remove',
       'domains_set',
+      'domains_share',
       'domains_validate',
       'domains_verify',
       'whoami',
@@ -66,7 +70,7 @@ describe('server', () => {
   });
 
   it('marks read-only tools', () => {
-    const readOnly = ['deployments_list', 'deployments_get', 'domains_list', 'domains_get', 'domains_records', 'domains_validate', 'whoami'];
+    const readOnly = ['deployments_list', 'deployments_get', 'domains_list', 'domains_get', 'domains_records', 'domains_dns', 'domains_share', 'domains_validate', 'whoami'];
     for (const name of readOnly) {
       expect(configs.get(name)?.annotations?.readOnlyHint, name).toBe(true);
     }
@@ -81,6 +85,13 @@ describe('server', () => {
 
   it('does not mark upload as idempotent', () => {
     expect(configs.get('deployments_upload')?.annotations?.idempotentHint).toBeUndefined();
+  });
+
+  it('marks non-destructive write tools', () => {
+    const nonDestructive = ['deployments_upload', 'deployments_set', 'domains_set', 'domains_verify'];
+    for (const name of nonDestructive) {
+      expect(configs.get(name)?.annotations?.destructiveHint, name).toBe(false);
+    }
   });
 
   // Deployments
@@ -148,6 +159,16 @@ describe('server', () => {
   it('domains records passes domain name', async () => {
     await tools.get('domains_records')!({ domain: 'www.example.com' }, {});
     expect(ship.domains.records).toHaveBeenCalledWith('www.example.com');
+  });
+
+  it('domains dns passes domain name', async () => {
+    await tools.get('domains_dns')!({ domain: 'www.example.com' }, {});
+    expect(ship.domains.dns).toHaveBeenCalledWith('www.example.com');
+  });
+
+  it('domains share passes domain name', async () => {
+    await tools.get('domains_share')!({ domain: 'www.example.com' }, {});
+    expect(ship.domains.share).toHaveBeenCalledWith('www.example.com');
   });
 
   it('domains validate passes domain name', async () => {
