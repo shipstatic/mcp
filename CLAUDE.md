@@ -2,14 +2,14 @@
 
 Claude Code instructions for the **ShipStatic MCP Server**.
 
-**@shipstatic/mcp** — MCP server that exposes the ShipStatic SDK to AI agents via stdio. Thin wrapper over `@shipstatic/ship`. Published to the MCP Registry as `com.shipstatic/mcp`. **Maturity:** v0.1.x — Deployments + Domains only (13 tools).
+**@shipstatic/mcp** — MCP server that exposes the ShipStatic SDK to AI agents via stdio. Thin wrapper over `@shipstatic/ship`. Published to the MCP Registry as `com.shipstatic/mcp`. **Maturity:** v0.2.x — Deployments + Domains (15 tools).
 
 ## Architecture
 
 ```
 src/
 ├── index.ts     # Entry: env validation, Ship construction, stdio transport
-├── server.ts    # createServer(ship) — pure factory, all 13 tools
+├── server.ts    # createServer(ship) — pure factory, all 15 tools
 └── call.ts      # call() wrapper + error mapping
 ```
 
@@ -17,7 +17,7 @@ src/
 
 ```bash
 pnpm build          # TypeScript → dist/
-pnpm test --run     # All tests (27 tests, ~400ms)
+pnpm test --run     # All tests (30 tests, ~500ms)
 ```
 
 ## Core Patterns
@@ -41,8 +41,8 @@ Every tool handler is a one-liner that delegates to the SDK through `call()`:
 
 ```typescript
 server.registerTool('deployments_get', {
-  description: 'Show deployment information',
-  inputSchema: { deployment: z.string().describe('Deployment ID') },
+  description: 'Get deployment details including URL, status, file count, size, and labels.',
+  inputSchema: { deployment: z.string().describe('Deployment ID (e.g. "happy-cat-abc1234")') },
 }, ({ deployment }) => call(() => ship.deployments.get(deployment)));
 ```
 
@@ -65,7 +65,7 @@ server.registerTool('deployments_get', {
 ```
 tests/
 ├── call.test.ts     # call() + error mapping (8 tests)
-└── server.test.ts   # Registration + wiring for all 13 tools (19 tests)
+└── server.test.ts   # Registration + wiring for all 15 tools (22 tests)
 ```
 
 ## Publishing
