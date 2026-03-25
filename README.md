@@ -44,29 +44,31 @@ Get your API key at [my.shipstatic.com](https://my.shipstatic.com).
 
 | Tool | Description |
 |------|-------------|
-| `deployments_upload` | Upload deployment from directory |
-| `deployments_list` | List all deployments |
-| `deployments_get` | Show deployment information |
-| `deployments_set` | Set deployment labels |
-| `deployments_remove` | Delete deployment permanently |
+| `deployments_upload` | Deploy a static site by uploading files from a directory |
+| `deployments_list` | List all deployments with their URLs, status, and labels |
+| `deployments_get` | Get deployment details including URL, status, file count, size, and labels |
+| `deployments_set` | Update deployment labels |
+| `deployments_remove` | Permanently delete a deployment and its files |
 
 ### Domains
 
 | Tool | Description |
 |------|-------------|
-| `domains_set` | Create domain, link to deployment, or update labels |
-| `domains_list` | List all domains |
-| `domains_get` | Show domain information |
-| `domains_records` | Get required DNS records for a domain |
-| `domains_validate` | Check if domain name is valid and available |
-| `domains_verify` | Trigger DNS verification for external domain |
-| `domains_remove` | Delete domain permanently |
+| `domains_set` | Create or update a custom domain |
+| `domains_list` | List all domains with their linked deployments and verification status |
+| `domains_get` | Get domain details including linked deployment, verification status, and labels |
+| `domains_records` | Get the DNS records the user needs to configure at their DNS provider |
+| `domains_dns` | Look up the DNS provider for a domain |
+| `domains_share` | Get a shareable DNS setup hash for a domain |
+| `domains_validate` | Check if a domain name is valid and available |
+| `domains_verify` | Trigger DNS verification for a custom domain |
+| `domains_remove` | Permanently delete a domain |
 
-### Debugging
+### Account
 
 | Tool | Description |
 |------|-------------|
-| `whoami` | Show current account information |
+| `whoami` | Show authenticated account details including email, plan, and usage |
 
 ## Registry
 
