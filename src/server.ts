@@ -4,125 +4,152 @@ import { z } from 'zod';
 import { call } from './call.js';
 
 const OPEN_WORLD = { openWorldHint: true } as const;
-const READ = { readOnlyHint: true, idempotentHint: true, ...OPEN_WORLD } as const;
-const WRITE = { idempotentHint: true, ...OPEN_WORLD } as const;
+const READ = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, ...OPEN_WORLD } as const;
+const CREATE = { destructiveHint: false, ...OPEN_WORLD } as const;
+const WRITE = { destructiveHint: false, idempotentHint: true, ...OPEN_WORLD } as const;
 const DESTRUCTIVE = { destructiveHint: true, idempotentHint: true, ...OPEN_WORLD } as const;
+
+const INSTRUCTIONS = `ShipStatic hosts static websites.
+
+Concepts:
+- Deployment: an immutable set of uploaded files. Every deployment gets a permanent URL (e.g. happy-cat-abc1234.shipstatic.dev) immediately — no domain setup needed.
+- Domain: a custom domain (e.g. www.example.com) that points to a deployment. Optional. Only subdomains are supported (www.example.com, blog.example.com) — not apex domains (example.com).
+
+To deploy a site: call deployments_upload with the absolute path to the build output directory. The response includes the live URL.
+
+To add a custom domain: domains_validate → domains_set (with the deployment ID) → domains_records (show the DNS records to the user) → user configures DNS → domains_verify.`;
 
 export function createServer(ship: Ship): McpServer {
   const server = new McpServer({
     name: 'shipstatic',
-    version: '0.1.13',
+    version: '0.2.0',
   }, {
-    instructions: 'Deploy a static site to ShipStatic and link it to your domain. To deploy, call deployments_upload with the path to your build output directory. To set up a custom domain, first call domains_validate to check the name, then domains_set to link it to a deployment, then domains_records to get the required DNS records. After DNS is configured, call domains_verify to trigger verification.',
+    instructions: INSTRUCTIONS,
   });
 
   // Deployments
 
   server.registerTool('deployments_upload', {
-    description: 'Upload deployment from directory',
-    annotations: OPEN_WORLD,
+    description: 'Deploy a static site by uploading files from a directory. Returns the deployment with its live URL, file count, and size.',
+    annotations: CREATE,
     inputSchema: {
-      path: z.string().describe('Absolute path to directory or file to deploy'),
-      subdomain: z.string().optional().describe('Suggested subdomain'),
-      labels: z.array(z.string()).optional().describe('Labels'),
+      path: z.string().describe('Absolute path to the build output directory to deploy (e.g. "/Users/me/project/dist")'),
+      subdomain: z.string().optional().describe('Preferred subdomain for the deployment URL (e.g. "my-site" for my-site.shipstatic.dev). If unavailable or omitted, a random name is assigned.'),
+      labels: z.array(z.string()).optional().describe('Labels for organizing deployments (e.g. ["production", "v1.2"]). Lowercase, 3-25 chars, allows . _ - separators.'),
     },
   }, ({ path, subdomain, labels }) =>
     call(() => ship.deployments.upload(path, { subdomain, labels, via: 'mcp' }))
   );
 
   server.registerTool('deployments_list', {
-    description: 'List all deployments',
+    description: 'List all deployments with their URLs, status, and labels.',
     annotations: READ,
   }, () => call(() => ship.deployments.list()));
 
   server.registerTool('deployments_get', {
-    description: 'Show deployment information',
+    description: 'Get deployment details including URL, status, file count, size, and labels.',
     annotations: READ,
     inputSchema: {
-      deployment: z.string().describe('Deployment ID (e.g. "happy-cat-abc1234")'),
+      deployment: z.string().describe('Deployment ID (e.g. "happy-cat-abc1234"). Returned by deployments_upload or deployments_list.'),
     },
   }, ({ deployment }) => call(() => ship.deployments.get(deployment)));
 
   server.registerTool('deployments_set', {
-    description: 'Set deployment labels',
+    description: 'Update deployment labels. Replaces all existing labels.',
     annotations: WRITE,
     inputSchema: {
-      deployment: z.string().describe('Deployment ID'),
-      labels: z.array(z.string()).describe('New labels for the deployment'),
+      deployment: z.string().describe('Deployment ID (e.g. "happy-cat-abc1234"). Use deployments_list to find IDs.'),
+      labels: z.array(z.string()).describe('Labels to set. Replaces all existing labels. Pass empty array to clear.'),
     },
   }, ({ deployment, labels }) => call(() => ship.deployments.set(deployment, { labels })));
 
   server.registerTool('deployments_remove', {
-    description: 'Delete deployment permanently',
+    description: 'Permanently delete a deployment and its files. You MUST confirm with the user before calling this tool, referencing the deployment ID.',
     annotations: DESTRUCTIVE,
     inputSchema: {
-      deployment: z.string().describe('Deployment ID to delete'),
+      deployment: z.string().describe('Deployment ID to delete (e.g. "happy-cat-abc1234")'),
     },
   }, ({ deployment }) => call(() => ship.deployments.remove(deployment)));
 
   // Domains
 
   server.registerTool('domains_set', {
-    description: 'Create domain, link to deployment, or update labels',
+    description: 'Create or update a custom domain. Can reserve a name (omit deployment), link it to a deployment, switch deployments, or update labels. After creating, call domains_records and show the DNS records to the user.',
     annotations: WRITE,
     inputSchema: {
       domain: z.string().describe('Domain name (e.g. "www.example.com" or "blog.example.com")'),
-      deployment: z.string().optional().describe('Deployment ID to link to this domain'),
-      labels: z.array(z.string()).optional().describe('Labels'),
+      deployment: z.string().optional().describe('Deployment ID to serve on this domain (e.g. "happy-cat-abc1234"). Omit to reserve the domain without linking.'),
+      labels: z.array(z.string()).optional().describe('Labels for organizing domains (e.g. ["production"]).'),
     },
   }, ({ domain, deployment, labels }) =>
     call(() => ship.domains.set(domain, { deployment, labels }))
   );
 
   server.registerTool('domains_list', {
-    description: 'List all domains',
+    description: 'List all domains with their linked deployments and verification status.',
     annotations: READ,
   }, () => call(() => ship.domains.list()));
 
   server.registerTool('domains_get', {
-    description: 'Show domain information',
+    description: 'Get domain details including linked deployment, verification status, and labels.',
     annotations: READ,
     inputSchema: {
-      domain: z.string().describe('Domain name'),
+      domain: z.string().describe('Domain name (e.g. "www.example.com"). Use domains_list to find names.'),
     },
   }, ({ domain }) => call(() => ship.domains.get(domain)));
 
   server.registerTool('domains_records', {
-    description: 'Get required DNS records for a domain',
+    description: 'Get the DNS records the user needs to configure at their DNS provider. Call after domains_set. You MUST show the returned records to the user.',
     annotations: READ,
     inputSchema: {
-      domain: z.string().describe('Domain name'),
+      domain: z.string().describe('Domain name. Must be a domain previously created with domains_set.'),
     },
   }, ({ domain }) => call(() => ship.domains.records(domain)));
 
-  server.registerTool('domains_validate', {
-    description: 'Check if domain name is valid and available',
+  server.registerTool('domains_dns', {
+    description: 'Look up the DNS provider for a domain (e.g. Cloudflare, Namecheap). Helps the user know where to configure their DNS records.',
     annotations: READ,
     inputSchema: {
-      domain: z.string().describe('Domain name to validate'),
+      domain: z.string().describe('Domain name to look up DNS provider for (e.g. "www.example.com")'),
+    },
+  }, ({ domain }) => call(() => ship.domains.dns(domain)));
+
+  server.registerTool('domains_share', {
+    description: 'Get a shareable DNS setup hash for a domain. The hash can be shared with the user so they can view the required DNS records without needing an API key.',
+    annotations: READ,
+    inputSchema: {
+      domain: z.string().describe('Domain name to generate a share link for. Must be a domain previously created with domains_set.'),
+    },
+  }, ({ domain }) => call(() => ship.domains.share(domain)));
+
+  server.registerTool('domains_validate', {
+    description: 'Check if a domain name is valid and available before creating it. Returns the normalized form and availability.',
+    annotations: READ,
+    inputSchema: {
+      domain: z.string().describe('Domain name to check (e.g. "www.example.com"). Call before domains_set to check availability.'),
     },
   }, ({ domain }) => call(() => ship.domains.validate(domain)));
 
   server.registerTool('domains_verify', {
-    description: 'Trigger DNS verification for external domain',
+    description: 'Trigger DNS verification for a custom domain. Call after the user has configured DNS records from domains_records. Verification is asynchronous — the domain status updates once DNS propagates.',
     annotations: WRITE,
     inputSchema: {
-      domain: z.string().describe('Domain name'),
+      domain: z.string().describe('Domain name to verify DNS for. Must be a domain previously created with domains_set.'),
     },
   }, ({ domain }) => call(() => ship.domains.verify(domain)));
 
   server.registerTool('domains_remove', {
-    description: 'Delete domain permanently',
+    description: 'Permanently delete a domain. You MUST confirm with the user before calling this tool, referencing the domain name.',
     annotations: DESTRUCTIVE,
     inputSchema: {
-      domain: z.string().describe('Domain name to delete'),
+      domain: z.string().describe('Domain name to delete (e.g. "www.example.com")'),
     },
   }, ({ domain }) => call(() => ship.domains.remove(domain)));
 
   // Debugging
 
   server.registerTool('whoami', {
-    description: 'Show current account information',
+    description: 'Show authenticated account details including email, plan, and usage.',
     annotations: READ,
   }, () => call(() => ship.whoami()));
 
