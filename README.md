@@ -10,6 +10,10 @@ Works with Claude Code, Cursor, VS Code Copilot, and any MCP-compatible client.
   <img width="380" height="200" src="https://glama.ai/mcp/servers/@shipstatic/shipstatic/badge" alt="shipstatic MCP server" />
 </a>
 
+## Hosted deployment
+
+A hosted deployment is available on [Fronteir AI](https://fronteir.ai/mcp/shipstatic-mcp).
+
 ## Setup
 
 ### Claude Code
