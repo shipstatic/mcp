@@ -12,12 +12,12 @@ const DESTRUCTIVE = { destructiveHint: true, idempotentHint: true, ...OPEN_WORLD
 const INSTRUCTIONS = `ShipStatic hosts static websites.
 
 Concepts:
-- Deployment: an immutable set of uploaded files. Every deployment gets a permanent URL (e.g. happy-cat-abc1234.shipstatic.dev) immediately — no domain setup needed.
+- Deployment: an immutable set of uploaded files. Every deployment gets a permanent URL (e.g. happy-cat-abc1234.shipstatic.com) immediately — no domain setup needed.
 - Domain: a custom domain (e.g. www.example.com) that points to a deployment. Optional. Only subdomains are supported (www.example.com, blog.example.com) — not apex domains (example.com).
 
-To deploy a site: call deployments_upload with the absolute path to the build output directory. The response includes the live URL.
+To deploy a site: call deployments_upload with the absolute path to the build output directory. The response includes the deployment hostname.
 
-To add a custom domain: domains_validate → domains_set (with the deployment ID) → domains_records (show the DNS records to the user) → user configures DNS → domains_verify.`;
+To add a custom domain: domains_validate → domains_set (with the deployment) → domains_records (show the DNS records to the user) → user configures DNS → domains_verify.`;
 
 export function createServer(ship: Ship): McpServer {
   const server = new McpServer({
@@ -30,27 +30,26 @@ export function createServer(ship: Ship): McpServer {
   // Deployments
 
   server.registerTool('deployments_upload', {
-    description: 'Deploy a static site by uploading files from a directory. Returns the deployment with its live URL, file count, and size.',
+    description: 'Deploy a static site by uploading files from a directory. Returns the deployment details including hostname, file count, and size.',
     annotations: CREATE,
     inputSchema: {
       path: z.string().describe('Absolute path to the build output directory to deploy (e.g. "/Users/me/project/dist")'),
-      subdomain: z.string().optional().describe('Preferred subdomain for the deployment URL (e.g. "my-site" for my-site.shipstatic.dev). If unavailable or omitted, a random name is assigned.'),
       labels: z.array(z.string()).optional().describe('Labels for organizing deployments (e.g. ["production", "v1.2"]). Lowercase, 3-25 chars, allows . _ - separators.'),
     },
-  }, ({ path, subdomain, labels }) =>
-    call(() => ship.deployments.upload(path, { subdomain, labels, via: 'mcp' }))
+  }, ({ path, labels }) =>
+    call(() => ship.deployments.upload(path, { labels, via: 'mcp' }))
   );
 
   server.registerTool('deployments_list', {
-    description: 'List all deployments with their URLs, status, and labels.',
+    description: 'List all deployments with their hostnames, status, and labels.',
     annotations: READ,
   }, () => call(() => ship.deployments.list()));
 
   server.registerTool('deployments_get', {
-    description: 'Get deployment details including URL, status, file count, size, and labels.',
+    description: 'Get deployment details including status, file count, size, and labels.',
     annotations: READ,
     inputSchema: {
-      deployment: z.string().describe('Deployment ID (e.g. "happy-cat-abc1234"). Returned by deployments_upload or deployments_list.'),
+      deployment: z.string().describe('Deployment hostname (e.g. "happy-cat-abc1234.shipstatic.com"). Returned by deployments_upload or deployments_list.'),
     },
   }, ({ deployment }) => call(() => ship.deployments.get(deployment)));
 
@@ -58,16 +57,16 @@ export function createServer(ship: Ship): McpServer {
     description: 'Update deployment labels. Replaces all existing labels.',
     annotations: WRITE,
     inputSchema: {
-      deployment: z.string().describe('Deployment ID (e.g. "happy-cat-abc1234"). Use deployments_list to find IDs.'),
+      deployment: z.string().describe('Deployment hostname (e.g. "happy-cat-abc1234.shipstatic.com"). Use deployments_list to find deployments.'),
       labels: z.array(z.string()).describe('Labels to set. Replaces all existing labels. Pass empty array to clear.'),
     },
   }, ({ deployment, labels }) => call(() => ship.deployments.set(deployment, { labels })));
 
   server.registerTool('deployments_remove', {
-    description: 'Permanently delete a deployment and its files. You MUST confirm with the user before calling this tool, referencing the deployment ID.',
+    description: 'Permanently delete a deployment and its files. You MUST confirm with the user before calling this tool, referencing the deployment.',
     annotations: DESTRUCTIVE,
     inputSchema: {
-      deployment: z.string().describe('Deployment ID to delete (e.g. "happy-cat-abc1234")'),
+      deployment: z.string().describe('Deployment hostname to delete (e.g. "happy-cat-abc1234.shipstatic.com")'),
     },
   }, ({ deployment }) => call(() => ship.deployments.remove(deployment)));
 
@@ -78,7 +77,7 @@ export function createServer(ship: Ship): McpServer {
     annotations: WRITE,
     inputSchema: {
       domain: z.string().describe('Domain name (e.g. "www.example.com" or "blog.example.com")'),
-      deployment: z.string().optional().describe('Deployment ID to serve on this domain (e.g. "happy-cat-abc1234"). Omit to reserve the domain without linking.'),
+      deployment: z.string().optional().describe('Deployment to serve on this domain (e.g. "happy-cat-abc1234.shipstatic.com"). Omit to reserve the domain without linking.'),
       labels: z.array(z.string()).optional().describe('Labels for organizing domains (e.g. ["production"]).'),
     },
   }, ({ domain, deployment, labels }) =>

@@ -96,17 +96,17 @@ describe('server', () => {
 
   // Deployments
 
-  it('upload passes path, options, and via:mcp', async () => {
-    await tools.get('deployments_upload')!({ path: '/tmp/dist', subdomain: 'my-site', labels: ['v1'] }, {});
+  it('upload passes path, labels, and via:mcp', async () => {
+    await tools.get('deployments_upload')!({ path: '/tmp/dist', labels: ['v1'] }, {});
     expect(ship.deployments.upload).toHaveBeenCalledWith('/tmp/dist', {
-      subdomain: 'my-site', labels: ['v1'], via: 'mcp',
+      labels: ['v1'], via: 'mcp',
     });
   });
 
   it('upload passes undefined for omitted optional args', async () => {
     await tools.get('deployments_upload')!({ path: '/tmp/dist' }, {});
     expect(ship.deployments.upload).toHaveBeenCalledWith('/tmp/dist', {
-      subdomain: undefined, labels: undefined, via: 'mcp',
+      labels: undefined, via: 'mcp',
     });
   });
 
