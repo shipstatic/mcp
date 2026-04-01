@@ -9,18 +9,18 @@ importers:
   .:
     dependencies:
       '@modelcontextprotocol/sdk':
-        specifier: ^1.28.0
-        version: 1.28.0(zod@4.3.6)
+        specifier: ^1.29.0
+        version: 1.29.0(zod@4.3.6)
       '@shipstatic/ship':
-        specifier: ^0.8.3
-        version: 0.8.3(typescript@5.9.3)
+        specifier: ^0.8.6
+        version: 0.8.6(typescript@5.9.3)
       zod:
         specifier: ^4.3.6
         version: 4.3.6
     devDependencies:
       '@shipstatic/types':
-        specifier: ^0.8.1
-        version: 0.8.1
+        specifier: ^0.8.2
+        version: 0.8.2
       '@types/node':
         specifier: ^20.19.37
         version: 20.19.37
@@ -209,8 +209,8 @@ packages:
   '@jridgewell/sourcemap-codec@1.5.5':
     resolution: {integrity: sha512-cYQ9310grqxueWbl+WuIUIaiUaDcj7WOq5fVhEljNVgRfOUhY9fy2zTvfoqWsnebh8Sl70VScFbICvJnLKB0Og==}
 
-  '@modelcontextprotocol/sdk@1.28.0':
-    resolution: {integrity: sha512-gmloF+i+flI8ouQK7MWW4mOwuMh4RePBuPFAEPC6+pdqyWOUMDOixb6qZ69owLJpz6XmyllCouc4t8YWO+E2Nw==}
+  '@modelcontextprotocol/sdk@1.29.0':
+    resolution: {integrity: sha512-zo37mZA9hJWpULgkRpowewez1y6ML5GsXJPY8FI0tBBCd77HEvza4jDqRKOXgHNn867PVGCyTdzqpz0izu5ZjQ==}
     engines: {node: '>=18'}
     peerDependencies:
       '@cfworker/json-schema': ^4.1.1
@@ -344,13 +344,13 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@shipstatic/ship@0.8.3':
-    resolution: {integrity: sha512-lMLG4cAJua4bqjFFYbacAKfuPyh8ML4y7XZW8fxPnsi+1Wp7xPzuVEjajSyf32rtAlPS/p2lyFbIpe7a0R/uXA==}
+  '@shipstatic/ship@0.8.6':
+    resolution: {integrity: sha512-htdner3wLRiNIZILb0JWV/WV6OhTqpaeJadn/XiKP5HsH2JGFKBoNVQ5Ees6wCCoLWN8kIFY+55V2GREspTNxg==}
     engines: {node: '>=20.0.0'}
     hasBin: true
 
-  '@shipstatic/types@0.8.1':
-    resolution: {integrity: sha512-cUSgIeliKulrGjfkg0IMQ+lzcSA6lEbUUzwAgXEHYKL5IeD0M+bW+fQzl9WMR6hDGQzSNmRlgZ51fs+YXnjpFw==}
+  '@shipstatic/types@0.8.2':
+    resolution: {integrity: sha512-uQYI1KnegaVUSyqZes6HqAsDtaq/a+ymhiPyeXO3PV+ipBzYCdqBRnFH6tdH8snDjZIOq8a4O7M73LfcJ7Ky2w==}
     engines: {node: '>=20.0.0'}
 
   '@types/chai@5.2.3':
@@ -1157,7 +1157,7 @@ snapshots:
 
   '@jridgewell/sourcemap-codec@1.5.5': {}
 
-  '@modelcontextprotocol/sdk@1.28.0(zod@4.3.6)':
+  '@modelcontextprotocol/sdk@1.29.0(zod@4.3.6)':
     dependencies:
       '@hono/node-server': 1.19.11(hono@4.12.9)
       ajv: 8.18.0
@@ -1254,7 +1254,7 @@ snapshots:
   '@rollup/rollup-win32-x64-msvc@4.60.0':
     optional: true
 
-  '@shipstatic/ship@0.8.3(typescript@5.9.3)':
+  '@shipstatic/ship@0.8.6(typescript@5.9.3)':
     dependencies:
       columnify: 1.6.0
       commander: 12.1.0
@@ -1269,7 +1269,7 @@ snapshots:
     transitivePeerDependencies:
       - typescript
 
-  '@shipstatic/types@0.8.1': {}
+  '@shipstatic/types@0.8.2': {}
 
   '@types/chai@5.2.3':
     dependencies:
