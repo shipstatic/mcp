@@ -17,8 +17,8 @@ function handleError(error: unknown): CallToolResult {
   if (isShipError(error)) {
     let message = error.message;
 
-    if (error.isType(ErrorType.Authentication)) {
-      message += '\n\nHint: Set the SHIP_API_KEY environment variable in your MCP server configuration.';
+    if (error.isType(ErrorType.Authentication) && !message.includes('Too many requests')) {
+      message += '\n\nHint: Set a free SHIP_API_KEY environment variable in your MCP server configuration.';
     }
 
     if (error.isType(ErrorType.Validation) && error.details) {

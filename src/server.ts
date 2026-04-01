@@ -9,15 +9,19 @@ const CREATE = { destructiveHint: false, ...OPEN_WORLD } as const;
 const WRITE = { destructiveHint: false, idempotentHint: true, ...OPEN_WORLD } as const;
 const DESTRUCTIVE = { destructiveHint: true, idempotentHint: true, ...OPEN_WORLD } as const;
 
-const INSTRUCTIONS = `ShipStatic hosts static websites.
+const INSTRUCTIONS = `ShipStatic deploys static websites instantly. No account required.
+
+To deploy: call deployments_upload with the build output directory path. The site is live immediately.
+
+Without SHIP_API_KEY, deployments are public and expire in 3 days. The response includes a claim URL — always show the deployment URL and the claim URL to the user so they can keep the site permanently.
+
+With SHIP_API_KEY configured, deployments go to the user's account and never expire. Listing, managing, and domain operations also require SHIP_API_KEY.
 
 Concepts:
-- Deployment: an immutable set of uploaded files. Every deployment gets a permanent URL (e.g. happy-cat-abc1234.shipstatic.com) immediately — no domain setup needed.
-- Domain: a custom domain (e.g. www.example.com) that points to a deployment. Optional. Only subdomains are supported (www.example.com, blog.example.com) — not apex domains (example.com).
+- Deployment: an immutable set of files with an instant URL (e.g. happy-cat-abc1234.shipstatic.com). No setup needed.
+- Domain: a custom domain (e.g. www.example.com) pointing to a deployment. Optional. Subdomains only — not apex domains.
 
-To deploy a site: call deployments_upload with the absolute path to the build output directory. The response includes the deployment hostname.
-
-To add a custom domain: domains_validate → domains_set (with the deployment) → domains_records (show the DNS records to the user) → user configures DNS → domains_verify.`;
+To add a custom domain: domains_validate → domains_set → domains_records (show DNS records to user) → user configures DNS → domains_verify.`;
 
 export function createServer(ship: Ship): McpServer {
   const server = new McpServer({
@@ -30,7 +34,7 @@ export function createServer(ship: Ship): McpServer {
   // Deployments
 
   server.registerTool('deployments_upload', {
-    description: 'Deploy a static site by uploading files from a directory. Returns the deployment details including hostname, file count, and size.',
+    description: 'Deploy a static site instantly. No account or API key required. Returns the live URL, file count, and size. Without SHIP_API_KEY, the response includes a claim URL (site expires in 3 days) — always show both the deployment URL and claim URL to the user.',
     annotations: CREATE,
     inputSchema: {
       path: z.string().describe('Absolute path to the build output directory to deploy (e.g. "/Users/me/project/dist")'),

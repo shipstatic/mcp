@@ -1,8 +1,8 @@
 {
   "name": "@shipstatic/mcp",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "mcpName": "com.shipstatic/mcp",
-  "description": "MCP server for ShipStatic — deploy and manage static sites from AI agents",
+  "description": "Deploy static sites instantly from AI agents — no account required",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -20,18 +20,21 @@
     "README.md"
   ],
   "keywords": [
+    "ai",
+    "claude",
+    "deploy",
+    "hosting",
+    "llm",
     "mcp",
     "mcp-server",
     "model-context-protocol",
-    "shipstatic",
-    "deploy",
-    "static-hosting",
-    "hosting",
-    "static",
-    "cloud",
     "ship",
-    "ai",
-    "claude"
+    "static-hosting",
+    "static-site",
+    "typescript",
+    "vibe-coding",
+    "web-hosting",
+    "website"
   ],
   "homepage": "https://github.com/shipstatic/mcp",
   "repository": {
@@ -47,12 +50,12 @@
   "author": "ShipStatic",
   "license": "MIT",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.28.0",
-    "@shipstatic/ship": "^0.8.3",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@shipstatic/ship": "^0.8.6",
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@shipstatic/types": "^0.8.1",
+    "@shipstatic/types": "^0.8.2",
     "@types/node": "^20.19.37",
     "husky": "^9.1.7",
     "typescript": "^5.9.3",

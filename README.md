@@ -1,10 +1,8 @@
 # @shipstatic/mcp
 
-MCP server for [ShipStatic](https://shipstatic.com) - deploy and manage static sites from AI agents.
+MCP server for [ShipStatic](https://shipstatic.com) — deploy static sites instantly from AI agents. No account required.
 
-ShipStatic is a simpler alternative to Vercel and Netlify, specialized for static website hosting. No build steps, no framework lock-in - just upload your files and get a URL.
-
-Works with Claude Code, Cursor, VS Code Copilot, and any MCP-compatible client.
+Works with Claude Code, Cursor, VS Code Copilot, and any MCP-compatible client. Deployments are live immediately — no setup, no credentials needed.
 
 <a href="https://glama.ai/mcp/servers/@shipstatic/shipstatic">
   <img width="380" height="200" src="https://glama.ai/mcp/servers/@shipstatic/shipstatic/badge" alt="shipstatic MCP server" />
@@ -15,28 +13,50 @@ Works with Claude Code, Cursor, VS Code Copilot, and any MCP-compatible client.
 ### Claude Code
 
 ```bash
-claude mcp add shipstatic -e SHIP_API_KEY=ship-... -- npx @shipstatic/mcp
+claude mcp add shipstatic -- npx @shipstatic/mcp
 ```
 
-### Other MCP clients
+### Cursor
 
-Add to your MCP client configuration:
+Add to `~/.cursor/mcp.json`:
 
 ```json
 {
   "mcpServers": {
     "shipstatic": {
       "command": "npx",
-      "args": ["@shipstatic/mcp"],
-      "env": {
-        "SHIP_API_KEY": "ship-..."
-      }
+      "args": ["@shipstatic/mcp"]
     }
   }
 }
 ```
 
-Get your API key at [my.shipstatic.com](https://my.shipstatic.com).
+### Windsurf
+
+Add to `~/.codeium/windsurf/mcp_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "shipstatic": {
+      "command": "npx",
+      "args": ["@shipstatic/mcp"]
+    }
+  }
+}
+```
+
+### Other MCP clients
+
+Same config format — `npx @shipstatic/mcp` via stdio.
+
+That's it. Deployments work immediately — sites are live with a claim URL (3-day TTL).
+
+For permanent deployments, add a free API key from [my.shipstatic.com/api-key](https://my.shipstatic.com/api-key):
+
+```bash
+claude mcp add shipstatic -e SHIP_API_KEY=ship-... -- npx @shipstatic/mcp
+```
 
 ## Tools
 
