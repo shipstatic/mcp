@@ -2,7 +2,7 @@
   "name": "@shipstatic/mcp",
   "version": "0.4.0",
   "mcpName": "com.shipstatic/mcp",
-  "description": "Deploy static sites instantly from AI agents — no account required",
+  "description": "Free, no account needed — deploy static websites, landing pages, and prototypes instantly from AI agents",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
