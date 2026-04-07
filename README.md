@@ -31,9 +31,9 @@ Add to `~/.cursor/mcp.json`:
 }
 ```
 
-### Windsurf
+### Antigravity
 
-Add to `~/.codeium/windsurf/mcp_config.json`:
+Add to `~/.gemini/antigravity/mcp_config.json`:
 
 ```json
 {
@@ -46,7 +46,7 @@ Add to `~/.codeium/windsurf/mcp_config.json`:
 }
 ```
 
-### Zed, Antigravity, and other MCP clients
+### Windsurf, Zed, and other MCP clients
 
 Same config format — `npx @shipstatic/mcp` via stdio. Works with any MCP-compatible client.
 
