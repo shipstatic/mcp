@@ -46,9 +46,9 @@ Add to `~/.codeium/windsurf/mcp_config.json`:
 }
 ```
 
-### Other MCP clients
+### Zed, Antigravity, and other MCP clients
 
-Same config format — `npx @shipstatic/mcp` via stdio.
+Same config format — `npx @shipstatic/mcp` via stdio. Works with any MCP-compatible client.
 
 That's it. Your site is live instantly.
 
