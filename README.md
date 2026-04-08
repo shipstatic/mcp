@@ -1,8 +1,6 @@
 # @shipstatic/mcp
 
-MCP server for [ShipStatic](https://shipstatic.com) — free, no account needed. Deploy static websites, landing pages, and prototypes instantly from AI agents.
-
-ShipStatic is static hosting without the complexity. No build steps, no framework lock-in — upload your files and get a live URL.
+MCP server for [ShipStatic](https://shipstatic.com) — deploy static websites, landing pages, and prototypes instantly from AI agents.
 
 <a href="https://glama.ai/mcp/servers/@shipstatic/shipstatic">
   <img width="380" height="200" src="https://glama.ai/mcp/servers/@shipstatic/shipstatic/badge" alt="shipstatic MCP server" />
@@ -50,21 +48,27 @@ Add to `~/.gemini/antigravity/mcp_config.json`:
 
 Same config format — `npx @shipstatic/mcp` via stdio. Works with any MCP-compatible client.
 
-That's it. Your site is live instantly.
+## Deploy — Free, No Account Needed
 
-Without an API key, deployments are public and expire in 3 days. For permanent deployments, add a free API key from [my.shipstatic.com/api-key](https://my.shipstatic.com/api-key):
+Ask your AI agent to deploy a site. No API key, no sign-up, no configuration.
+
+You get a live, shareable URL on `*.shipstatic.com` instantly.
+
+Deployments without an API key are public and expire in 3 days.
+
+## All Tools — Free API Key
+
+For permanent deployments and full control over your sites and domains, add a free API key from [my.shipstatic.com/api-key](https://my.shipstatic.com/api-key):
 
 ```bash
 claude mcp add shipstatic -e SHIP_API_KEY=ship-... -- npx @shipstatic/mcp
 ```
 
-## Tools
-
 ### Deployments
 
 | Tool | Description |
 |------|-------------|
-| `deployments_upload` | Publish files and get a live URL instantly — no account needed |
+| `deployments_upload` | Publish files and get a live URL instantly |
 | `deployments_list` | List all your deployed sites with their URLs, status, and labels |
 | `deployments_get` | Get details for a specific deployment including URL, status, and file count |
 | `deployments_set` | Update the labels on a deployment for organization and filtering |
