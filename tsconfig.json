@@ -11,6 +11,7 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "lib": ["ES2022"],
+    "types": ["node"],
     "allowSyntheticDefaultImports": true
   },
   "include": ["src/**/*"],

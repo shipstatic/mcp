@@ -26,7 +26,7 @@ To add a custom domain: domains_validate → domains_set → domains_records (sh
 export function createServer(ship: Ship): McpServer {
   const server = new McpServer({
     name: 'shipstatic',
-    version: '0.2.0',
+    version: '0.4.3',
   }, {
     instructions: INSTRUCTIONS,
   });
@@ -45,12 +45,12 @@ export function createServer(ship: Ship): McpServer {
   );
 
   server.registerTool('deployments_list', {
-    description: 'List all deployments with their hostnames, status, and labels.',
+    description: 'List all deployments with their URLs, status, and labels.',
     annotations: READ,
   }, () => call(() => ship.deployments.list()));
 
   server.registerTool('deployments_get', {
-    description: 'Get deployment details including status, file count, size, and labels.',
+    description: 'Get deployment details including URL, status, file count, size, and labels.',
     annotations: READ,
     inputSchema: {
       deployment: z.string().describe('Deployment hostname (e.g. "happy-cat-abc1234.shipstatic.com"). Returned by deployments_upload or deployments_list.'),
@@ -89,12 +89,12 @@ export function createServer(ship: Ship): McpServer {
   );
 
   server.registerTool('domains_list', {
-    description: 'List all domains with their linked deployments and verification status.',
+    description: 'List all domains with their URLs, linked deployments, and verification status.',
     annotations: READ,
   }, () => call(() => ship.domains.list()));
 
   server.registerTool('domains_get', {
-    description: 'Get domain details including linked deployment, verification status, and labels.',
+    description: 'Get domain details including URL, linked deployment, verification status, and labels.',
     annotations: READ,
     inputSchema: {
       domain: z.string().describe('Domain name (e.g. "www.example.com"). Use domains_list to find names.'),

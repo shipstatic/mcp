@@ -2,20 +2,41 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { createServer } from '../src/server.js';
 
+const MOCK_DEPLOYMENT = {
+  deployment: 'happy-cat-abc1234.shipstatic.com',
+  url: 'https://happy-cat-abc1234.shipstatic.com',
+  files: 5,
+  size: 1024000,
+  status: 'success',
+  labels: [],
+  created: 1700000000,
+  updated: 1700000000,
+};
+
+const MOCK_DOMAIN = {
+  domain: 'www.example.com',
+  url: 'https://www.example.com',
+  deployment: 'happy-cat-abc1234.shipstatic.com',
+  status: 'success',
+  labels: [],
+  created: 1700000000,
+  updated: 1700000000,
+};
+
 function createMockShip() {
   return {
     deployments: {
-      upload: vi.fn().mockResolvedValue({}),
-      list: vi.fn().mockResolvedValue({}),
-      get: vi.fn().mockResolvedValue({}),
-      set: vi.fn().mockResolvedValue({}),
+      upload: vi.fn().mockResolvedValue(MOCK_DEPLOYMENT),
+      list: vi.fn().mockResolvedValue([MOCK_DEPLOYMENT]),
+      get: vi.fn().mockResolvedValue(MOCK_DEPLOYMENT),
+      set: vi.fn().mockResolvedValue(MOCK_DEPLOYMENT),
       remove: vi.fn().mockResolvedValue(undefined),
     },
     whoami: vi.fn().mockResolvedValue({}),
     domains: {
-      set: vi.fn().mockResolvedValue({}),
-      list: vi.fn().mockResolvedValue({}),
-      get: vi.fn().mockResolvedValue({}),
+      set: vi.fn().mockResolvedValue(MOCK_DOMAIN),
+      list: vi.fn().mockResolvedValue([MOCK_DOMAIN]),
+      get: vi.fn().mockResolvedValue(MOCK_DOMAIN),
       records: vi.fn().mockResolvedValue({}),
       dns: vi.fn().mockResolvedValue({}),
       share: vi.fn().mockResolvedValue({}),
@@ -37,7 +58,7 @@ describe('server', () => {
     configs = new Map();
 
     const orig = McpServer.prototype.registerTool;
-    vi.spyOn(McpServer.prototype, 'registerTool').mockImplementation(
+    const spy = vi.spyOn(McpServer.prototype, 'registerTool').mockImplementation(
       function (this: McpServer, name: string, config: any, cb: any) {
         tools.set(name, cb);
         configs.set(name, config);
@@ -46,7 +67,7 @@ describe('server', () => {
     );
 
     createServer(ship);
-    vi.restoreAllMocks();
+    spy.mockRestore();
   });
 
   it('registers 15 tools', () => {
