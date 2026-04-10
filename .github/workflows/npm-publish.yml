@@ -8,8 +8,11 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
@@ -24,7 +27,7 @@ jobs:
 
       - run: pnpm run build
 
-      - run: pnpm publish --access public --no-git-checks
+      - run: pnpm publish --access public --no-git-checks --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
 
