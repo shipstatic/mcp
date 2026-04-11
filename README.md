@@ -52,9 +52,9 @@ Same config format — `npx @shipstatic/mcp` via stdio. Works with any MCP-compa
 
 Ask your AI agent to deploy a site. No API key, no sign-up, no configuration.
 
-You get a live, shareable URL on `*.shipstatic.com` instantly.
+Your site is live instantly on `*.shipstatic.com`.
 
-Deployments without an API key are public and expire in 3 days.
+Deployments without an API key are public and expire in 3 days. The response includes a **claim URL** — always show it to the user so they can keep the site permanently.
 
 ## All Tools — Free API Key
 
@@ -69,8 +69,8 @@ claude mcp add shipstatic -e SHIP_API_KEY=ship-... -- npx @shipstatic/mcp
 | Tool | Description |
 |------|-------------|
 | `deployments_upload` | Publish files and get a live URL instantly |
-| `deployments_list` | List all your deployed sites with their URLs, status, and labels |
-| `deployments_get` | Get details for a specific deployment including URL, status, and file count |
+| `deployments_list` | List all deployments with their URLs, status, and labels |
+| `deployments_get` | Get deployment details including URL, status, file count, size, and labels |
 | `deployments_set` | Update the labels on a deployment for organization and filtering |
 | `deployments_remove` | Permanently remove a deployment and all its files |
 
@@ -79,8 +79,8 @@ claude mcp add shipstatic -e SHIP_API_KEY=ship-... -- npx @shipstatic/mcp
 | Tool | Description |
 |------|-------------|
 | `domains_set` | Connect a custom domain to your site, switch deployments, or update labels |
-| `domains_list` | List all your custom domains with their linked sites and verification status |
-| `domains_get` | Get details for a specific domain including its linked site and DNS status |
+| `domains_list` | List all domains with their linked deployments and verification status |
+| `domains_get` | Get domain details including linked deployment, verification status, and labels |
 | `domains_records` | Get the DNS records you need to configure at your DNS provider |
 | `domains_dns` | Look up which DNS provider hosts a domain (e.g. Cloudflare, Namecheap) |
 | `domains_share` | Get a shareable link so someone else can see the required DNS records |
