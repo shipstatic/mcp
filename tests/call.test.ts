@@ -78,6 +78,16 @@ describe('call', () => {
     expect(text).not.toContain('SHIP_API_KEY');
   });
 
+  it('maps Forbidden error with stop-retrying hint (plan limit / terminated account)', async () => {
+    const result = await call(() => Promise.reject(ShipError.forbidden('Deployment limit reached')));
+
+    expect(result.isError).toBe(true);
+    const text = (result.content[0] as any).text;
+    expect(text).toContain('Deployment limit reached');
+    expect(text).toContain('Stop retrying');
+    expect(text).toContain('upgrade or contact support');
+  });
+
   it('survives circular validation details', async () => {
     const circular: any = { field: 'name' };
     circular.self = circular;

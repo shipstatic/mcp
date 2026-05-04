@@ -21,6 +21,10 @@ function handleError(error: unknown): CallToolResult {
       message += '\n\nHint: Set a free SHIP_API_KEY environment variable in your MCP server configuration.';
     }
 
+    if (error.isType(ErrorType.Forbidden)) {
+      message += '\n\nHint: This action is not permitted. Likely cause: plan limits reached or the account is terminated. Stop retrying — the user needs to upgrade or contact support at https://my.shipstatic.com.';
+    }
+
     if (error.isType(ErrorType.Validation) && error.details) {
       message += `\n\nDetails: ${safeStringify(error.details)}`;
     }

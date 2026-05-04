@@ -17,7 +17,7 @@ src/
 
 ```bash
 pnpm build          # TypeScript → dist/
-pnpm test --run     # All tests (30 tests, ~500ms)
+pnpm test --run     # All tests
 ```
 
 ## Core Patterns
@@ -64,8 +64,8 @@ server.registerTool('deployments_get', {
 
 ```
 tests/
-├── call.test.ts     # call() + error mapping (8 tests)
-└── server.test.ts   # Registration + wiring for all 15 tools (22 tests)
+├── call.test.ts     # call() + ShipError mapping (auth/forbidden/validation hints)
+└── server.test.ts   # Tool registration + 1:1 SDK wiring + annotation correctness
 ```
 
 ## Publishing

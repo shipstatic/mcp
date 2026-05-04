@@ -71,8 +71,8 @@ claude mcp add shipstatic -e SHIP_API_KEY=ship-... -- npx @shipstatic/mcp
 | Tool | Description |
 |------|-------------|
 | `deployments_upload` | Publish files and get a live URL instantly, optionally protected by a password |
-| `deployments_list` | List all deployments with their URLs, status, and labels |
-| `deployments_get` | Get deployment details including URL, status, file count, size, and labels |
+| `deployments_list` | List all deployments with their URLs, status, labels, and password protection state |
+| `deployments_get` | Get deployment details including URL, status, file count, size, labels, and password protection state |
 | `deployments_set` | Update the labels on a deployment for organization and filtering |
 | `deployments_remove` | Permanently remove a deployment and all its files |
 
