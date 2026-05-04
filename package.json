@@ -1,6 +1,6 @@
 {
   "name": "@shipstatic/mcp",
-  "version": "0.4.7",
+  "version": "0.4.8",
   "mcpName": "com.shipstatic/mcp",
   "description": "Free, no account needed — deploy static websites, landing pages, and prototypes instantly from AI agents",
   "type": "module",
@@ -52,11 +52,11 @@
   "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
-    "@shipstatic/ship": "^0.9.1",
+    "@shipstatic/ship": "^0.9.6",
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@shipstatic/types": "^0.9.1",
+    "@shipstatic/types": "^0.9.8",
     "@types/node": "^25.6.0",
     "husky": "^9.1.7",
     "typescript": "^6.0.2",
