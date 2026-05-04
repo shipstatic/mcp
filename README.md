@@ -56,6 +56,8 @@ Your site is live instantly on `*.shipstatic.com`.
 
 Deployments without an API key are public and expire in 3 days. The response includes a **claim URL** — always show it to the user so they can keep the site permanently.
 
+Want a private site? Ask your agent to set a password when deploying — visitors will be prompted to unlock before viewing, on the deployment URL and on any custom domains pointing at it.
+
 ## All Tools — Free API Key
 
 For permanent deployments and full control over your sites and domains, add a free API key from [my.shipstatic.com/api-key](https://my.shipstatic.com/api-key):
@@ -68,7 +70,7 @@ claude mcp add shipstatic -e SHIP_API_KEY=ship-... -- npx @shipstatic/mcp
 
 | Tool | Description |
 |------|-------------|
-| `deployments_upload` | Publish files and get a live URL instantly |
+| `deployments_upload` | Publish files and get a live URL instantly, optionally protected by a password |
 | `deployments_list` | List all deployments with their URLs, status, and labels |
 | `deployments_get` | Get deployment details including URL, status, file count, size, and labels |
 | `deployments_set` | Update the labels on a deployment for organization and filtering |

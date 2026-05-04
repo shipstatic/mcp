@@ -50,11 +50,11 @@ server.registerTool('deployments_get', {
 
 ### Dependency Injection
 
-`index.ts` owns the process: validates `SHIP_API_KEY`, constructs `new Ship({ apiKey })`, passes it to `createServer(ship)`. The factory never touches `process.env` or constructs its own dependencies. Tests pass a mock directly.
+`index.ts` owns the process: reads `SHIP_API_KEY` from the environment, constructs `new Ship({ apiKey })`, passes it to `createServer(ship)`. The factory never touches `process.env` or constructs its own dependencies. Tests pass a mock directly.
 
 ### Credential Isolation
 
-`SHIP_API_KEY` is **required** — the server exits with a clear error if missing. The API key is passed explicitly to the Ship constructor, bypassing the SDK's file-based config resolution (`~/.shiprc`). This prevents credential leakage from locally installed CLI credentials.
+`SHIP_API_KEY` is **optional**. Without it, deployments go to the public account and expire in 3 days; with it, they go to the user's account permanently. The API key is forwarded explicitly to the `Ship` constructor — and that's all MCP needs to do. The SDK's strict-isolation contract (synchronous constructor, no filesystem reads, only documented `SHIP_*` env-var fallbacks) is what keeps embedded credentials predictable. See `npm/ship/CLAUDE.md` "Strict-isolation contract for embedded hosts" for the full rationale.
 
 ### Deployment Tracking
 

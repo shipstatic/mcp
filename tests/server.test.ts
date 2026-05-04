@@ -1,26 +1,32 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { ShipError } from '@shipstatic/types';
+import type { Deployment, Domain } from '@shipstatic/types';
 import { createServer } from '../src/server.js';
 
-const MOCK_DEPLOYMENT = {
+const MOCK_DEPLOYMENT: Deployment = {
   deployment: 'happy-cat-abc1234.shipstatic.com',
   url: 'https://happy-cat-abc1234.shipstatic.com',
   files: 5,
   size: 1024000,
   status: 'success',
+  config: false,
+  password: false,
   labels: [],
+  via: 'mcp',
   created: 1700000000,
-  updated: 1700000000,
+  expires: null,
 };
 
-const MOCK_DOMAIN = {
+const MOCK_DOMAIN: Domain = {
   domain: 'www.example.com',
   url: 'https://www.example.com',
   deployment: 'happy-cat-abc1234.shipstatic.com',
   status: 'success',
   labels: [],
   created: 1700000000,
-  updated: 1700000000,
+  linked: 1700000000,
+  links: 1,
 };
 
 function createMockShip() {
@@ -117,17 +123,17 @@ describe('server', () => {
 
   // Deployments
 
-  it('upload passes path, labels, and via:mcp', async () => {
-    await tools.get('deployments_upload')!({ path: '/tmp/dist', labels: ['v1'] }, {});
+  it('upload passes path, labels, password, and via:mcp', async () => {
+    await tools.get('deployments_upload')!({ path: '/tmp/dist', labels: ['v1'], password: 'secret123' }, {});
     expect(ship.deployments.upload).toHaveBeenCalledWith('/tmp/dist', {
-      labels: ['v1'], via: 'mcp',
+      labels: ['v1'], password: 'secret123', via: 'mcp',
     });
   });
 
   it('upload passes undefined for omitted optional args', async () => {
     await tools.get('deployments_upload')!({ path: '/tmp/dist' }, {});
     expect(ship.deployments.upload).toHaveBeenCalledWith('/tmp/dist', {
-      labels: undefined, via: 'mcp',
+      labels: undefined, password: undefined, via: 'mcp',
     });
   });
 
@@ -212,5 +218,34 @@ describe('server', () => {
   it('whoami calls ship.whoami', async () => {
     await tools.get('whoami')!({});
     expect(ship.whoami).toHaveBeenCalled();
+  });
+
+  // End-to-end error mapping through call()
+
+  it('tool returns MCP error when SDK throws Authentication, with SHIP_API_KEY hint', async () => {
+    ship.deployments.list.mockRejectedValueOnce(ShipError.authentication('Invalid API key'));
+    const result = await tools.get('deployments_list')!({});
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain('Invalid API key');
+    expect(result.content[0].text).toContain('SHIP_API_KEY');
+  });
+
+  it('tool returns MCP error when SDK throws NotFound, no auth hint', async () => {
+    ship.deployments.get.mockRejectedValueOnce(ShipError.notFound('Deployment', 'abc123'));
+    const result = await tools.get('deployments_get')!({ deployment: 'abc123' }, {});
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).not.toContain('SHIP_API_KEY');
+  });
+
+  it('tool returns success result as JSON-stringified payload', async () => {
+    const result = await tools.get('deployments_get')!({ deployment: 'happy-cat-abc1234' }, {});
+    expect(result.isError).toBeUndefined();
+    expect(JSON.parse(result.content[0].text)).toEqual(MOCK_DEPLOYMENT);
+  });
+
+  it('tool returns "Done." for void destructive operations', async () => {
+    const result = await tools.get('deployments_remove')!({ deployment: 'happy-cat-abc1234' }, {});
+    expect(result.isError).toBeUndefined();
+    expect(result.content[0].text).toBe('Done.');
   });
 });

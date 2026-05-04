@@ -68,4 +68,32 @@ describe('call', () => {
     expect(result.isError).toBe(true);
     expect((result.content[0] as any).text).toBe('An unexpected error occurred');
   });
+
+  it('does not append SHIP_API_KEY hint to rate-limit errors', async () => {
+    const result = await call(() => Promise.reject(ShipError.rateLimit('Too many requests')));
+
+    expect(result.isError).toBe(true);
+    const text = (result.content[0] as any).text;
+    expect(text).toContain('Too many requests');
+    expect(text).not.toContain('SHIP_API_KEY');
+  });
+
+  it('survives circular validation details', async () => {
+    const circular: any = { field: 'name' };
+    circular.self = circular;
+    const result = await call(() => Promise.reject(ShipError.validation('Bad input', circular)));
+
+    expect(result.isError).toBe(true);
+    const text = (result.content[0] as any).text;
+    expect(text).toContain('Bad input');
+    // Doesn't crash; falls back to String() representation when JSON.stringify throws
+    expect(text).toContain('Details:');
+  });
+
+  it('serializes null result as JSON literal', async () => {
+    const result = await call(() => Promise.resolve(null));
+
+    expect(result.isError).toBeUndefined();
+    expect((result.content[0] as any).text).toBe('null');
+  });
 });
