@@ -12,15 +12,15 @@ importers:
         specifier: ^1.29.0
         version: 1.29.0(zod@4.3.6)
       '@shipstatic/ship':
-        specifier: ^0.8.9
-        version: 0.8.9(typescript@6.0.2)
+        specifier: ^0.9.1
+        version: 0.9.1(typescript@6.0.2)
       zod:
         specifier: ^4.3.6
         version: 4.3.6
     devDependencies:
       '@shipstatic/types':
-        specifier: ^0.8.7
-        version: 0.8.7
+        specifier: ^0.9.1
+        version: 0.9.1
       '@types/node':
         specifier: ^25.6.0
         version: 25.6.0
@@ -344,13 +344,13 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@shipstatic/ship@0.8.9':
-    resolution: {integrity: sha512-KHOys4QfVppE333HDfgRO3JW0mpcfW2t6BTjGkd88IWYaaXjTBKmT4s1bcIWs9UqVkJdJW6TSYkyj+DM5eImMg==}
+  '@shipstatic/ship@0.9.1':
+    resolution: {integrity: sha512-V/UUdI+98+TXK1BzsoGv1A33UYIq+0Zh/3+8wiURVCK3Q5/k5oDvz8wey2d7sx68S0rOwE7IHfbYeytZmaKGNQ==}
     engines: {node: '>=20.0.0'}
     hasBin: true
 
-  '@shipstatic/types@0.8.7':
-    resolution: {integrity: sha512-zQ1KDCGbr3KdxQlzp6uUeYXjjxEhCKg3op//3mAKaTbVl2ygIi+g3jQdm9YS2B3NjzG2PSZD6P3f+03RoT4ZMA==}
+  '@shipstatic/types@0.9.1':
+    resolution: {integrity: sha512-AhfHt79HnMBDIDjfmE4noi7+DGTLedDQpZC9WUAlRyJFv0KJ6+JUetxNhZwnR1399dIsPSGZUV9BIHXa+aFyvQ==}
     engines: {node: '>=20.0.0'}
 
   '@standard-schema/spec@1.1.0':
@@ -1032,8 +1032,8 @@ packages:
   wrappy@1.0.2:
     resolution: {integrity: sha512-l4Sp/DRseor9wL6EvV2+TuQn63dMkPjZ/sp9XkghTEbV9KlPS1xUsZ3u7/IQO4wxtcFB4bgpQPRcR3QCvezPcQ==}
 
-  yocto-spinner@1.1.0:
-    resolution: {integrity: sha512-/BY0AUXnS7IKO354uLLA2eRcWiqDifEbd6unXCsOxkFDAkhgUL3PH9X2bFoaU0YchnDXsF+iKleeTLJGckbXfA==}
+  yocto-spinner@1.2.0:
+    resolution: {integrity: sha512-Yw0hUB6UA3o4YUgKy3oSe9a4cxoaZ9sBfYDw+JSxo6Id0KoJGoxzPA24qqUXYKBWABs/zDSGTz9kww7t3F0XGw==}
     engines: {node: '>=18.19'}
 
   yoctocolors@2.1.2:
@@ -1047,6 +1047,9 @@ packages:
 
   zod@4.3.6:
     resolution: {integrity: sha512-rftlrkhHZOcjDwkGlnUtZZkvaPHCsDATp4pGpuOOMDaTdDDXF91wuVDJoWoPsKX/3YPQ5fHuF3STjcYyKr+Qhg==}
+
+  zod@4.4.2:
+    resolution: {integrity: sha512-IynmDyxsEsb9RKzO3J9+4SxXnl2FTFSzNBaKKaMV6tsSk0rw9gYw9gs+JFCq/qk2LCZ78KDwyj+Z289TijSkUw==}
 
 snapshots:
 
@@ -1239,7 +1242,7 @@ snapshots:
   '@rollup/rollup-win32-x64-msvc@4.60.1':
     optional: true
 
-  '@shipstatic/ship@0.8.9(typescript@6.0.2)':
+  '@shipstatic/ship@0.9.1(typescript@6.0.2)':
     dependencies:
       columnify: 1.6.0
       commander: 12.1.0
@@ -1248,13 +1251,13 @@ snapshots:
       formdata-node: 6.0.3
       junk: 4.0.1
       spark-md5: 3.0.2
-      yocto-spinner: 1.1.0
+      yocto-spinner: 1.2.0
       yoctocolors: 2.1.2
-      zod: 4.3.6
+      zod: 4.4.2
     transitivePeerDependencies:
       - typescript
 
-  '@shipstatic/types@0.8.7': {}
+  '@shipstatic/types@0.9.1': {}
 
   '@standard-schema/spec@1.1.0': {}
 
@@ -1921,7 +1924,7 @@ snapshots:
 
   wrappy@1.0.2: {}
 
-  yocto-spinner@1.1.0:
+  yocto-spinner@1.2.0:
     dependencies:
       yoctocolors: 2.1.2
 
@@ -1932,3 +1935,5 @@ snapshots:
       zod: 4.3.6
 
   zod@4.3.6: {}
+
+  zod@4.4.2: {}

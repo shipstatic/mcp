@@ -17,12 +17,12 @@ function handleError(error: unknown): CallToolResult {
   if (isShipError(error)) {
     let message = error.message;
 
-    if (error.isType(ErrorType.Authentication) && !message.includes('Too many requests')) {
+    if (error.isType(ErrorType.Authentication)) {
       message += '\n\nHint: Set a free SHIP_API_KEY environment variable in your MCP server configuration.';
     }
 
     if (error.isType(ErrorType.Validation) && error.details) {
-      message += `\n\nDetails: ${JSON.stringify(error.details)}`;
+      message += `\n\nDetails: ${safeStringify(error.details)}`;
     }
 
     return {
@@ -36,4 +36,12 @@ function handleError(error: unknown): CallToolResult {
     content: [{ type: 'text', text: fallback }],
     isError: true,
   };
+}
+
+function safeStringify(value: unknown): string {
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
 }

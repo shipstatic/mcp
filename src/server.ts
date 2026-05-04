@@ -1,17 +1,21 @@
 import type Ship from '@shipstatic/ship';
+import { LABEL_CONSTRAINTS, PASSWORD_CONSTRAINTS } from '@shipstatic/ship';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { createRequire } from 'node:module';
 import { z } from 'zod';
 import { call } from './call.js';
 
+const { version } = createRequire(import.meta.url)('../package.json') as { version: string };
+
 const OPEN_WORLD = { openWorldHint: true } as const;
 const READ = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, ...OPEN_WORLD } as const;
-const CREATE = { destructiveHint: false, ...OPEN_WORLD } as const;
-const WRITE = { destructiveHint: false, idempotentHint: true, ...OPEN_WORLD } as const;
-const DESTRUCTIVE = { destructiveHint: true, idempotentHint: true, ...OPEN_WORLD } as const;
+const CREATE = { readOnlyHint: false, destructiveHint: false, ...OPEN_WORLD } as const;
+const WRITE = { readOnlyHint: false, destructiveHint: false, idempotentHint: true, ...OPEN_WORLD } as const;
+const DESTRUCTIVE = { readOnlyHint: false, destructiveHint: true, idempotentHint: true, ...OPEN_WORLD } as const;
 
 const INSTRUCTIONS = `ShipStatic deploys static websites instantly. No account required.
 
-To deploy: call deployments_upload with the build output directory path. The site is live immediately.
+To deploy: call deployments_upload with the build output directory path. The site is live immediately. To make the site private, pass \`password\` — visitors must unlock before viewing, including on any custom domains pointing at it.
 
 Without SHIP_API_KEY, deployments are public and expire in 3 days. The response includes a claim URL — always show the deployment URL and the claim URL to the user so they can keep the site permanently.
 
@@ -26,7 +30,7 @@ To add a custom domain: domains_validate → domains_set → domains_records (sh
 export function createServer(ship: Ship): McpServer {
   const server = new McpServer({
     name: 'shipstatic',
-    version: '0.4.3',
+    version,
   }, {
     instructions: INSTRUCTIONS,
   });
@@ -34,23 +38,24 @@ export function createServer(ship: Ship): McpServer {
   // Deployments
 
   server.registerTool('deployments_upload', {
-    description: 'Deploy a static site instantly. No account or API key required. Returns the live URL, file count, and size. Without SHIP_API_KEY, the response includes a claim URL (site expires in 3 days) — always show both the deployment URL and claim URL to the user.',
+    description: 'Deploy a static site instantly. No account or API key required. Returns the live URL, file count, and size. Without SHIP_API_KEY, the response includes a claim URL (site expires in 3 days) — always show both the deployment URL and claim URL to the user. To make the site private, pass `password`; always show the password to the user if you set one.',
     annotations: CREATE,
     inputSchema: {
       path: z.string().describe('Absolute path to the build output directory to deploy (e.g. "/Users/me/project/dist")'),
-      labels: z.array(z.string()).optional().describe('Labels for organizing deployments (e.g. ["production", "v1.2"]). Lowercase, 3-25 chars, allows . _ - separators.'),
+      labels: z.array(z.string()).optional().describe(`Labels for organizing deployments (e.g. ["production", "v1.2"]). Lowercase, ${LABEL_CONSTRAINTS.MIN_LENGTH}-${LABEL_CONSTRAINTS.MAX_LENGTH} chars, allows . _ - separators.`),
+      password: z.string().optional().describe(`Optional password to gate the deployment behind an unlock prompt (${PASSWORD_CONSTRAINTS.MIN_LENGTH}–${PASSWORD_CONSTRAINTS.MAX_LENGTH} characters; whitespace significant). Visitors must enter this password before viewing the site, including on any custom domains pointing at it.`),
     },
-  }, ({ path, labels }) =>
-    call(() => ship.deployments.upload(path, { labels, via: 'mcp' }))
+  }, ({ path, labels, password }) =>
+    call(() => ship.deployments.upload(path, { labels, password, via: 'mcp' }))
   );
 
   server.registerTool('deployments_list', {
-    description: 'List all deployments with their URLs, status, and labels.',
+    description: 'List all deployments with their URLs, status, labels, and password protection state.',
     annotations: READ,
   }, () => call(() => ship.deployments.list()));
 
   server.registerTool('deployments_get', {
-    description: 'Get deployment details including URL, status, file count, size, and labels.',
+    description: 'Get deployment details including URL, status, file count, size, labels, and password protection state.',
     annotations: READ,
     inputSchema: {
       deployment: z.string().describe('Deployment hostname (e.g. "happy-cat-abc1234.shipstatic.com"). Returned by deployments_upload or deployments_list.'),
