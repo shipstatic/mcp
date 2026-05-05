@@ -81,7 +81,7 @@ claude mcp add shipstatic -e SHIP_API_KEY=ship-... -- npx @shipstatic/mcp
 | Tool | Description |
 |------|-------------|
 | `domains_set` | Connect a custom domain to your site, switch deployments, or update labels |
-| `domains_list` | List all domains with their linked deployments and verification status |
+| `domains_list` | List all domains with their linked deployment and verification status |
 | `domains_get` | Get domain details including linked deployment, verification status, and labels |
 | `domains_records` | Get the DNS records you need to configure at your DNS provider |
 | `domains_dns` | Look up which DNS provider hosts a domain (e.g. Cloudflare, Namecheap) |

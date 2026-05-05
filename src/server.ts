@@ -94,7 +94,7 @@ export function createServer(ship: Ship): McpServer {
   );
 
   server.registerTool('domains_list', {
-    description: 'List all domains with their URLs, linked deployments, and verification status.',
+    description: 'List all domains with their URLs, linked deployment, and verification status.',
     annotations: READ,
   }, () => call(() => ship.domains.list()));
 
