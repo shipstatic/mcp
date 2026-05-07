@@ -6,6 +6,16 @@ MCP server for [ShipStatic](https://shipstatic.com) — deploy static websites, 
   <img width="380" height="200" src="https://glama.ai/mcp/servers/@shipstatic/shipstatic/badge" alt="shipstatic MCP server" />
 </a>
 
+## No install? Use the hosted endpoint
+
+For anonymous one-shot deploys, point your MCP client at:
+
+```
+https://mcp.shipstatic.com
+```
+
+Same `deployments_upload` tool as below — no Node, no npm, no config. For listing, custom domains, or account-tied operations, install the package below.
+
 ## Setup
 
 ### Claude Code
