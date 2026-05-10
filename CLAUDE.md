@@ -6,6 +6,24 @@ Claude Code instructions for the **ShipStatic MCP Server**.
 
 A **hosted Streamable-HTTP variant** lives at `https://mcp.shipstatic.com`, registered alongside this package under the same `com.shipstatic/mcp` registry entry (see `server.json` `remotes`). Source: `cloudflare/mcp/` in the monorepo. The hosted variant exposes only `deployments_upload` (anonymous-only). The user-facing strings — tool description, INSTRUCTIONS — must stay coordinated where they overlap; the hosted side documents the divergence boundaries.
 
+## README positioning (public docs)
+
+`README.md` ships to npm, Glama, and the MCP Registry. From the reader's perspective, **ShipStatic MCP is one product with two ways to use it**: the hosted endpoint (no install) and this package (full toolset). The README leads with hosted, presents the local install as the "want more" upgrade, and never reveals that the hosted variant lives in a separate, private repo (`cloudflare/mcp/`).
+
+Voice mirrors the marketing site — keep these phrases verbatim when editing:
+
+- Slogan: **"One URL. Your agent ships."**
+- Action: **"Drop `https://mcp.shipstatic.com` into any MCP client."**
+- Qualifier: **"No install, no signup, no API key."**
+- Upgrade: **"Install this package for the full toolset (custom domains, listing, account-tied ops)."**
+
+Do not surface in the README:
+- That the hosted endpoint is a separate Worker / different codebase
+- Implementation details (transport names, base64 file encoding, defensive caps, etc.)
+- Anything about the `cloudflare/mcp/` repo
+
+Keep the public surface coherent: one ShipStatic MCP, two doors in.
+
 ## Architecture
 
 ```
