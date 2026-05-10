@@ -1,22 +1,48 @@
 # @shipstatic/mcp
 
-MCP server for [ShipStatic](https://shipstatic.com) — deploy static websites, landing pages, and prototypes instantly from AI agents.
+ShipStatic MCP — deploy static websites, landing pages, and prototypes from AI agents.
+
+**One URL. Your agent ships.**
 
 <a href="https://glama.ai/mcp/servers/@shipstatic/shipstatic">
   <img width="380" height="200" src="https://glama.ai/mcp/servers/@shipstatic/shipstatic/badge" alt="shipstatic MCP server" />
 </a>
 
-## No install? Use the hosted endpoint
+## Hosted — no install
 
-For anonymous one-shot deploys, point your MCP client at:
+Drop this URL into any MCP client. Your agent can publish a website in its next message — free, no install, no signup, no API key.
 
 ```
 https://mcp.shipstatic.com
 ```
 
-Same `deployments_upload` tool as below — no Node, no npm, no config. For listing, custom domains, or account-tied operations, install the package below.
+### Claude Code
 
-## Setup
+```bash
+claude mcp add --transport http shipstatic https://mcp.shipstatic.com
+```
+
+### Cursor, Antigravity, Windsurf, Zed — anywhere with `mcp.json`
+
+```json
+{
+  "mcpServers": {
+    "shipstatic": {
+      "url": "https://mcp.shipstatic.com"
+    }
+  }
+}
+```
+
+### Claude Desktop, Claude.ai web
+
+Add a custom connector pointing at `https://mcp.shipstatic.com`.
+
+The hosted endpoint exposes one tool: `deployments_upload`. Public deployments expire in 3 days unless claimed — the response includes a claim URL the user can visit to keep the site permanently. Set a `password` arg to gate the deployment behind an unlock prompt.
+
+## Local — full toolset
+
+Install this package when you need to manage deployments, link custom domains, or use account-tied operations.
 
 ### Claude Code
 
@@ -56,35 +82,31 @@ Add to `~/.gemini/antigravity/mcp_config.json`:
 
 ### Windsurf, Zed, and other MCP clients
 
-Same config format — `npx @shipstatic/mcp` via stdio. Works with any MCP-compatible client.
+Same config format — `npx @shipstatic/mcp`. Works with any MCP-compatible client.
 
-## Deploy — Free, No Account Needed
+## Free API key — permanent deployments
 
-Ask your AI agent to deploy a site. No API key, no sign-up, no configuration.
+`SHIP_API_KEY` is optional. Without it, deploys behave like the hosted endpoint (public, claim URL, 3-day expiry). With it, you get permanent deployments, the full toolset, and bigger limits.
 
-Your site is live instantly on `*.shipstatic.com`.
-
-Deployments without an API key are public and expire in 3 days. The response includes a **claim URL** — always show it to the user so they can keep the site permanently.
-
-Want a private site? Ask your agent to set a password when deploying — visitors will be prompted to unlock before viewing, on the deployment URL and on any custom domains pointing at it.
-
-## All Tools — Free API Key
-
-For permanent deployments and full control over your sites and domains, add a free API key from [my.shipstatic.com/api-key](https://my.shipstatic.com/api-key):
+Get a free key at [my.shipstatic.com/api-key](https://my.shipstatic.com/api-key):
 
 ```bash
 claude mcp add shipstatic -e SHIP_API_KEY=ship-... -- npx @shipstatic/mcp
 ```
 
+## Tools
+
+The hosted endpoint exposes `deployments_upload` only. The local install exposes everything below.
+
 ### Deployments
 
-| Tool | Description |
-|------|-------------|
-| `deployments_upload` | Publish files and get a live URL instantly, optionally protected by a password |
-| `deployments_list` | List all deployments with their URLs, status, labels, and password protection state |
-| `deployments_get` | Get deployment details including URL, status, file count, size, labels, and password protection state |
-| `deployments_set` | Update the labels on a deployment for organization and filtering |
-| `deployments_remove` | Permanently remove a deployment and all its files |
+| Tool | Description | Hosted |
+|------|-------------|:---:|
+| `deployments_upload` | Publish files and get a live URL instantly, optionally protected by a password | ✓ |
+| `deployments_list` | List all deployments with their URLs, status, labels, and password protection state | |
+| `deployments_get` | Get deployment details including URL, status, file count, size, labels, and password protection state | |
+| `deployments_set` | Update the labels on a deployment for organization and filtering | |
+| `deployments_remove` | Permanently remove a deployment and all its files | |
 
 ### Domains
 
@@ -108,7 +130,7 @@ claude mcp add shipstatic -e SHIP_API_KEY=ship-... -- npx @shipstatic/mcp
 
 ## Registry
 
-Published to the [MCP Registry](https://registry.modelcontextprotocol.io/v0.1/servers?search=com.shipstatic/mcp) as `com.shipstatic/mcp`.
+Published to the [MCP Registry](https://registry.modelcontextprotocol.io/v0.1/servers?search=com.shipstatic/mcp) as `com.shipstatic/mcp`. Registry-aware clients see both the hosted endpoint and the local install and pick the right transport for their environment.
 
 ## License
 
