@@ -5,10 +5,7 @@ ShipStatic MCP — deploy static websites, landing pages, and prototypes from AI
 **One URL. Your agent ships.**
 
 [![smithery badge](https://smithery.ai/badge/shipstatic/ship)](https://smithery.ai/servers/shipstatic/ship)
-
-<a href="https://glama.ai/mcp/servers/@shipstatic/shipstatic">
-  <img width="380" height="200" src="https://glama.ai/mcp/servers/@shipstatic/shipstatic/badge" alt="shipstatic MCP server" />
-</a>
+[![glama badge](https://img.shields.io/badge/glama-MCP%20server-1f7ade)](https://glama.ai/mcp/servers/shipstatic/mcp)
 
 ## Hosted — no install
 
