@@ -13,7 +13,7 @@ const CREATE = { readOnlyHint: false, destructiveHint: false, ...OPEN_WORLD } as
 const WRITE = { readOnlyHint: false, destructiveHint: false, idempotentHint: true, ...OPEN_WORLD } as const;
 const DESTRUCTIVE = { readOnlyHint: false, destructiveHint: true, idempotentHint: true, ...OPEN_WORLD } as const;
 
-const INSTRUCTIONS = `ShipStatic deploys static websites instantly. No account required.
+const INSTRUCTIONS = `ShipStatic deploys static websites instantly. Free, no account required.
 
 To deploy: call deployments_upload with the build output directory path. The site is live immediately. To make the site private, pass \`password\` — visitors must unlock before viewing, including on any custom domains pointing at it.
 
@@ -38,7 +38,7 @@ export function createServer(ship: Ship): McpServer {
   // Deployments
 
   server.registerTool('deployments_upload', {
-    description: 'Deploy a static site instantly. No account or API key required. Returns the live URL, file count, and size. Without SHIP_API_KEY, the response includes a claim URL (site expires in 3 days) — always show both the deployment URL and claim URL to the user. To make the site private, pass `password`; always show the password to the user if you set one.',
+    description: 'Deploy a static site instantly — free, no account or API key required. Returns the live URL, file count, and size. Without SHIP_API_KEY, the response includes a claim URL (site expires in 3 days) — always show both the deployment URL and claim URL to the user. To make the site private, pass `password`; always show the password to the user if you set one.',
     annotations: CREATE,
     inputSchema: {
       path: z.string().describe('Absolute path to the build output directory to deploy (e.g. "/Users/me/project/dist")'),
