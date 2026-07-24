@@ -90,7 +90,7 @@ tests/
 
 ## Publishing
 
-The CI workflow (`.github/workflows/npm-publish.yml`) publishes to both npm and the MCP Registry on every push to main. `package.json` is the single source of truth for the version — CI patches `server.json` with `jq` before registry publish. DNS authentication uses an Ed25519 key on `shipstatic.com`.
+The CI workflow (`.github/workflows/npm-publish.yml`) runs on pushes to `main` and `development`. The guarded publish step publishes to npm only when `package.json` holds a version not yet on the registry, with the dist-tag derived from the version (`-` suffix → `beta`, else `latest`). The MCP Registry publish is **stable-only** — the registry has no channel concept, so betas live on npm's `beta` dist-tag alone. `package.json` is the single source of truth for the version — CI patches `server.json` with `jq` before registry publish. DNS authentication uses an Ed25519 key on `shipstatic.com`.
 
 **`server.json`** — MCP Registry metadata. `mcpName` in `package.json` must match `name` in `server.json` (`com.shipstatic/mcp`).
 
