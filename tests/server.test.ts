@@ -55,7 +55,7 @@ function createMockShip() {
 
 describe('server', () => {
   let ship: ReturnType<typeof createMockShip>;
-  let tools: Map<string, Function>;
+  let tools: Map<string, (...args: any[]) => unknown>;
   let configs: Map<string, any>;
 
   beforeEach(() => {

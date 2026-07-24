@@ -1,10 +1,13 @@
 #!/bin/sh
-# Fast gate only — the full suite lives in CI (the workflow's test job).
+# Platform-standard pre-commit (byte-identical across ShipStatic repos).
+# Fast gate only — the full suite lives in CI.
 
-# No ship-/deploy- credential may enter history. Test paths are excluded —
-# fixtures hold fake keys by design — as is the repeating fake test key.
+# No ship-/deploy- credential may enter history. Test and example paths are
+# excluded — fixtures hold fake keys by design — as is the repeating fake
+# test key.
 LEAKS=$(git diff --cached --no-color --unified=0 --diff-filter=ACMR -- . \
-  ':(exclude)tests/**' ':(exclude)**/*.test.*' \
+  ':(exclude)**/tests/**' ':(exclude)**/__tests__/**' ':(exclude)**/*.test.*' \
+  ':(exclude)test-utils/**' ':(exclude)examples/**' ':(exclude)e2e/**' \
   | grep -E '^\+' | grep -E '(ship|deploy)-[0-9a-f]{64}' \
   | grep -v '1234567890abcdef' || true)
 if [ -n "$LEAKS" ]; then
@@ -13,4 +16,9 @@ if [ -n "$LEAKS" ]; then
   exit 1
 fi
 
-pnpm exec biome check --staged --no-errors-on-unmatched
+pnpm exec biome check --staged --no-errors-on-unmatched || exit 1
+
+# Typecheck when the repo defines it — cheap; CI runs the superset.
+if node -e "process.exit(require('./package.json').scripts?.typecheck ? 0 : 1)" 2>/dev/null; then
+  pnpm typecheck
+fi
