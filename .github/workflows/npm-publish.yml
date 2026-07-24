@@ -2,7 +2,7 @@ name: Publish
 
 on:
   push:
-    branches: [main]
+    branches: [main, development]
   workflow_dispatch:
 
 jobs:
@@ -19,37 +19,68 @@ jobs:
           node-version: '20.19.1'
           registry-url: 'https://registry.npmjs.org'
 
-      - uses: pnpm/action-setup@v4
+      # The version decides everything: skip when this version is already on
+      # the registry (any push — workflow edits, docs — is a safe no-op, so
+      # publishes are idempotent), and derive the dist-tag from the version —
+      # prerelease versions (any `-` suffix) publish under `beta` so `latest`
+      # keeps resolving the last stable; promoting a stable version needs no
+      # workflow change. The branch decides only which pushes are eligible.
+      - id: version
+        run: |
+          NAME=$(node -p "require('./package.json').name")
+          VERSION=$(node -p "require('./package.json').version")
+          if npm view "$NAME@$VERSION" version >/dev/null 2>&1; then
+            echo "$NAME@$VERSION already on the registry — nothing to publish"
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          else
+            if [[ "$VERSION" == *-* ]]; then TAG=beta; else TAG=latest; fi
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+            echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+            echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.version.outputs.publish == 'true'
+        uses: pnpm/action-setup@v4
         with:
           version: 10.12.4
 
-      - run: pnpm install
+      - if: steps.version.outputs.publish == 'true'
+        run: pnpm install
 
-      - run: pnpm run build
+      - if: steps.version.outputs.publish == 'true'
+        run: pnpm run build
 
-      - run: pnpm publish --access public --no-git-checks --provenance
+      - if: steps.version.outputs.publish == 'true'
+        run: pnpm publish --access public --no-git-checks --provenance --tag "${{ steps.version.outputs.tag }}"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
 
+      # The MCP Registry has no channel concept — a published version is THE
+      # listed version for every client. Betas therefore live on npm's `beta`
+      # dist-tag alone; only stable versions reach the registry.
       - name: Install mcp-publisher
+        if: steps.version.outputs.publish == 'true' && steps.version.outputs.tag == 'latest'
         run: |
           curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
 
       - name: Sync server.json version from package.json
+        if: steps.version.outputs.publish == 'true' && steps.version.outputs.tag == 'latest'
         run: |
           VERSION=$(node -p "require('./package.json').version")
           jq --arg v "$VERSION" '.version = $v | .packages[0].version = $v' server.json > server.tmp && mv server.tmp server.json
 
       - name: Authenticate to MCP Registry
+        if: steps.version.outputs.publish == 'true' && steps.version.outputs.tag == 'latest'
         run: ./mcp-publisher login dns --domain shipstatic.com --private-key ${{ secrets.MCP_PRIVATE_KEY }}
 
       - name: Publish to MCP Registry
+        if: steps.version.outputs.publish == 'true' && steps.version.outputs.tag == 'latest'
         run: ./mcp-publisher publish
 
-      - if: success()
+      - if: steps.version.outputs.publish == 'true'
         uses: slackapi/slack-github-action@v1.23.0
         with:
-          payload: '{"text":"✅ @shipstatic/mcp published successfully"}'
+          payload: '{"text":"✅ @shipstatic/mcp ${{ steps.version.outputs.version }} published (${{ steps.version.outputs.tag }})"}'
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
