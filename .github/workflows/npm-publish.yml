@@ -1,22 +1,54 @@
-name: Publish
+name: CI
 
 on:
   push:
     branches: [main, development]
+  pull_request:
+    branches: [main, development]
   workflow_dispatch:
 
 jobs:
-  publish:
+  test:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      # No `version:` — pnpm/action-setup reads the `packageManager` field,
+      # so the pnpm pin lives in exactly one place.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm exec biome ci .
+
+      - run: pnpm run build
+
+      - run: pnpm test --run
+
+  publish:
+    # Publishes fire on branch pushes only; PRs stop at the test gate.
+    if: github.event_name != 'pull_request'
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: read
       id-token: write
     steps:
       - uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@v4
+
       - uses: actions/setup-node@v4
         with:
-          node-version: '20.19.1'
+          node-version: 22
+          cache: pnpm
           registry-url: 'https://registry.npmjs.org'
 
       # The version decides everything: skip when this version is already on
@@ -40,12 +72,7 @@ jobs:
           fi
 
       - if: steps.version.outputs.publish == 'true'
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.12.4
-
-      - if: steps.version.outputs.publish == 'true'
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       - if: steps.version.outputs.publish == 'true'
         run: pnpm run build
