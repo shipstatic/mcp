@@ -14,7 +14,7 @@
     "clean": "rm -rf dist",
     "prepare": "git config core.hooksPath scripts/githooks",
     "test": "vitest",
-    "typecheck": "tsc --noEmit -p tsconfig.test.json",
+    "typecheck": "tsc --noEmit",
     "lint": "biome check .",
     "format": "biome format --write ."
   },
