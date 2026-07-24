@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
 import { ShipError } from '@shipstatic/types';
+import { describe, expect, it } from 'vitest';
 import { call } from '../src/call.js';
 
 describe('call', () => {
@@ -28,7 +28,7 @@ describe('call', () => {
 
   it('maps validation error with details', async () => {
     const result = await call(() =>
-      Promise.reject(ShipError.validation('Invalid input', { field: 'name', reason: 'too short' }))
+      Promise.reject(ShipError.validation('Invalid input', { field: 'name', reason: 'too short' })),
     );
 
     expect(result.isError).toBe(true);
@@ -79,7 +79,9 @@ describe('call', () => {
   });
 
   it('maps Forbidden error with stop-retrying hint (plan limit / terminated account)', async () => {
-    const result = await call(() => Promise.reject(ShipError.forbidden('Deployment limit reached')));
+    const result = await call(() =>
+      Promise.reject(ShipError.forbidden('Deployment limit reached')),
+    );
 
     expect(result.isError).toBe(true);
     const text = (result.content[0] as any).text;

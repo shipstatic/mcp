@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { ShipError } from '@shipstatic/types';
 import type { Deployment, Domain } from '@shipstatic/types';
+import { ShipError } from '@shipstatic/types';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createServer } from '../src/server.js';
 
 const MOCK_DEPLOYMENT: Deployment = {
@@ -64,13 +64,16 @@ describe('server', () => {
     configs = new Map();
 
     const orig = McpServer.prototype.registerTool;
-    const spy = vi.spyOn(McpServer.prototype, 'registerTool').mockImplementation(
-      function (this: McpServer, name: string, config: any, cb: any) {
-        tools.set(name, cb);
-        configs.set(name, config);
-        return orig.call(this, name, config, cb);
-      },
-    );
+    const spy = vi.spyOn(McpServer.prototype, 'registerTool').mockImplementation(function (
+      this: McpServer,
+      name: string,
+      config: any,
+      cb: any,
+    ) {
+      tools.set(name, cb);
+      configs.set(name, config);
+      return orig.call(this, name, config, cb);
+    });
 
     createServer(ship);
     spy.mockRestore();
@@ -97,7 +100,17 @@ describe('server', () => {
   });
 
   it('marks read-only tools', () => {
-    const readOnly = ['deployments_list', 'deployments_get', 'domains_list', 'domains_get', 'domains_records', 'domains_dns', 'domains_share', 'domains_validate', 'whoami'];
+    const readOnly = [
+      'deployments_list',
+      'deployments_get',
+      'domains_list',
+      'domains_get',
+      'domains_records',
+      'domains_dns',
+      'domains_share',
+      'domains_validate',
+      'whoami',
+    ];
     for (const name of readOnly) {
       expect(configs.get(name)?.annotations?.readOnlyHint, name).toBe(true);
     }
@@ -115,7 +128,12 @@ describe('server', () => {
   });
 
   it('marks non-destructive write tools', () => {
-    const nonDestructive = ['deployments_upload', 'deployments_set', 'domains_set', 'domains_verify'];
+    const nonDestructive = [
+      'deployments_upload',
+      'deployments_set',
+      'domains_set',
+      'domains_verify',
+    ];
     for (const name of nonDestructive) {
       expect(configs.get(name)?.annotations?.destructiveHint, name).toBe(false);
     }
@@ -124,16 +142,23 @@ describe('server', () => {
   // Deployments
 
   it('upload passes path, labels, password, and via:mcp', async () => {
-    await tools.get('deployments_upload')!({ path: '/tmp/dist', labels: ['v1'], password: 'secret123' }, {});
+    await tools.get('deployments_upload')!(
+      { path: '/tmp/dist', labels: ['v1'], password: 'secret123' },
+      {},
+    );
     expect(ship.deployments.upload).toHaveBeenCalledWith('/tmp/dist', {
-      labels: ['v1'], password: 'secret123', via: 'mcp',
+      labels: ['v1'],
+      password: 'secret123',
+      via: 'mcp',
     });
   });
 
   it('upload passes undefined for omitted optional args', async () => {
     await tools.get('deployments_upload')!({ path: '/tmp/dist' }, {});
     expect(ship.deployments.upload).toHaveBeenCalledWith('/tmp/dist', {
-      labels: undefined, password: undefined, via: 'mcp',
+      labels: undefined,
+      password: undefined,
+      via: 'mcp',
     });
   });
 
@@ -160,16 +185,21 @@ describe('server', () => {
   // Domains
 
   it('domains set passes domain, deployment, and labels', async () => {
-    await tools.get('domains_set')!({ domain: 'www.example.com', deployment: 'abc', labels: ['prod'] }, {});
+    await tools.get('domains_set')!(
+      { domain: 'www.example.com', deployment: 'abc', labels: ['prod'] },
+      {},
+    );
     expect(ship.domains.set).toHaveBeenCalledWith('www.example.com', {
-      deployment: 'abc', labels: ['prod'],
+      deployment: 'abc',
+      labels: ['prod'],
     });
   });
 
   it('domains set passes undefined for omitted optional args', async () => {
     await tools.get('domains_set')!({ domain: 'www.example.com' }, {});
     expect(ship.domains.set).toHaveBeenCalledWith('www.example.com', {
-      deployment: undefined, labels: undefined,
+      deployment: undefined,
+      labels: undefined,
     });
   });
 

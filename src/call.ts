@@ -1,12 +1,10 @@
-import { isShipError, ErrorType } from '@shipstatic/ship';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
+import { ErrorType, isShipError } from '@shipstatic/ship';
 
 export async function call<T>(fn: () => Promise<T>): Promise<CallToolResult> {
   try {
     const result = await fn();
-    const text = result === undefined
-      ? 'Done.'
-      : JSON.stringify(result, null, 2);
+    const text = result === undefined ? 'Done.' : JSON.stringify(result, null, 2);
     return { content: [{ type: 'text', text }] };
   } catch (error) {
     return handleError(error);
@@ -18,11 +16,13 @@ function handleError(error: unknown): CallToolResult {
     let message = error.message;
 
     if (error.isType(ErrorType.Authentication)) {
-      message += '\n\nHint: Set a free SHIP_API_KEY environment variable in your MCP server configuration.';
+      message +=
+        '\n\nHint: Set a free SHIP_API_KEY environment variable in your MCP server configuration.';
     }
 
     if (error.isType(ErrorType.Forbidden)) {
-      message += '\n\nHint: This action is not permitted. Likely cause: plan limits reached or the account is terminated. Stop retrying — the user needs to upgrade or contact support at https://my.shipstatic.com.';
+      message +=
+        '\n\nHint: This action is not permitted. Likely cause: plan limits reached or the account is terminated. Stop retrying — the user needs to upgrade or contact support at https://my.shipstatic.com.';
     }
 
     if (error.isType(ErrorType.Validation) && error.details) {
