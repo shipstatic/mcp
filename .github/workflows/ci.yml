@@ -12,13 +12,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # No `version:` — pnpm/action-setup reads the `packageManager` field,
       # so the pnpm pin lives in exactly one place.
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: pnpm
@@ -41,11 +41,11 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: pnpm
@@ -105,17 +105,17 @@ jobs:
         run: ./mcp-publisher publish
 
       - if: steps.version.outputs.publish == 'true'
-        uses: slackapi/slack-github-action@v1.23.0
+        uses: slackapi/slack-github-action@v4
         with:
-          payload: '{"text":"✅ @shipstatic/mcp ${{ steps.version.outputs.version }} published (${{ steps.version.outputs.tag }})"}'
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            text: "✅ @shipstatic/mcp ${{ steps.version.outputs.version }} published (${{ steps.version.outputs.tag }})"
 
       - if: failure()
-        uses: slackapi/slack-github-action@v1.23.0
+        uses: slackapi/slack-github-action@v4
         with:
-          payload: '{"text":"🔴 @shipstatic/mcp publish failed"}'
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            text: "🔴 @shipstatic/mcp publish failed"
