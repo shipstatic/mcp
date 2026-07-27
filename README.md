@@ -83,11 +83,11 @@ Add to `~/.gemini/antigravity/mcp_config.json`:
 
 Same config format — `npx @shipstatic/mcp`. Works with any MCP-compatible client.
 
-## Free token — permanent deployments
+## Free API key — permanent deployments
 
 `SHIP_TOKEN` is optional. Without it, deploys behave like the hosted endpoint (public, claim URL, 3-day expiry). With it, you get permanent deployments, the full toolset, and bigger limits.
 
-Get a free token at [my.shipstatic.com/api-key](https://my.shipstatic.com/api-key):
+Get a free API key at [my.shipstatic.com/api-key](https://my.shipstatic.com/api-key):
 
 ```bash
 claude mcp add shipstatic -e SHIP_TOKEN=ship-... -- npx @shipstatic/mcp
