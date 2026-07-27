@@ -34,10 +34,8 @@ jobs:
       - run: pnpm coverage
 
 
-  # The publish DECISION, isolated in its own job so the channel is known at job
-  # level. That is what lets `publish` below select its environment from it:
-  # `environment:` is evaluated before a job's steps run, so it cannot read a step
-  # of its own job.
+  # The publish decision is its own job because `publish`'s `environment:` is
+  # evaluated before any step runs — it can only read another job's outputs.
   version:
     if: github.event_name != 'pull_request'
     needs: test
@@ -85,12 +83,8 @@ jobs:
     if: needs.version.outputs.publish == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    # The second gate, and the one that does not depend on our own shell logic:
-    # `npm-latest` accepts pushes from `main` ONLY (a deployment branch policy), and
-    # NODE_AUTH_TOKEN lives in these two environments and NOWHERE at repo level. A
-    # branch that cannot reach the environment cannot reach a credential either, so
-    # publishing `latest` off `main` is not a thing this workflow can do — not a
-    # thing it declines to do.
+    # `npm-latest` carries a main-only deployment branch policy, so publishing
+    # `latest` off `main` is refused by GitHub before a step runs.
     environment: npm-${{ needs.version.outputs.tag }}
     permissions:
       contents: read
@@ -100,13 +94,9 @@ jobs:
 
       - uses: pnpm/action-setup@v6
 
-      # No `registry-url`: it makes setup-node write
-      # `//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}` into a temp .npmrc,
-      # and with no token in the env that line is an EMPTY credential. npm reads
-      # any `_authToken` line — even empty — as "token auth is configured" and
-      # never attempts the OIDC handshake, so the publish goes out anonymous and
-      # 403s (actions/setup-node#1551). Dropping the input, not just the env var,
-      # is the fix. npm's default registry is registry.npmjs.org already.
+      # No `registry-url`: it would write an `_authToken` line into .npmrc, and
+      # npm reads that line — even with no token — as "token auth is configured"
+      # and skips the OIDC handshake (actions/setup-node#1551).
       - uses: actions/setup-node@v7
         with:
           node-version: 22
@@ -116,21 +106,14 @@ jobs:
 
       - run: pnpm run build
 
-      # Trusted publishing (OIDC), not a token. npm has restricted token-based
-      # direct publishing for 2FA-protected accounts
-      # (https://gh.io/npm-gat-bypass2fa-deprecation), so a long-lived credential
-      # can no longer publish at all — it can still write dist-tags, which is why
-      # the failure looked like a permissions problem rather than a policy one.
-      # OIDC needs npm >= 11.5.1; node 22 bundles npm 10.x, and pnpm has no OIDC
-      # support at all, so the publish step is `npm`, not `pnpm`.
+      # OIDC needs npm >= 11.5.1; node 22 bundles 10.x, and pnpm has no OIDC
+      # support — hence `npm`, not `pnpm`, for the publish.
       - run: npm install -g npm@latest
 
+      # Trusted publishing: no NODE_AUTH_TOKEN anywhere in this job — npm
+      # authenticates with a token whenever one is present and attempts OIDC
+      # only in its absence.
       - run: npm publish --access public --provenance --tag "${{ needs.version.outputs.tag }}"
-        # NO NODE_AUTH_TOKEN, deliberately. npm authenticates with a token
-        # whenever one is present and never attempts OIDC, so keeping it "as a
-        # fallback" silently disables trusted publishing — which is exactly what
-        # happened on the first attempt. The absence of a credential here IS the
-        # mechanism.
 
       # The MCP Registry carries stable releases only — a beta on npm must not
       # become the version agents discover.
