@@ -27,23 +27,71 @@ jobs:
 
       - run: pnpm exec biome ci .
 
-      # tsc over src AND tests. `build` only typechecks src, and the test tree
-      # is where this suite's contract detector lives — the fixtures'
-      # `satisfies` clauses and the ship fake's `vi.fn<Resource[method]>()`
-      # parameterisation. Without this step they are decoration.
       - run: pnpm typecheck
 
       - run: pnpm run build
 
-      # `coverage`, not `test` — the same suite plus the ratchet.
       - run: pnpm coverage
 
-  publish:
-    # Publishes fire on branch pushes only; PRs stop at the test gate.
+
+  # The publish DECISION, isolated in its own job so the channel is known at job
+  # level. That is what lets `publish` below select its environment from it:
+  # `environment:` is evaluated before a job's steps run, so it cannot read a step
+  # of its own job.
+  version:
     if: github.event_name != 'pull_request'
     needs: test
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      publish: ${{ steps.decide.outputs.publish }}
+      version: ${{ steps.decide.outputs.version }}
+      tag: ${{ steps.decide.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - id: decide
+        run: |
+          NAME=$(node -p "require('./package.json').name")
+          VERSION=$(node -p "require('./package.json').version")
+
+          # The VERSION decides the channel: a prerelease (any `-` suffix) goes to
+          # `beta`, so `latest` keeps resolving the last stable release.
+          if [[ "$VERSION" == *-* ]]; then TAG=beta; else TAG=latest; fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+          # The BRANCH decides whether that channel may be published from here.
+          # `latest` is main-only. A stable version on an integration branch is a
+          # STAGED release, and staging one before merging is the normal flow — so
+          # this skips rather than fails, exactly like the idempotence check below.
+          if [[ "$TAG" == "latest" && "$GITHUB_REF_NAME" != "main" ]]; then
+            echo "::notice title=Release staged::$NAME@$VERSION is a stable version. latest publishes only from main, so nothing was published from $GITHUB_REF_NAME. Merge to main to release it."
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Idempotence: once the version is on the registry, any push is a no-op.
+          if npm view "$NAME@$VERSION" version >/dev/null 2>&1; then
+            echo "$NAME@$VERSION already on the registry — nothing to publish"
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "publish=true" >> "$GITHUB_OUTPUT"
+
+  publish:
+    needs: version
+    if: needs.version.outputs.publish == 'true'
+    runs-on: ubuntu-latest
     timeout-minutes: 10
+    # The second gate, and the one that does not depend on our own shell logic:
+    # `npm-latest` accepts pushes from `main` ONLY (a deployment branch policy), and
+    # NODE_AUTH_TOKEN lives in these two environments and NOWHERE at repo level. A
+    # branch that cannot reach the environment cannot reach a credential either, so
+    # publishing `latest` off `main` is not a thing this workflow can do — not a
+    # thing it declines to do.
+    environment: npm-${{ needs.version.outputs.tag }}
     permissions:
       contents: read
       id-token: write
@@ -58,66 +106,40 @@ jobs:
           cache: pnpm
           registry-url: 'https://registry.npmjs.org'
 
-      # The version decides everything: skip when this version is already on
-      # the registry (any push — workflow edits, docs — is a safe no-op, so
-      # publishes are idempotent), and derive the dist-tag from the version —
-      # prerelease versions (any `-` suffix) publish under `beta` so `latest`
-      # keeps resolving the last stable; promoting a stable version needs no
-      # workflow change. The branch decides only which pushes are eligible.
-      - id: version
-        run: |
-          NAME=$(node -p "require('./package.json').name")
-          VERSION=$(node -p "require('./package.json').version")
-          if npm view "$NAME@$VERSION" version >/dev/null 2>&1; then
-            echo "$NAME@$VERSION already on the registry — nothing to publish"
-            echo "publish=false" >> "$GITHUB_OUTPUT"
-          else
-            if [[ "$VERSION" == *-* ]]; then TAG=beta; else TAG=latest; fi
-            echo "publish=true" >> "$GITHUB_OUTPUT"
-            echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-            echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-          fi
+      - run: pnpm install --frozen-lockfile
 
-      - if: steps.version.outputs.publish == 'true'
-        run: pnpm install --frozen-lockfile
+      - run: pnpm run build
 
-      - if: steps.version.outputs.publish == 'true'
-        run: pnpm run build
-
-      - if: steps.version.outputs.publish == 'true'
-        run: pnpm publish --access public --no-git-checks --provenance --tag "${{ steps.version.outputs.tag }}"
+      - run: pnpm publish --access public --no-git-checks --provenance --tag "${{ needs.version.outputs.tag }}"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
 
-      # The MCP Registry has no channel concept — a published version is THE
-      # listed version for every client. Betas therefore live on npm's `beta`
-      # dist-tag alone; only stable versions reach the registry.
+      # The MCP Registry carries stable releases only — a beta on npm must not
+      # become the version agents discover.
       - name: Install mcp-publisher
-        if: steps.version.outputs.publish == 'true' && steps.version.outputs.tag == 'latest'
+        if: needs.version.outputs.tag == 'latest'
         run: |
           curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
 
       - name: Sync server.json version from package.json
-        if: steps.version.outputs.publish == 'true' && steps.version.outputs.tag == 'latest'
+        if: needs.version.outputs.tag == 'latest'
         run: |
-          VERSION=$(node -p "require('./package.json').version")
-          jq --arg v "$VERSION" '.version = $v | .packages[0].version = $v' server.json > server.tmp && mv server.tmp server.json
+          jq --arg v "${{ needs.version.outputs.version }}" '.version = $v | .packages[0].version = $v' server.json > server.tmp && mv server.tmp server.json
 
       - name: Authenticate to MCP Registry
-        if: steps.version.outputs.publish == 'true' && steps.version.outputs.tag == 'latest'
+        if: needs.version.outputs.tag == 'latest'
         run: ./mcp-publisher login dns --domain shipstatic.com --private-key ${{ secrets.MCP_PRIVATE_KEY }}
 
       - name: Publish to MCP Registry
-        if: steps.version.outputs.publish == 'true' && steps.version.outputs.tag == 'latest'
+        if: needs.version.outputs.tag == 'latest'
         run: ./mcp-publisher publish
 
-      - if: steps.version.outputs.publish == 'true'
-        uses: slackapi/slack-github-action@v4
+      - uses: slackapi/slack-github-action@v4
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
           webhook-type: incoming-webhook
           payload: |
-            text: "✅ @shipstatic/mcp ${{ steps.version.outputs.version }} published (${{ steps.version.outputs.tag }})"
+            text: "✅ @shipstatic/mcp ${{ needs.version.outputs.version }} published (${{ needs.version.outputs.tag }})"
 
       - if: failure()
         uses: slackapi/slack-github-action@v4
