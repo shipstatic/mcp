@@ -100,11 +100,17 @@ jobs:
 
       - uses: pnpm/action-setup@v6
 
+      # No `registry-url`: it makes setup-node write
+      # `//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}` into a temp .npmrc,
+      # and with no token in the env that line is an EMPTY credential. npm reads
+      # any `_authToken` line — even empty — as "token auth is configured" and
+      # never attempts the OIDC handshake, so the publish goes out anonymous and
+      # 403s (actions/setup-node#1551). Dropping the input, not just the env var,
+      # is the fix. npm's default registry is registry.npmjs.org already.
       - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: pnpm
-          registry-url: 'https://registry.npmjs.org'
 
       - run: pnpm install --frozen-lockfile
 
@@ -120,11 +126,11 @@ jobs:
       - run: npm install -g npm@latest
 
       - run: npm publish --access public --provenance --tag "${{ needs.version.outputs.tag }}"
-        env:
-          # Retained only as a fallback until trusted publishing is confirmed
-          # working for this package; OIDC takes precedence when configured.
-          # Delete this env block once a publish has succeeded without it.
-          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
+        # NO NODE_AUTH_TOKEN, deliberately. npm authenticates with a token
+        # whenever one is present and never attempts OIDC, so keeping it "as a
+        # fallback" silently disables trusted publishing — which is exactly what
+        # happened on the first attempt. The absence of a credential here IS the
+        # mechanism.
 
       # The MCP Registry carries stable releases only — a beta on npm must not
       # become the version agents discover.
