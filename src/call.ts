@@ -17,7 +17,7 @@ function handleError(error: unknown): CallToolResult {
 
     if (error.isType(ErrorType.Authentication)) {
       message +=
-        '\n\nHint: Set a free SHIP_API_KEY environment variable in your MCP server configuration.';
+        '\n\nHint: Set a free SHIP_TOKEN environment variable in your MCP server configuration.';
     }
 
     if (error.isType(ErrorType.Forbidden)) {

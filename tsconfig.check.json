@@ -1,0 +1,27 @@
+{
+  // Typecheck config: `src` AND `tests`. This is what `pnpm typecheck` runs.
+  //
+  // `tsconfig.json` stays build-shaped (rootDir: src, declaration output) and
+  // is what `pnpm build` reads. This one exists because vitest transpiles via
+  // esbuild WITHOUT typechecking, so nothing checked `tests/**` — and the
+  // previous `tsconfig.test.json` was wired into no script or hook at all, so
+  // it never ran. It had 9 errors sitting in it.
+  //
+  // That gap is the single enabling condition for a fictional fake: the old
+  // ship mock was `as any`, and five of its return shapes were inventions the
+  // API cannot produce. The `satisfies` clauses in tests/fixtures/builders.ts
+  // and the `vi.fn<Resource[method]>()` parameterisation in tests/mocks/ship.ts
+  // are decorative until this file is the gate.
+  //
+  // Renamed from `tsconfig.test.json` to match the platform sibling
+  // (`npm/ship/tsconfig.check.json`) and to say what it does: it checks
+  // everything, not just the tests.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": ".",
+    "types": ["node", "vitest/globals"]
+  },
+  "include": ["src/**/*", "tests/**/*", "vitest.config.ts"],
+  "exclude": ["node_modules", "dist"]
+}

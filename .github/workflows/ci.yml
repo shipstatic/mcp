@@ -27,9 +27,16 @@ jobs:
 
       - run: pnpm exec biome ci .
 
+      # tsc over src AND tests. `build` only typechecks src, and the test tree
+      # is where this suite's contract detector lives — the fixtures'
+      # `satisfies` clauses and the ship fake's `vi.fn<Resource[method]>()`
+      # parameterisation. Without this step they are decoration.
+      - run: pnpm typecheck
+
       - run: pnpm run build
 
-      - run: pnpm test --run
+      # `coverage`, not `test` — the same suite plus the ratchet.
+      - run: pnpm coverage
 
   publish:
     # Publishes fire on branch pushes only; PRs stop at the test gate.
