@@ -27,7 +27,7 @@
       },
       "environmentVariables": [
         {
-          "name": "SHIP_API_KEY",
+          "name": "SHIP_TOKEN",
           "description": "Optional. Without it, deploys behave like the hosted endpoint (public, claim URL, 3-day expiry). With it, deployments are permanent, the full toolset (custom domains, listing, account-tied ops) unlocks, and you get bigger limits.",
           "isRequired": false,
           "isSecret": true

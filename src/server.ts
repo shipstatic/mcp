@@ -32,9 +32,9 @@ const INSTRUCTIONS = `ShipStatic deploys static websites instantly. Free, no acc
 
 To deploy: call deployments_upload with the build output directory path. The site is live immediately. To make the site private, pass \`password\` — visitors must unlock before viewing, including on any custom domains pointing at it.
 
-Without SHIP_API_KEY, deployments are public and expire in 3 days. The response includes a claim URL — always show the deployment URL and the claim URL to the user so they can keep the site permanently.
+Without SHIP_TOKEN, deployments are public and expire in 3 days. The response includes a claim URL — always show the deployment URL and the claim URL to the user so they can keep the site permanently.
 
-With SHIP_API_KEY configured, deployments go to the user's account and never expire. Listing, managing, and domain operations also require SHIP_API_KEY.
+With SHIP_TOKEN configured, deployments go to the user's account and never expire. Listing, managing, and domain operations also require SHIP_TOKEN.
 
 Concepts:
 - Deployment: an immutable set of files with an instant URL (e.g. happy-cat-abc1234.shipstatic.com). No setup needed.
@@ -59,7 +59,7 @@ export function createServer(ship: Ship): McpServer {
     'deployments_upload',
     {
       description:
-        'Deploy a static site instantly — free, no account or API key required. Returns the live URL, file count, and size. Without SHIP_API_KEY, the response includes a claim URL (site expires in 3 days) — always show both the deployment URL and claim URL to the user. To make the site private, pass `password`; always show the password to the user if you set one.',
+        'Deploy a static site instantly — free, no account or API key required. Returns the live URL, file count, and size. Without SHIP_TOKEN, the response includes a claim URL (site expires in 3 days) — always show both the deployment URL and claim URL to the user. To make the site private, pass `password`; always show the password to the user if you set one.',
       annotations: CREATE,
       inputSchema: {
         path: z
