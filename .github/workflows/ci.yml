@@ -110,8 +110,20 @@ jobs:
 
       - run: pnpm run build
 
-      - run: pnpm publish --access public --no-git-checks --provenance --tag "${{ needs.version.outputs.tag }}"
+      # Trusted publishing (OIDC), not a token. npm has restricted token-based
+      # direct publishing for 2FA-protected accounts
+      # (https://gh.io/npm-gat-bypass2fa-deprecation), so a long-lived credential
+      # can no longer publish at all — it can still write dist-tags, which is why
+      # the failure looked like a permissions problem rather than a policy one.
+      # OIDC needs npm >= 11.5.1; node 22 bundles npm 10.x, and pnpm has no OIDC
+      # support at all, so the publish step is `npm`, not `pnpm`.
+      - run: npm install -g npm@latest
+
+      - run: npm publish --access public --provenance --tag "${{ needs.version.outputs.tag }}"
         env:
+          # Retained only as a fallback until trusted publishing is confirmed
+          # working for this package; OIDC takes precedence when configured.
+          # Delete this env block once a publish has succeeded without it.
           NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
 
       # The MCP Registry carries stable releases only — a beta on npm must not
