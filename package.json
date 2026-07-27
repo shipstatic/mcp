@@ -54,16 +54,16 @@
   "author": "ShipStatic",
   "license": "MIT",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.29.0",
-    "@shipstatic/ship": "2.0.0-beta.2",
-    "zod": "^4.3.6"
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "@shipstatic/ship": "2.0.0-beta.3",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.5",
-    "@shipstatic/types": "2.5.0-beta.0",
-    "@types/node": "^25.6.0",
+    "@shipstatic/types": "2.5.0-beta.3",
+    "@types/node": "^25.9.5",
     "@vitest/coverage-v8": "4.1.10",
-    "typescript": "^6.0.2",
+    "typescript": "^6.0.3",
     "vitest": "4.1.10"
   },
   "packageManager": "pnpm@10.12.4"
