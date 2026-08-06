@@ -29,6 +29,10 @@ const PUBLIC_API = [
   // The shared agent-facing vocabulary.
   'ANNOTATIONS',
   'PARAM_DESCRIPTIONS',
+  // The fourteen account-tied tools, identical on every transport. Exported
+  // so the hosted transport registers them rather than copying them when it
+  // gains OAuth — the copy is what would start the drift.
+  'registerAccountTools',
 ] as const;
 
 describe('public surface', () => {

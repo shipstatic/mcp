@@ -19,6 +19,13 @@ export interface ErrorHints {
   forbidden: string;
 }
 
+/**
+ * The wrapper every tool handler delegates to. Named because the shared
+ * toolset takes it as an argument: the tools are identical across transports,
+ * the hints inside `call` are not.
+ */
+export type CallFn = <T>(fn: () => Promise<T>) => Promise<CallToolResult>;
+
 export interface CallOptions {
   hints: ErrorHints;
   /**
@@ -41,7 +48,7 @@ export interface CallOptions {
  * facts an agent observes — so they live here once, rather than in two files
  * kept equal by review.
  */
-export function createCall(options: CallOptions) {
+export function createCall(options: CallOptions): CallFn {
   const { hints, structuredContent = false } = options;
 
   return async function call<T>(fn: () => Promise<T>): Promise<CallToolResult> {

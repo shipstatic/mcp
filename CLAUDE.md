@@ -32,10 +32,42 @@ Keep the public surface coherent: one ShipStatic MCP, two doors in.
 src/
 ├── bin.ts        # THE EXECUTABLE (dist/bin.js) — env read, Ship construction, stdio transport
 ├── index.ts      # The LIBRARY entry — curated exports, no side effects
-├── server.ts     # createServer(ship, version) — pure factory, all 15 tools
+├── server.ts     # createServer(ship, version) — stdio's own upload tool + INSTRUCTIONS
+├── tools.ts      # registerAccountTools() — the 14 tools identical on EVERY transport
 ├── call.ts       # createCall() — the result envelope + error mapping, parameterised by hints
 └── vocabulary.ts # What BOTH transports say: annotations + shared param descriptions
 ```
+
+## One product, two transports — the shape that survives OAuth
+
+The hosted Streamable-HTTP server (`cloudflare/mcp`, private) is gaining OAuth,
+after which **both transports offer the complete toolset for authenticated
+callers and the anonymous deploy for everyone else**. The architecture is built
+for that end state, not the one-tool present, because the alternative is that
+someone copies fourteen tool definitions into a second repo — and the copy is
+the moment two surfaces begin to drift.
+
+**The 14 / 1 split is the product's own shape.** `deployments_upload` is the
+anonymous door: the one operation needing no account, and the one whose INPUT
+differs by transport (a filesystem path here, inline bytes there, because a
+Worker has no filesystem). It also carries the Apps-SDK widget hosted-side. So
+it is authored per transport. The other fourteen need an identity, and once a
+transport has one, nothing about them depends on how bytes arrived — identical
+names, schemas, prose and 1:1 SDK calls. They live in `tools.ts` and the hosted
+side registers them with one call when OAuth lands.
+
+**The catalogue is static; identity decides what SUCCEEDS.** All fifteen are
+registered whether or not a credential is present. An anonymous caller sees
+them and gets a typed authentication error naming how to authenticate *on this
+transport* — which is exactly `createCall`'s one per-transport argument. The
+alternative, a tool list that changes shape under the caller, is a second and
+dynamic contract for an agent to track, and MCP clients cache catalogues.
+Anonymous deploy remains the headline promise on both doors.
+
+**What stays different forever**, and it is a short list: the upload input
+schema, the Apps-SDK widget and its `outputSchema`, the `via` tag, and the
+environment `domain`. Everything else either is shared today or converges when
+OAuth lands (INSTRUCTIONS bodies, the auth hint, `idempotencyKey`).
 
 **`bin.ts` is the executable; `index.ts` is a library.** Importing the package
 has no side effects, which is what lets the hosted transport
@@ -163,6 +195,14 @@ tests/
 ├── server.test.ts               # the tool CATALOGUE (tools/list, instructions)
 └── server-calls.test.ts         # tool CALLS (wiring, payloads, claim, errors)
 ```
+
+**Recorded mirror-axis exception: `src/tools.ts` has no `tools.test.ts`.** Its
+fourteen tools are registered by `createServer` and therefore already pinned
+where it matters — `server.test.ts` asserts every one of them in the catalogue
+an agent reads, and `server-calls.test.ts` asserts every one of their SDK
+wirings, both through the real protocol. A mirror file would have to
+re-register them against a bare `McpServer` to say anything the two protocol
+suites do not already say, which is a weaker assertion in a new place.
 
 **Tests run through the protocol.** A real `Client` drives the real server
 over `InMemoryTransport.createLinkedPair()`. Nothing pokes a handler
