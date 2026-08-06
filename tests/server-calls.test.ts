@@ -107,9 +107,9 @@ const WIRING: WiringCase[] = [
     received: [DEPLOYMENT, { labels: [] }],
   },
   {
-    tool: 'deployments_remove',
+    tool: 'deployments_delete',
     args: { deployment: DEPLOYMENT },
-    method: (s) => s.deployments.remove,
+    method: (s) => s.deployments.delete,
     received: [DEPLOYMENT],
   },
 
@@ -166,9 +166,9 @@ const WIRING: WiringCase[] = [
     received: [CUSTOM_DOMAIN],
   },
   {
-    tool: 'domains_remove',
+    tool: 'domains_delete',
     args: { domain: CUSTOM_DOMAIN },
-    method: (s) => s.domains.remove,
+    method: (s) => s.domains.delete,
     received: [CUSTOM_DOMAIN],
   },
 
@@ -234,7 +234,7 @@ describe('response payloads', () => {
   // the API cannot produce. Each test names the field that was missing.
 
   it('deployments_list relays the paginated envelope, not a bare array', async () => {
-    const wire = makeDeploymentList({ cursor: 'eyJpZCI6MX0', total: 42 });
+    const wire = makeDeploymentList({ cursor: 'eyJpZCI6MX0' });
     harness.ship.deployments.list.mockResolvedValue(wire);
 
     const payload = await harness.client
@@ -242,11 +242,11 @@ describe('response payloads', () => {
       .then(jsonOf);
 
     expect(payload).toEqual(wire);
-    expect(payload).toMatchObject({ cursor: 'eyJpZCI6MX0', total: 42 });
+    expect(payload).toMatchObject({ cursor: 'eyJpZCI6MX0' });
   });
 
   it('domains_list relays the paginated envelope, not a bare array', async () => {
-    const wire = makeDomainList({ cursor: null, total: 3 });
+    const wire = makeDomainList({ cursor: null });
     harness.ship.domains.list.mockResolvedValue(wire);
 
     expect(
@@ -303,17 +303,33 @@ describe('response payloads', () => {
     expect(text).toBe(JSON.stringify(makeDeployment(), null, 2));
   });
 
-  it.each(['deployments_remove', 'domains_remove'] as const)(
-    '%s answers "Done." — the SDK resolves void and there is nothing to serialize',
-    async (tool) => {
-      const args =
-        tool === 'deployments_remove' ? { deployment: DEPLOYMENT } : { domain: CUSTOM_DOMAIN };
-      const result = await harness.client.callTool({ name: tool, arguments: args });
+  // A deletion is not void — the wire answers with the resource noun carrying
+  // its canonical key, plus the resource's own state where the state changed
+  // (`@shipstatic/types`, `DeploymentDeleteResponse`). These relayed "Done."
+  // while the SDK still resolved void; an agent that deleted a deployment
+  // learned nothing, least of all that cleanup was still running.
+  it('deployments_delete relays the acknowledgement, including the transitional status', async () => {
+    const result = await harness.client.callTool({
+      name: 'deployments_delete',
+      arguments: { deployment: DEPLOYMENT },
+    });
 
-      expect(result.isError).toBeFalsy();
-      expect(textOf(result)).toBe('Done.');
-    },
-  );
+    expect(result.isError).toBeFalsy();
+    expect(JSON.parse(textOf(result))).toEqual({
+      deployment: DEPLOYMENT,
+      status: 'deleting',
+    });
+  });
+
+  it('domains_delete relays the acknowledgement — the key alone, a hard delete', async () => {
+    const result = await harness.client.callTool({
+      name: 'domains_delete',
+      arguments: { domain: CUSTOM_DOMAIN },
+    });
+
+    expect(result.isError).toBeFalsy();
+    expect(JSON.parse(textOf(result))).toEqual({ domain: CUSTOM_DOMAIN });
+  });
 });
 
 describe('the anonymous claim story', () => {

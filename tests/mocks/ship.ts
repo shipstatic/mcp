@@ -47,8 +47,10 @@ import {
   makeAccount,
   makeDeployment,
   makeDeploymentCreateResponse,
+  makeDeploymentDelete,
   makeDeploymentList,
   makeDomain,
+  makeDomainDelete,
   makeDomainDns,
   makeDomainList,
   makeDomainRecords,
@@ -88,14 +90,14 @@ export function createShipFake(): ShipFake {
       list: vi.fn<DeploymentResource['list']>().mockResolvedValue(makeDeploymentList()),
       get: vi.fn<DeploymentResource['get']>().mockResolvedValue(makeDeployment()),
       set: vi.fn<DeploymentResource['set']>().mockResolvedValue(makeDeployment()),
-      // `remove` resolves void — the "Done." path through `call()`.
-      remove: vi.fn<DeploymentResource['remove']>().mockResolvedValue(undefined),
+      // A deletion resolves its acknowledgement, never void.
+      delete: vi.fn<DeploymentResource['delete']>().mockResolvedValue(makeDeploymentDelete()),
     },
     domains: {
       set: vi.fn<DomainResource['set']>().mockResolvedValue(makeDomainSetResult()),
       list: vi.fn<DomainResource['list']>().mockResolvedValue(makeDomainList()),
       get: vi.fn<DomainResource['get']>().mockResolvedValue(makeDomain()),
-      remove: vi.fn<DomainResource['remove']>().mockResolvedValue(undefined),
+      delete: vi.fn<DomainResource['delete']>().mockResolvedValue(makeDomainDelete()),
       verify: vi.fn<DomainResource['verify']>().mockResolvedValue(makeDomainVerify()),
       validate: vi.fn<DomainResource['validate']>().mockResolvedValue(makeDomainValidate()),
       dns: vi.fn<DomainResource['dns']>().mockResolvedValue(makeDomainDns()),

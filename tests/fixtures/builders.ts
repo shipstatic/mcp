@@ -11,7 +11,7 @@
  * response an agent reads. A fixture that is not a real wire shape means the
  * suite proves the agent sees something no agent will ever see. The 2026-07-27
  * audit of this repo found exactly that in five places — `deployments.list`
- * returning a bare array (the wire returns `{deployments, cursor, total}`),
+ * returning a bare array (the wire returns `{deployments, cursor}`),
  * `domains.set` returning a `Domain` without `isCreate`, and `whoami`,
  * `domains.records`, `domains.validate` all returning `{}`.
  *
@@ -29,14 +29,17 @@ import type {
   AccountGetResponse,
   Deployment,
   DeploymentCreateResponse,
+  DeploymentDeleteResponse,
   DeploymentListResponse,
   DnsRecord,
   Domain,
+  DomainDeleteResponse,
   DomainDnsResponse,
   DomainListResponse,
   DomainRecordsResponse,
   DomainSetResult,
   DomainValidateResponse,
+  DomainVerifyResponse,
 } from '@shipstatic/types';
 
 // =============================================================================
@@ -141,7 +144,6 @@ export function makeDeploymentList(
   return {
     deployments: [makeDeployment()],
     cursor: null,
-    total: 1,
     ...overrides,
   } satisfies DeploymentListResponse;
 }
@@ -174,7 +176,6 @@ export function makeDomainList(overrides: Partial<DomainListResponse> = {}): Dom
   return {
     domains: [makeDomain()],
     cursor: null,
-    total: 1,
     ...overrides,
   } satisfies DomainListResponse;
 }
@@ -215,14 +216,27 @@ export function makeDomainValidate(
     valid: true,
     normalized: CUSTOM_DOMAIN,
     available: true,
-    error: null,
+    reason: null,
     ...overrides,
   } satisfies DomainValidateResponse;
 }
 
-/** `domains.verify` resolves to a bare message — wire: `DomainResource.verify`. */
-export function makeDomainVerify(message = 'Verification started.'): { message: string } {
-  return { message };
+/** `domains.verify` answers the acknowledgement — 202 `{domain}`; wire: `DomainResource.verify`. */
+export function makeDomainVerify(domain = CUSTOM_DOMAIN): DomainVerifyResponse {
+  return { domain };
+}
+
+/**
+ * A deletion acknowledgement — the resource noun carrying its canonical key,
+ * plus the resource's own state where the state changed. Deletions are not
+ * void: the wire answers, and an agent reads the state from the answer.
+ */
+export function makeDeploymentDelete(deployment = deploymentId()): DeploymentDeleteResponse {
+  return { deployment, status: 'deleting' };
+}
+
+export function makeDomainDelete(domain = CUSTOM_DOMAIN): DomainDeleteResponse {
+  return { domain };
 }
 
 /** `domains.share` resolves to the domain plus its share hash. */

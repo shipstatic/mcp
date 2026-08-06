@@ -105,7 +105,7 @@ The hosted endpoint exposes `deployments_upload` only. The local install exposes
 | `deployments_list` | List all deployments with their URLs, status, labels, and password protection state | |
 | `deployments_get` | Get deployment details including URL, status, file count, size, labels, and password protection state | |
 | `deployments_set` | Update the labels on a deployment for organization and filtering | |
-| `deployments_remove` | Permanently remove a deployment and all its files | |
+| `deployments_delete` | Permanently delete a deployment and all its files | |
 
 ### Domains
 
@@ -119,7 +119,7 @@ The hosted endpoint exposes `deployments_upload` only. The local install exposes
 | `domains_share` | Get a shareable link so someone else can see the required DNS records |
 | `domains_validate` | Check if a domain name is valid and available before connecting it |
 | `domains_verify` | Check if DNS is configured correctly after you set up the records |
-| `domains_remove` | Permanently disconnect and remove a custom domain |
+| `domains_delete` | Permanently disconnect and delete a custom domain |
 
 ### Account
 
