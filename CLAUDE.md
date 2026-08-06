@@ -87,9 +87,19 @@ boundary says the same thing to every caller.
 
 **What is shared, and what is deliberately not**, lives in `vocabulary.ts`'s
 header and in `cloudflare/mcp/CLAUDE.md`'s divergence table. The short form:
-annotations and the deploy-param descriptions are imported by both; the
-file-input schema, the tool descriptions, and everything Apps-SDK are forced
-apart by the transport and stay separate.
+the two identifiers (`SERVER_NAME`, `UPLOAD_TOOL_NAME`), the annotations, the
+deploy-param descriptions, the INSTRUCTIONS sentences, the upload-description
+fragments and the public-deploy expiry are imported by both; the file-input
+schema, the description bodies, and everything Apps-SDK are forced apart by the
+transport and stay separate.
+
+**The export list is the drift ledger, and it only grows by deletion.** Every
+name in `index.ts` was a restatement somewhere before it was an export —
+`SERVER_NAME` was two literals in two repos that an Apps host compares to each
+other, `PUBLIC_EXPIRY` was the same duration written out eight times,
+`DESCRIPTION_BLOCKS` were fragments with three copies each (both servers plus a
+test literal that could only prove one of them matched itself). Adding an export
+that deletes no restatement is how a curated surface becomes a grab bag.
 
 ## Quick Reference
 
@@ -177,6 +187,7 @@ pnpm test --run     # the whole suite
 pnpm coverage       # the same suite, plus the ratchet
 pnpm typecheck      # tsc over src AND tests, 0 errors
 pnpm lint           # biome, 0 warnings
+pnpm smoke          # the PUBLISHED artifact, live — see below. Manual, never CI
 ```
 
 ```
@@ -247,6 +258,7 @@ configured" assertions) and wraps `fetch` to throw on any non-loopback host
 | the `ErrorType` sweep in `call.test.ts` | An error arm nobody thought about. It enumerates `Object.values(ErrorType)` rather than a hand-written list, so "exhaustive" is derived from types, not claimed in prose. Coverage is blind to this class: `handleError` has three branches, so six arms exercise them all and the other five sit untested at 100% — which is how a transport failure moving from `internal_server_error` to `network_error` reached agents unasserted. Bidirectional: a hint added to `call.ts` without recording it in `HINTED` turns the arm red, and a hint removed turns it red too. |
 | `test-naming.test.ts` | Layout drift: a filename describing the test instead of its subject, a mirror file with no `src/` counterpart, an aspect split not recorded below. |
 | `coverage.thresholds` | Coverage decay. 100/100/100/100 — MCP has no in-process-unreachable corner, so the bar is the ceiling and an untested new tool fails the run. |
+| the `ACCOUNT_TOOL_NAMES` comparison in `server.test.ts` | The exported name list drifting from the registrations it names. Both directions, through a real `tools/list`: a registration added without its name, a name without its registration, a typo in either. It is what lets the hosted transport state its expected catalogue as `[UPLOAD_TOOL_NAME, ...ACCOUNT_TOOL_NAMES]` instead of counting to fifteen in a second repo. |
 
 **Recorded aspect splits** — one subject, more than one mirror file. The
 naming fence fails the suite if a split is not named here by full basename.
@@ -254,6 +266,44 @@ naming fence fails the suite if a split is not named here by full basename.
 | Module | Files | Why |
 |---|---|---|
 | `src/server.ts` | `server`, `server-calls` | Two separable contracts on one module. `server.test.ts` asserts the STATIC surface an agent reads before acting — `tools/list`, instructions, schemas — and is a pinned table. `server-calls.test.ts` asserts BEHAVIOUR: the 1:1 SDK wiring, pass-through payload fidelity, the anonymous claim story, and the error surfaces. A single file would mix a specification with a test suite. |
+
+### `smoke.mjs` — the live gate, and the one thing the suite cannot be
+
+`pnpm smoke` drives the **published** package over `npx`, against a real API,
+through all fifteen tools. Manual and dev-only, like `cloudflare/api/smoke.mjs`
+and `cloudflare/mcp/smoke.mjs`; deliberately **not** in `ci.yml`, which has
+neither a live API nor a credential.
+
+It exists because the suite is structurally blind to one whole class. The ship
+fake is derived from the SDK's own interfaces, so it catches *signature* drift
+at compile time and cannot, even in principle, catch the API answering
+differently than those types promise. Published `0.6.0` is the recorded cost: it
+pinned a ship that mints an agent token through an endpoint the 2.x API deleted,
+so anonymous deploy — the headline feature — 404'd, and the suite was green
+throughout and would have stayed green through any number of releases.
+
+Four properties, each load-bearing:
+
+- **The published artifact, not the checkout.** `npx -y @shipstatic/mcp@<v>`.
+  A local `node dist/bin.js` proves your tree works; what ships is the tarball
+  with its own resolved dependency tree, and that resolution is where 0.6.0
+  broke. The version defaults to this repo's `package.json`, so run after a
+  publish it asserts *what I am is what the registry serves* — and the exact pin
+  defeats a stale npx cache.
+- **Refusals skip, they never fail.** No `SHIP_TOKEN` runs the anonymous half
+  alone; a token for another environment says so; a plan without custom domains
+  skips the domain block. Every skip names what went unverified and exits 0 —
+  an unprovable half is "not verified", never "failed".
+- **Two processes, because the credential is process-scoped.** `bin.ts` reads
+  `SHIP_TOKEN` once at construction, so anonymous and authenticated cannot be
+  two calls. Every `SHIP_*` is scrubbed from the child's environment and only
+  the two the run means to set are put back — an exported credential would
+  otherwise authenticate the "no token" half, and an exported `SHIP_VIA` would
+  falsify the origin-tracking assertion.
+- **No hostname in tracked source.** This repo is public: the API URL arrives
+  from `--api=` or `SHIP_API_URL` and defaults to the SDK's own `DEFAULT_API`.
+  Excluded from the tarball by `files` — confirm with `npm pack --dry-run`
+  rather than assuming.
 
 ## Publishing
 
@@ -263,9 +313,21 @@ The CI workflow (`.github/workflows/ci.yml`) runs on pushes to `main` and `devel
 
 ## Adding New Tools
 
-1. Add `server.registerTool()` in `server.ts`
+An account-tied tool is a tool **both transports get**, so it goes in the
+shared file, not this server's:
+
+1. Add `server.registerTool()` in **`tools.ts`**, and its name to
+   `ACCOUNT_TOOL_NAMES` — the comparison in `server.test.ts` fails until both
+   exist, in either order.
 2. Handler is a one-liner: `(args) => call(() => ship.resource.action(args))`
-3. Add wiring test in `server.test.ts`
+3. Pin the new tool in `server.test.ts`'s `CATALOGUE` and its SDK wiring in
+   `server-calls.test.ts`. Add the live assertion to `smoke.mjs` — the matrix
+   is "all fifteen tools" precisely so a tool no run has ever invoked cannot
+   exist.
+
+`server.ts` is for the one tool this transport authors for itself
+(`deployments_upload`, whose input is a filesystem path). Adding an account tool
+there instead would give the hosted door fourteen tools and this one fifteen.
 
 ## User Configuration
 
