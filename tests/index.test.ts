@@ -19,7 +19,7 @@ import * as library from '../src/index.js';
 
 /**
  * Every name `src/index.ts` is meant to expose — which is exactly what a
- * SECOND TRANSPORT needs to speak this product, and nothing else. Runtime
+ * SECOND CONSUMER needs to speak this product, and nothing else. Runtime
  * values only; types erase.
  */
 const PUBLIC_API = [
@@ -45,6 +45,13 @@ const PUBLIC_API = [
   // The result envelope, so both transports answer in one shape. A consumer
   // configures its own hints; `call` (stdio's instance) stays internal.
   'createCall',
+  // Stdio's whole composition, for a consumer that wants it verbatim: the VS
+  // Code extension bundles a stdio server into its `.vsix`. Admitted in
+  // 1.0.0-beta.7, and it deleted a restatement like every other name here —
+  // three regexes in that repo's esbuild config that patched this package's
+  // compiled `dist/` at bundle time. Safe to publish because `version` is an
+  // argument: no `node:module` enters the graph the Worker transport loads.
+  'createServer',
 ] as const;
 
 describe('public surface', () => {

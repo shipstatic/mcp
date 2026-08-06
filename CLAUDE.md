@@ -74,6 +74,26 @@ has no side effects, which is what lets the hosted transport
 (`cloudflare/mcp`, private) import this package's vocabulary rather than
 re-authoring the strings an agent reads.
 
+**Two consumers, not one — and the second one widened the export rule.** The
+VS Code extension (`integrations/vscode`) bundles a stdio server into its
+`.vsix`, so it wants stdio's composition verbatim. It used to get it by
+REGEX-PATCHING this package's compiled `dist/` at bundle time: strip `bin`'s
+shebang, and rewrite the `createRequire(import.meta.url)('../package.json')`
+line inside `server.js` to inline a version literal. Every one of those hacks
+broke on the 1.x library split — the runnable entry moved from `main` to
+`bin`, and the version became a parameter — so a naive pin bump would have
+built green and shipped a server that starts and does nothing.
+
+`createServer` is therefore exported as of **1.0.0-beta.7**, and the rule in
+`index.ts` reads "what a second CONSUMER needs" rather than "a second
+TRANSPORT". It still only grows by deletion: the admission removed three
+regexes in another repo's build in exchange for a fifteen-line entry point.
+Two things stay true — `cloudflare/mcp` must keep authoring its own upload
+tool (a filesystem-path input is a footgun for a Worker; that is now the
+caller's judgement rather than an absence), and the export is safe for the
+Worker graph only because `version` is an ARGUMENT, so no `node:module`
+rides along.
+
 Until 1.0.0-beta.2 they were one file — `main` and `bin` in `package.json`
 both pointed at `index.ts`, so importing the package started a stdio server
 and could `process.exit` in its consumer. Nothing could be shared because
@@ -98,8 +118,10 @@ name in `index.ts` was a restatement somewhere before it was an export —
 `SERVER_NAME` was two literals in two repos that an Apps host compares to each
 other, `PUBLIC_EXPIRY` was the same duration written out eight times,
 `DESCRIPTION_BLOCKS` were fragments with three copies each (both servers plus a
-test literal that could only prove one of them matched itself). Adding an export
-that deletes no restatement is how a curated surface becomes a grab bag.
+test literal that could only prove one of them matched itself), and
+`createServer` was three regexes patching this package's compiled output in the
+VS Code extension's bundler. Adding an export that deletes no restatement is
+how a curated surface becomes a grab bag.
 
 ## Quick Reference
 
