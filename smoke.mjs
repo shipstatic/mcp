@@ -68,8 +68,10 @@ const FLAGS = new Map(
  * failure the 0.6.0 story shows nothing else can catch. The exact pin in the
  * npx specifier also defeats a stale npx cache.
  */
-const { version: OWN_VERSION } = createRequire(import.meta.url)('./package.json');
+const { version: OWN_VERSION, bin } = createRequire(import.meta.url)('./package.json');
 const VERSION = FLAGS.get('version') ?? OWN_VERSION;
+/** The executable npx must run — read from the manifest, never spelled out. */
+const [BIN_NAME] = Object.keys(bin);
 const API_URL = FLAGS.get('api') ?? process.env.SHIP_API_URL ?? DEFAULT_API;
 
 /** Pagination and `idempotencyKey` arrived in this release; earlier ones skip that block. */
@@ -102,12 +104,20 @@ const check = (label, ok, detail) => (ok ? pass(label) : fail(label, detail));
  * read corrupts the first JSON-RPC parse.
  */
 class StdioClient {
-  constructor(env) {
+  constructor(env, cwd) {
     this.id = 0;
     this.pending = new Map();
     this.stderr = '';
-    this.proc = spawn('npx', ['-y', `@shipstatic/mcp@${VERSION}`], {
+    // `--package=… -- <bin>` rather than a bare specifier, and a cwd OUTSIDE
+    // this repo. Both defend the script's whole thesis. Run from the package's
+    // own directory, npx resolves against the local tree, finds no installed
+    // `shipstatic-bin` shim and dies with "command not found" — and a checkout
+    // that DID have one would be tested in place of the registry's copy, which
+    // is the one thing this file exists to never do. The bin name is read from
+    // the manifest for the same reason the version is.
+    this.proc = spawn('npx', ['-y', `--package=@shipstatic/mcp@${VERSION}`, '--', BIN_NAME], {
       env,
+      cwd,
       stdio: ['pipe', 'pipe', 'pipe'],
     });
     createInterface({ input: this.proc.stdout }).on('line', (line) => {
@@ -118,31 +128,52 @@ class StdioClient {
       } catch {
         return;
       }
-      const resolve = this.pending.get(message.id);
-      if (resolve) {
-        this.pending.delete(message.id);
-        resolve(message);
-      }
+      this.settle(message.id, (entry) => entry.resolve(message));
     });
     this.proc.stderr.on('data', (chunk) => {
       this.stderr += String(chunk);
     });
+    // Registered before anything can fire, so `close()` never awaits an event
+    // that already happened — an exited child would otherwise hang the run
+    // with an empty event loop and no message but "unsettled top-level await".
+    this.exited = new Promise((resolve) => this.proc.once('exit', resolve));
+    this.proc.on('error', (error) => this.abort(`could not start the server: ${error.message}`));
+    this.proc.on('exit', (code, signal) => {
+      // A child that dies mid-call must fail loudly and NOW. Waiting out the
+      // 120s timeout would report the symptom (slow) instead of the cause.
+      if (this.pending.size > 0) {
+        this.abort(`server exited early (code ${code}, signal ${signal})`);
+      }
+    });
+  }
+
+  /** Resolve or reject one in-flight call, clearing its timer exactly once. */
+  settle(id, apply) {
+    const entry = this.pending.get(id);
+    if (!entry) return;
+    this.pending.delete(id);
+    clearTimeout(entry.timer);
+    apply(entry);
+  }
+
+  /** Fail every in-flight call with the same cause, stderr attached. */
+  abort(reason) {
+    const detail = this.stderr.trim();
+    for (const id of [...this.pending.keys()]) {
+      this.settle(id, (entry) =>
+        entry.reject(new Error(`${reason}${detail ? ` — stderr: ${detail}` : ''}`)),
+      );
+    }
   }
 
   send(method, params) {
     const id = ++this.id;
-    this.proc.stdin.write(`${JSON.stringify({ jsonrpc: '2.0', id, method, params })}\n`);
     return new Promise((resolve, reject) => {
       // Generous by necessity: the first npx call may download the package,
       // and an upload hashes and transfers files.
-      const timer = setTimeout(
-        () => reject(new Error(`timeout after 120s: ${method} (stderr: ${this.stderr.trim()})`)),
-        120_000,
-      );
-      this.pending.set(id, (message) => {
-        clearTimeout(timer);
-        resolve(message);
-      });
+      const timer = setTimeout(() => this.abort(`timeout after 120s: ${method}`), 120_000);
+      this.pending.set(id, { resolve, reject, timer });
+      this.proc.stdin.write(`${JSON.stringify({ jsonrpc: '2.0', id, method, params })}\n`);
     });
   }
 
@@ -177,9 +208,11 @@ class StdioClient {
 
   /** ALWAYS call, pass or fail — an unkilled npx child outlives the run. */
   async close() {
-    this.proc.stdin.end();
-    this.proc.kill();
-    await new Promise((resolve) => this.proc.once('exit', resolve));
+    if (this.proc.exitCode === null && this.proc.signalCode === null) {
+      this.proc.stdin.end();
+      this.proc.kill();
+    }
+    await this.exited;
   }
 }
 
@@ -265,7 +298,7 @@ async function anonymousHalf() {
   section('Anonymous (no credential)');
   // An empty string, explicitly. The SDK coerces it to `undefined`, and
   // setting it is what defends against the operator's own shell credential.
-  const client = new StdioClient(childEnv(''));
+  const client = new StdioClient(childEnv(''), scratch);
   try {
     const info = await client.handshake();
 
@@ -361,7 +394,7 @@ async function authenticatedHalf() {
     return;
   }
 
-  const client = new StdioClient(childEnv(token));
+  const client = new StdioClient(childEnv(token), scratch);
   try {
     await client.handshake();
 
