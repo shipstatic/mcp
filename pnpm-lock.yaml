@@ -15,8 +15,8 @@ importers:
         specifier: 2.0.0-beta.15
         version: 2.0.0-beta.15
       '@shipstatic/types':
-        specifier: 2.5.0-beta.19
-        version: 2.5.0-beta.19
+        specifier: 2.5.0-beta.20
+        version: 2.5.0-beta.20
       zod:
         specifier: ^4.4.3
         version: 4.4.3
@@ -425,8 +425,8 @@ packages:
     engines: {node: '>=20.0.0'}
     hasBin: true
 
-  '@shipstatic/types@2.5.0-beta.19':
-    resolution: {integrity: sha512-aUlOXJr1GU70c2NrSShaRHR/xSEmyLTao/Nbhi2FZHkSPSo0IowrirNpJQKRHgd5+Lakm8WE1uXOS+g3fRqPmw==}
+  '@shipstatic/types@2.5.0-beta.20':
+    resolution: {integrity: sha512-F1tDu3Ha5m029QYmGmNyf7XIs+fiAJ0m+mRxKwjKrOdWJSrK0TfnFJIkRgKXCPZetrYZCNwBb/OObvWp5JwmGw==}
     engines: {node: '>=20.0.0'}
 
   '@standard-schema/spec@1.1.0':
@@ -1371,7 +1371,7 @@ snapshots:
       yoctocolors: 2.2.0
       zod: 4.4.3
 
-  '@shipstatic/types@2.5.0-beta.19': {}
+  '@shipstatic/types@2.5.0-beta.20': {}
 
   '@standard-schema/spec@1.1.0': {}
 

@@ -35,13 +35,22 @@
  *     ship-2.0 bump lands on — the break surfaces at `pnpm typecheck`, in one
  *     file, instead of at runtime in an agent's session.
  *
+ * **The resource interfaces come from `@shipstatic/ship`, not from
+ * `@shipstatic/types`** — even though types declares them. Ship BUNDLES its own
+ * copy of types, so the two are the same shapes from different releases, and a
+ * fake typed against one while standing in for the other disagrees the moment
+ * the copies differ by a single field. That is not hypothetical: it fired the
+ * day `via` became a union in types while ship still bundled the string. Same
+ * rule as `vocabulary.ts` states for constants — read it from whatever will act
+ * on it, and here the thing being faked is ship.
+ *
  * Note `ShipSurface` deliberately does NOT include `account` or `tokens`:
  * `createServer` never touches them, and a fake should be exactly as wide as
  * the collaboration it stands in for.
  */
 
 import type Ship from '@shipstatic/ship';
-import type { DeploymentResource, DomainResource } from '@shipstatic/types';
+import type { DeploymentResource, DomainResource } from '@shipstatic/ship';
 import { vi } from 'vitest';
 import {
   makeAccount,
