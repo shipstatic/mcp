@@ -5,6 +5,8 @@ import {
   PASSWORD_CONSTRAINTS,
 } from '@shipstatic/ship';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { ACCOUNT_TOOL_NAMES } from '../src/tools.js';
+import { UPLOAD_TOOL_NAME } from '../src/vocabulary.js';
 import { connect, type Harness, textOf } from './harness.js';
 
 /**
@@ -288,6 +290,20 @@ describe('tool catalogue', () => {
 
   it('exposes exactly the 15 documented tools', () => {
     expect(listed.map((t) => t.name).sort()).toEqual(Object.keys(CATALOGUE).sort());
+  });
+
+  it('registers exactly the names it publishes — the account list, plus the one tool each transport authors', () => {
+    // The one place this file imports from `src/` rather than restating, and
+    // it is not tautological for the same reason the descriptions would be:
+    // `ACCOUNT_TOOL_NAMES` is a SEPARATE declaration from the fourteen
+    // `registerTool` calls, exported so the hosted transport can state its
+    // expected catalogue without counting to fifteen a second time. A
+    // registration added without its name, a name without its registration,
+    // and a typo in either all land here — through a real `tools/list`, so
+    // what is compared is what a client receives.
+    expect(listed.map((t) => t.name).sort()).toEqual(
+      [UPLOAD_TOOL_NAME, ...ACCOUNT_TOOL_NAMES].sort(),
+    );
   });
 
   it('every tool matches its pinned surface — name, description, schema, annotations', () => {

@@ -1,4 +1,8 @@
-import { LABEL_CONSTRAINTS, PASSWORD_CONSTRAINTS } from '@shipstatic/ship';
+import {
+  IDEMPOTENCY_KEY_CONSTRAINTS,
+  LABEL_CONSTRAINTS,
+  PASSWORD_CONSTRAINTS,
+} from '@shipstatic/ship';
 import { describe, expect, it } from 'vitest';
 import { ANNOTATIONS, PARAM_DESCRIPTIONS } from '../src/vocabulary.js';
 
@@ -16,6 +20,11 @@ describe('parameter descriptions', () => {
   it.each([
     ['labels', PARAM_DESCRIPTIONS.labels, LABEL_CONSTRAINTS.MAX_LENGTH],
     ['password', PARAM_DESCRIPTIONS.password, PASSWORD_CONSTRAINTS.MAX_LENGTH],
+    [
+      'idempotencyKey',
+      PARAM_DESCRIPTIONS.idempotencyKey,
+      IDEMPOTENCY_KEY_CONSTRAINTS.WINDOW_SECONDS / 3600,
+    ],
   ])('%s interpolates the platform constant rather than restating it', (_name, text, bound) => {
     // The point of sharing prose is lost if the NUMBERS inside it are typed by
     // hand: the hosted side's test mock once declared labels as 2–32 against a
@@ -27,6 +36,17 @@ describe('parameter descriptions', () => {
 
   it('teaches the label count cap, which the API enforces', () => {
     expect(PARAM_DESCRIPTIONS.labels).toContain(`Up to ${LABEL_CONSTRAINTS.MAX_COUNT}`);
+  });
+
+  it('keys the ATTEMPT and says so in the direction that is correct', () => {
+    // The rule inverts under one word, and it has already inverted once: the
+    // `idempotencyKey` JSDoc in `@shipstatic/types` reads "never one that
+    // varies per attempt", which names the try an attempt and so states the
+    // opposite rule. An agent following the inverted form mints a fresh key on
+    // every retry, which makes the option do nothing at all. Pin the direction,
+    // not just the number.
+    expect(PARAM_DESCRIPTIONS.idempotencyKey).toContain('Key the ATTEMPT');
+    expect(PARAM_DESCRIPTIONS.idempotencyKey).toContain('never one minted fresh on each retry');
   });
 });
 
