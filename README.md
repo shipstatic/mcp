@@ -102,7 +102,7 @@ The hosted endpoint exposes `deployments_upload` only. The local install exposes
 | Tool | Description | Hosted |
 |------|-------------|:---:|
 | `deployments_upload` | Publish files and get a live URL instantly, optionally protected by a password | ✓ |
-| `deployments_list` | List all deployments with their URLs, status, labels, and password protection state | |
+| `deployments_list` | List all deployments with their URLs, status, labels, and password protection state. Pages with `limit` and `cursor` | |
 | `deployments_get` | Get deployment details including URL, status, file count, size, labels, and password protection state | |
 | `deployments_set` | Update the labels on a deployment for organization and filtering | |
 | `deployments_delete` | Permanently delete a deployment and all its files | |
@@ -112,7 +112,7 @@ The hosted endpoint exposes `deployments_upload` only. The local install exposes
 | Tool | Description |
 |------|-------------|
 | `domains_set` | Connect a custom domain to your site, switch deployments, or update labels |
-| `domains_list` | List all domains with their linked deployment and verification status |
+| `domains_list` | List all domains with their linked deployment and verification status. Pages with `limit` and `cursor` |
 | `domains_get` | Get domain details including linked deployment, verification status, and labels |
 | `domains_records` | Get the DNS records you need to configure at your DNS provider |
 | `domains_dns` | Look up which DNS provider hosts a domain (e.g. Cloudflare, Namecheap) |
@@ -126,6 +126,16 @@ The hosted endpoint exposes `deployments_upload` only. The local install exposes
 | Tool | Description |
 |------|-------------|
 | `whoami` | Get your account details including email, plan, and usage |
+
+### Paging
+
+`deployments_list` and `domains_list` accept `limit` and `cursor`. Each response carries a `cursor` — pass it back to fetch the next page; `null` means you are on the last one.
+
+### Retrying a deploy safely
+
+`deployments_upload` accepts an `idempotencyKey`. If a deploy times out you cannot tell "it never landed" from "it landed and the response was lost", and retrying without a key creates a second site. Send the same key on the retry and the original deployment is returned instead.
+
+Key the *attempt*, not the try — a run id, a commit sha, or a uuid generated before the first call. A key that changes on every retry does nothing.
 
 ## Registry
 

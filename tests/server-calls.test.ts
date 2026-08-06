@@ -75,16 +75,45 @@ const WIRING: WiringCase[] = [
     method: (s) => s.deployments.upload,
     // Omitted optionals stay `undefined` rather than being dropped: the SDK
     // distinguishes "not supplied" from "supplied empty" for `password`.
-    received: [ABS_PATH, { labels: undefined, password: undefined, via: 'mcp' }],
+    received: [
+      ABS_PATH,
+      { labels: undefined, password: undefined, idempotencyKey: undefined, via: 'mcp' },
+    ],
+  },
+  {
+    tool: 'deployments_upload',
+    args: { path: ABS_PATH, idempotencyKey: 'run-2026-08-06-a1b2c3' },
+    method: (s) => s.deployments.upload,
+    // Its own case rather than a field on the one above, because `toEqual`
+    // treats an absent key and an `undefined` one alike — so only a SUPPLIED
+    // value actually pins that the option reaches the SDK. The key must arrive
+    // verbatim: MCP never mints, derives or normalizes it, since a key the
+    // agent did not choose cannot identify the agent's attempt.
+    received: [
+      ABS_PATH,
+      {
+        labels: undefined,
+        password: undefined,
+        idempotencyKey: 'run-2026-08-06-a1b2c3',
+        via: 'mcp',
+      },
+    ],
   },
   {
     tool: 'deployments_list',
     args: {},
     method: (s) => s.deployments.list,
-    // No arguments at all. This is also the pagination pin: the SDK's
-    // `list(options?)` can page, and MCP never passes anything — see
-    // HANDOVER-MCP-TESTING.md, "Flagged: pagination".
-    received: [],
+    // The bare call still works: an agent that knows nothing about paging
+    // sends no arguments and gets the server's default first page.
+    received: [{ limit: undefined, cursor: undefined }],
+  },
+  {
+    tool: 'deployments_list',
+    args: { limit: 5, cursor: 'eyJpZCI6MX0' },
+    method: (s) => s.deployments.list,
+    // Both options pass through untouched. MCP does not clamp `limit` — the
+    // API owns that number (see PAGINATION_INPUT in src/server.ts).
+    received: [{ limit: 5, cursor: 'eyJpZCI6MX0' }],
   },
   {
     tool: 'deployments_get',
@@ -128,7 +157,18 @@ const WIRING: WiringCase[] = [
     // (root CLAUDE.md, "Domain-Deployment Linking").
     received: [CUSTOM_DOMAIN, { deployment: undefined, labels: undefined }],
   },
-  { tool: 'domains_list', args: {}, method: (s) => s.domains.list, received: [] },
+  {
+    tool: 'domains_list',
+    args: {},
+    method: (s) => s.domains.list,
+    received: [{ limit: undefined, cursor: undefined }],
+  },
+  {
+    tool: 'domains_list',
+    args: { limit: 2, cursor: 'eyJpZCI6N30' },
+    method: (s) => s.domains.list,
+    received: [{ limit: 2, cursor: 'eyJpZCI6N30' }],
+  },
   {
     tool: 'domains_get',
     args: { domain: CUSTOM_DOMAIN },
@@ -252,6 +292,48 @@ describe('response payloads', () => {
     expect(
       await harness.client.callTool({ name: 'domains_list', arguments: {} }).then(jsonOf),
     ).toEqual(wire);
+  });
+
+  it('an agent can walk to the last page using only what the protocol gave it', async () => {
+    // The whole point of the pagination wiring, asserted end to end rather
+    // than as two independent pass-through pins: an agent that has never seen
+    // this API must be able to reach page two knowing ONLY the tool schema and
+    // the first response. Nothing here is read from the SDK fake's arguments —
+    // the cursor makes the round trip through the agent's hands.
+    const page1 = makeDeploymentList({
+      deployments: [makeDeployment({ deployment: deploymentId('page-one-aaa1111') })],
+      cursor: 'p2',
+    });
+    const page2 = makeDeploymentList({
+      deployments: [makeDeployment({ deployment: deploymentId('page-two-bbb2222') })],
+      cursor: null,
+    });
+    harness.ship.deployments.list.mockResolvedValueOnce(page1).mockResolvedValueOnce(page2);
+
+    const first = await harness.client
+      .callTool({ name: 'deployments_list', arguments: { limit: 1 } })
+      .then(jsonOf);
+
+    // `cursor` is the entire has-more signal — no `total`, no boolean.
+    expect(first).toMatchObject({ cursor: 'p2' });
+    expect(first).not.toHaveProperty('total');
+
+    const second = await harness.client
+      .callTool({
+        name: 'deployments_list',
+        arguments: { limit: 1, cursor: (first as { cursor: string }).cursor },
+      })
+      .then(jsonOf);
+
+    // A different row, and the null cursor that terminates the walk.
+    expect(second).toMatchObject({ cursor: null });
+    expect(second).not.toEqual(first);
+
+    // The cursor the agent read is the cursor the SDK received.
+    expect(harness.ship.deployments.list.mock.calls).toEqual([
+      [{ limit: 1, cursor: undefined }],
+      [{ limit: 1, cursor: 'p2' }],
+    ]);
   });
 
   it('domains_set relays isCreate, which distinguishes a new domain from a repoint', async () => {

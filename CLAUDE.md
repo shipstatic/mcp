@@ -57,6 +57,11 @@ No HTTP calls, no auth logic, no domain validation. The SDK handles everything.
 
 `resource_action` — matches SDK's `ship.resource.action()` and CLI's `ship resource action`.
 
+**One recorded exception: `whoami`.** It reads the account, so the law would
+spell it `account_get` — but the CLI and SDK both surface this as `whoami`, and
+a tool named for the word a user already knows beats one named for the rule.
+The exception is the parity, not an oversight; every other tool obeys.
+
 ### `call()` — The Single Abstraction
 
 Every tool handler is a one-liner that delegates to the SDK through `call()`:
@@ -72,6 +77,24 @@ server.registerTool('deployments_get', {
 ```
 
 `call()` handles try/catch, JSON serialization, void→"Done.", and ShipError→MCP error conversion.
+
+**The typed error contract terminates here, and that is the protocol's shape
+rather than a bug.** `CallToolResult` carries text plus `isError`, so an agent
+sees prose: `status`, `ErrorType`, and every `details` payload are dropped
+except the Validation arm's, which is appended as text. A 429's
+`details.expires` and its `Retry-After` header do not survive, so the caller
+most in need of a precise backoff gets "try again in 9 minutes" and must read
+English. This is survivable **only because the API's message law makes the
+prose authoritative** — the wire message is authored for the end user at the
+throw site (`cloudflare/api/CLAUDE.md`, "Message authoring law"), so it always
+contains what the agent needs.
+
+Recorded so nobody "fixes" it by rewording a message — the message is not the
+problem. Two real futures if it ever bites: carry the machine-readable payload
+in `structuredContent` on error results, or accept the prose permanently. The
+hosted transport feels this hardest (a 5/hr per-caller anonymous bucket), and
+it is the transport that already has `structuredContent` — see
+`cloudflare/mcp/CLAUDE.md` for why adopting it here is a surface-wide call.
 
 ### Dependency Injection
 
@@ -190,23 +213,62 @@ The CI workflow (`.github/workflows/ci.yml`) runs on pushes to `main` and `devel
 }
 ```
 
-## Post-Launch
+## Option Completeness
 
-**Pagination — a product call, deliberately not taken.** ship 2.0's
-`list(options?: ListOptions)` accepts `limit`/`cursor` and the responses carry
-`cursor`, but `deployments_list` and `domains_list` take no arguments, so an
-agent sees page one and cannot reach page two. This is *pinned* rather than
-merely absent: two wiring cases in `server-calls.test.ts` assert `list()` is
-called with **zero** arguments, so adding pagination means deliberately editing
-a test that states today's behaviour. Decide whether an agent should page at
-all before wiring it — an agent that pages a large account burns context on
-data it did not ask for.
+**Every SDK option an agent could meaningfully choose is exposed, and every
+absence is a recorded decision.** That is the standing bar — when the SDK
+grows an option, it belongs here unless a line below says otherwise.
+
+**Pagination — taken 2026-08-06.** Both list tools accept `{limit, cursor}`
+and pass them straight through. The contract an agent must learn is taught in
+the schema itself: `cursor` is an opaque position from the previous response,
+omitted for the first page, and **`cursor: null` is the entire has-more
+signal** — there is no `total` and no boolean, because a count is an aggregate
+over a collection, not a property of a page.
+
+**The MCP states no page-size cap**, in the schema or the prose. The API
+clamps an unusable `limit` server-side and owns that number; restating it here
+would give one fact two owners and let them drift. `min(1)` is not a cap — it
+rejects a value that could never mean anything. (`PAGINATION_INPUT` in
+`src/server.ts` is one shared shape for both tools, because it is one contract
+rather than two.)
+
+**Idempotency — taken 2026-08-06.** `deployments_upload` accepts
+`idempotencyKey`. A deploy is not naturally idempotent, and **agents are the
+audience**: a human notices a duplicate deployment, an automated retry does
+not. The `describe()` teaches the law — key the ATTEMPT (a run id, a commit
+sha, a uuid minted before the first try), never the try. MCP never mints,
+derives or normalizes the key; a key the agent did not choose cannot identify
+the agent's attempt.
 
 **No `tokens_*` tools — recorded, do not add without a new product call.** The
 SDK has `tokens.get`/`tokens.list`/`tokens.create`; this server exposes none.
 An MCP server's credential is *configured by the human* in the server config,
 never minted by the agent that would then hold it. Same shape as web/my's
 "deploy tokens are CLI-only" and the SDK's own `/activities` absence.
+
+**A labels tool stays an open product call.** The SDK has `GET /labels`; no
+tool exposes it. Unlike `tokens_*` this is undecided rather than closed —
+decide before wiring.
+
+**No `ping` tool — decided, not overlooked.** `ship.ping()` exists. An agent's
+*next tool call is already the reachability probe*: a tool answering "the
+server is up" spends a turn to learn what the following turn tells you anyway,
+and if the platform is down the real call fails with a `network_error` the
+agent can act on. A probe earns its place when a caller must decide whether to
+proceed; an agent has nothing else to do with the answer.
+
+**No `getLimits` tool — decided, not overlooked.** `ship.getLimits()` exists,
+and the platform teaches its caps *reactively*: an over-cap deploy fails with a
+validation error naming the limit, which reaches the agent as actionable text
+(the same mechanism that surfaced "Labels must be at least 3 characters long"
+during live verification). A proactive lookup would buy a round trip and a
+second number to keep true. The SDK already fetches dynamic limits for its own
+client-side pre-validation, so the agent gets that protection without a tool.
+
+**Deliberately not agent knobs.** `signal` (a process-level cancellation
+concern), `pathDetect` / `spaDetect` (local-detection defaults). These are not
+absences to close.
 
 ---
 

@@ -1,7 +1,11 @@
 import { createRequire } from 'node:module';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type Ship from '@shipstatic/ship';
-import { LABEL_CONSTRAINTS, PASSWORD_CONSTRAINTS } from '@shipstatic/ship';
+import {
+  IDEMPOTENCY_KEY_CONSTRAINTS,
+  LABEL_CONSTRAINTS,
+  PASSWORD_CONSTRAINTS,
+} from '@shipstatic/ship';
 import { z } from 'zod';
 import { call } from './call.js';
 
@@ -14,6 +18,15 @@ const READ = {
   idempotentHint: true,
   ...OPEN_WORLD,
 } as const;
+/**
+ * Deploys carry no `idempotentHint`, and that stays true now that
+ * `idempotencyKey` exists. The annotation is a STATIC per-tool claim; the
+ * property it would assert is per-CALL — true only when the caller supplies a
+ * key, false for the keyless caller, who is the common one. Advertising it
+ * would tell every agent that any retry is free, which is exactly wrong for
+ * the majority. An annotation an agent trusts wrongly is worse than one it
+ * never reads.
+ */
 const CREATE = { readOnlyHint: false, destructiveHint: false, ...OPEN_WORLD } as const;
 const WRITE = {
   readOnlyHint: false,
@@ -27,6 +40,36 @@ const DESTRUCTIVE = {
   idempotentHint: true,
   ...OPEN_WORLD,
 } as const;
+
+/**
+ * The pagination surface, shared by every list tool because it is one
+ * contract, not two. A list answers `{<collection>, cursor}` and nothing
+ * else — `cursor` carries the whole has-more signal and is null on the last
+ * page, so there is no `total` to ask for and no has-more boolean.
+ *
+ * No upper bound is stated here on purpose. The API clamps an unusable
+ * `limit` server-side and owns that number; restating a cap in the tool
+ * schema would give one fact two owners and let them drift. `min(1)` is not
+ * a cap — it rejects a value that could never mean anything.
+ */
+const PAGINATION_INPUT = {
+  limit: z
+    .number()
+    .int()
+    .min(1)
+    .optional()
+    .describe('Maximum number of items to return in one page. Omit for the server default.'),
+  cursor: z
+    .string()
+    .optional()
+    .describe(
+      "Opaque position from the previous response's `cursor` field; omit for the first page.",
+    ),
+};
+
+/** Appended to every list tool's description — the paging contract, stated once. */
+const PAGING_NOTE =
+  " The response's `cursor` is null on the last page; pass it back as `cursor` to fetch the next.";
 
 const INSTRUCTIONS = `ShipStatic deploys static websites instantly. Free, no account required.
 
@@ -71,7 +114,7 @@ export function createServer(ship: Ship): McpServer {
           .array(z.string())
           .optional()
           .describe(
-            `Labels for organizing deployments (e.g. ["production", "v1.2"]). Lowercase, ${LABEL_CONSTRAINTS.MIN_LENGTH}-${LABEL_CONSTRAINTS.MAX_LENGTH} chars, allows . _ - separators.`,
+            `Labels for organizing deployments (e.g. ["production", "v1.2"]). Lowercase, ${LABEL_CONSTRAINTS.MIN_LENGTH}-${LABEL_CONSTRAINTS.MAX_LENGTH} chars, allows . _ - separators. Up to ${LABEL_CONSTRAINTS.MAX_COUNT}.`,
           ),
         password: z
           .string()
@@ -79,20 +122,26 @@ export function createServer(ship: Ship): McpServer {
           .describe(
             `Optional password to gate the deployment behind an unlock prompt (${PASSWORD_CONSTRAINTS.MIN_LENGTH}–${PASSWORD_CONSTRAINTS.MAX_LENGTH} characters; whitespace significant). Visitors must enter this password before viewing the site, including on any custom domains pointing at it.`,
           ),
+        idempotencyKey: z
+          .string()
+          .optional()
+          .describe(
+            `Makes this deploy replayable instead of repeatable. A deploy is not naturally idempotent: if a call times out you cannot tell "it never landed" from "it landed and the response was lost", and retrying creates a second deployment. Send the same key on the retry and the original deployment is replayed instead (within ${IDEMPOTENCY_KEY_CONSTRAINTS.WINDOW_SECONDS / 3600} hours). Key the ATTEMPT — a run id, a commit sha, a uuid minted before the first try — never one minted fresh on each retry, which would defeat the point.`,
+          ),
       },
     },
-    ({ path, labels, password }) =>
-      call(() => ship.deployments.upload(path, { labels, password, via: 'mcp' })),
+    ({ path, labels, password, idempotencyKey }) =>
+      call(() => ship.deployments.upload(path, { labels, password, idempotencyKey, via: 'mcp' })),
   );
 
   server.registerTool(
     'deployments_list',
     {
-      description:
-        'List all deployments with their URLs, status, labels, and password protection state.',
+      description: `List all deployments with their URLs, status, labels, and password protection state.${PAGING_NOTE}`,
       annotations: READ,
+      inputSchema: PAGINATION_INPUT,
     },
-    () => call(() => ship.deployments.list()),
+    ({ limit, cursor }) => call(() => ship.deployments.list({ limit, cursor })),
   );
 
   server.registerTool(
@@ -175,10 +224,11 @@ export function createServer(ship: Ship): McpServer {
   server.registerTool(
     'domains_list',
     {
-      description: 'List all domains with their URLs, linked deployment, and verification status.',
+      description: `List all domains with their URLs, linked deployment, and verification status.${PAGING_NOTE}`,
       annotations: READ,
+      inputSchema: PAGINATION_INPUT,
     },
-    () => call(() => ship.domains.list()),
+    ({ limit, cursor }) => call(() => ship.domains.list({ limit, cursor })),
   );
 
   server.registerTool(
