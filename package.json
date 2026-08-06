@@ -64,11 +64,11 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
     "@shipstatic/ship": "2.0.0-beta.15",
+    "@shipstatic/types": "2.5.0-beta.19",
     "zod": "^4.4.3"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.5",
-    "@shipstatic/types": "2.5.0-beta.18",
     "@types/node": "^25.9.5",
     "@vitest/coverage-v8": "4.1.10",
     "typescript": "^6.0.3",
