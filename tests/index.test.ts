@@ -68,6 +68,21 @@ describe('public surface', () => {
     expect(typeof library.registerAccountTools).toBe('function');
   });
 
+  it('states the bin/library split to bundlers, exactly', async () => {
+    // `sideEffects` is the machine-readable form of this package's founding
+    // claim — the library is inert, the executable is not — and it is
+    // LOAD-BEARING for consumers that bundle: without it, esbuild must assume
+    // every re-exported module might matter, so a host importing one
+    // vocabulary string drags the whole MCP SDK into a bundle that never
+    // starts a server (measured in the VS Code extension: +142KB on its
+    // extension-host bundle). Exactly one entry, because exactly one module
+    // runs on import; a bare `false` would claim the same of `bin.js`, which
+    // is one refactor away from a bundler dropping the executable's body.
+    const { default: manifest } = await import('../package.json', { with: { type: 'json' } });
+
+    expect(manifest.sideEffects).toEqual(['./dist/bin.js']);
+  });
+
   it('createCall builds an independent wrapper, so a consumer configures its own hints', async () => {
     // The hosted transport's whole use of this package: same envelope, its own
     // hints. Proving it here means the shared implementation is genuinely
