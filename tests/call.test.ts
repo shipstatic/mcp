@@ -136,6 +136,46 @@ describe('ShipError mapping', () => {
       else expect(textOf(result)).toBe('Upstream said no');
     },
   );
+
+  it.each(Object.values(ErrorType))(
+    'carries the wire’s own %s payload as structuredContent, on every arm',
+    async (type) => {
+      // The typed contract used to terminate at this boundary: an agent got
+      // prose and `isError`, so `status`, the `ErrorType` and every `details`
+      // payload but the Validation arm's were dropped. The platform's law is
+      // that clients branch on type and status and never on message strings —
+      // and the agent, the consumer best equipped to obey it, was the only one
+      // that could not.
+      //
+      // Swept over the whole type domain for the same reason the hints are:
+      // `toErrorResult` has one ShipError branch, so a single arm would cover
+      // it at 100% while ten went unasserted.
+      const error = new ShipError(type, 'Upstream said no', 429, { expires: 1786017875 });
+
+      const result = await call(() => Promise.reject(error));
+
+      // `toResponse()` verbatim — not a shape this file invents. It is the
+      // same `ErrorResponse` the API put on the wire, so an agent branching on
+      // it branches on exactly what every other client sees.
+      expect(result.structuredContent).toEqual({ ...error.toResponse() });
+      expect(result.structuredContent).toMatchObject({ error: type, status: 429 });
+    },
+  );
+
+  it('leaves the text authoritative — the structure rides beside it, never instead', async () => {
+    // The hint is the actionable half and lives only in the prose. A client
+    // that reads `structuredContent` alone must not lose it, which is why this
+    // asserts both channels on the same result rather than either alone.
+    const result = await call(() =>
+      Promise.reject(ShipError.authentication('Authentication required')),
+    );
+
+    expect(textOf(result)).toContain('SHIP_TOKEN');
+    expect(result.structuredContent).toMatchObject({
+      error: ErrorType.Authentication,
+      status: 401,
+    });
+  });
 });
 
 describe('non-ShipError failures', () => {

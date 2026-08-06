@@ -1,5 +1,6 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type Ship from '@shipstatic/ship';
+import { DeploymentVia, type DeploymentViaType } from '@shipstatic/types';
 import { z } from 'zod';
 import { call } from './call.js';
 import { registerAccountTools } from './tools.js';
@@ -40,14 +41,41 @@ ${B.domainConcept}
 ${B.domainWorkflow}`;
 
 /**
- * Builds the stdio server's full 15-tool surface over an injected client.
+ * What the HOST knows about itself and this library must not assume.
  *
- * `version` is a parameter rather than something this module reads for itself:
- * the executable knows its own package manifest, a library must not assume it
- * has one, and reaching for `node:module` here would put a Node builtin in the
- * import graph of a module the Workers-hosted transport also loads.
+ * Both fields are the same category of fact, which is why they travel together
+ * rather than as a growing positional tail: a library has no manifest to read
+ * and no idea which product it was installed inside.
  */
-export function createServer(ship: Ship, version: string): McpServer {
+export interface ServerOptions {
+  /**
+   * The server's reported `serverInfo.version`. A parameter rather than
+   * something this module reads for itself: the executable knows its own
+   * package manifest, a library must not assume it has one, and reaching for
+   * `node:module` here would put a Node builtin in the import graph of a
+   * module the Workers-hosted transport also loads.
+   */
+  version: string;
+  /**
+   * The deploy origin this server's uploads are attributed to. Defaults to
+   * `mcp` — an npx install in some MCP client, which is what this package is
+   * on its own.
+   *
+   * It is a parameter because `via` names the DISTRIBUTION SURFACE, not the
+   * protocol: the GitHub Action reports `git` whatever invoked the workflow,
+   * and the web apps report `web`. The VS Code extension bundles this server
+   * into its `.vsix`, so its agent-mode deploys are the extension's — it
+   * passes `vsc`, and `mcp` goes back to meaning what it says.
+   */
+  via?: DeploymentViaType;
+}
+
+/**
+ * Builds the stdio server's full 15-tool surface over an injected client.
+ */
+export function createServer(ship: Ship, options: ServerOptions): McpServer {
+  const { version, via = DeploymentVia.MCP } = options;
+
   const server = new McpServer(
     {
       name: SERVER_NAME,
@@ -77,7 +105,7 @@ export function createServer(ship: Ship, version: string): McpServer {
       },
     },
     ({ path, labels, password, idempotencyKey }) =>
-      call(() => ship.deployments.upload(path, { labels, password, idempotencyKey, via: 'mcp' })),
+      call(() => ship.deployments.upload(path, { labels, password, idempotencyKey, via })),
   );
 
   // The other fourteen. Identical on every transport, so they live in the

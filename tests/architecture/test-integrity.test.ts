@@ -48,11 +48,17 @@ const ARTIFACT_TIER_EXCEPTIONS: ReadonlyArray<{ file: string; reason: string }> 
 const SKIP_DIRS = new Set(['node_modules', 'dist', 'coverage', 'fixtures']);
 
 /**
- * Asserts on source as data rather than importing it — what the fences in this
- * directory do. Anchored to a call so the bare word in a comment cannot
- * satisfy it.
+ * Reaches production code WITHOUT importing it — what the fences in this
+ * directory do. Each pattern is anchored to a call or a string literal, so the
+ * bare word in a comment cannot satisfy any of them.
+ *
+ * Two shapes so far: reading source as data (`readFileSync` over `README.md`,
+ * `readdirSync` over the suite), and naming this package's `src/` as a path to
+ * hand to a tool — `worker-safety.test.ts` bundles the whole library graph
+ * with esbuild and asserts on what came back, which is as connected to
+ * production as an import gets without being one.
  */
-const READS_SOURCE_AS_DATA = [/\b(readFileSync|readdirSync)\s*\(/];
+const READS_SOURCE_AS_DATA = [/\b(readFileSync|readdirSync)\s*\(/, /['"][^'"]*\.\.\/src\/?['"]/];
 
 /** Imports this package's production code — statically or dynamically. */
 const REACHES_SOURCE = [/from\s+['"](?:\.\.\/)+src\//, /import\s*\(\s*['"](?:\.\.\/)+src\//];

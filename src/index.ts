@@ -32,11 +32,18 @@
  * compiled `dist/` at bundle time — stripping `bin`'s shebang, and rewriting
  * the `createRequire(import.meta.url)('../package.json')` line inside
  * `server.js` to inline a version literal. Three hacks against another
- * package's build output, each of which the 1.x library split broke. A
- * fifteen-line entry point calling `createServer(ship, version)` replaces all
- * of them, which is a restatement deleted rather than a convenience added.
+ * package's build output, each of which the 1.x library split broke. A short
+ * entry point calling `createServer(ship, { version, via })` replaces all of
+ * them, which is a restatement deleted rather than a convenience added.
  * `call` stays internal because a consumer configures its own hints through
  * `createCall`, and stdio's instance is not a contract anyone needs.
+ *
+ * Its second argument is the HOST's own facts — the version it reports and the
+ * deploy origin its uploads carry — because a library has no manifest to read
+ * and no idea which product it was installed inside. A `startStdio` absorbing
+ * the transport as well was proposed and rejected; `CLAUDE.md` records why, and
+ * `tests/architecture/worker-safety.test.ts` is the fence that makes the reason
+ * mechanical rather than remembered.
  *
  * The old reason for withholding `createServer` — that its upload tool takes a
  * filesystem PATH, a footgun to offer a Worker — is still true and is now the

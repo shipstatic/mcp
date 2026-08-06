@@ -32,7 +32,7 @@ Keep the public surface coherent: one ShipStatic MCP, two doors in.
 src/
 ├── bin.ts        # THE EXECUTABLE (dist/bin.js) — env read, Ship construction, stdio transport
 ├── index.ts      # The LIBRARY entry — curated exports, no side effects
-├── server.ts     # createServer(ship, version) — stdio's own upload tool + INSTRUCTIONS
+├── server.ts     # createServer(ship, {version, via}) — stdio's own upload tool + INSTRUCTIONS
 ├── tools.ts      # registerAccountTools() — the 14 tools identical on EVERY transport
 ├── call.ts       # createCall() — the result envelope + error mapping, parameterised by hints
 └── vocabulary.ts # What BOTH transports say: annotations + shared param descriptions
@@ -93,6 +93,32 @@ tool (a filesystem-path input is a footgun for a Worker; that is now the
 caller's judgement rather than an absence), and the export is safe for the
 Worker graph only because `version` is an ARGUMENT, so no `node:module`
 rides along.
+
+**A `startStdio` was proposed and REJECTED (2026-08-06) — do not re-propose it
+without reading this.** `bin.ts` and the extension's `mcp-entry.ts` are the
+same five lines (construct `Ship`, `createServer`, connect a
+`StdioServerTransport`, print the banner), which looks like exactly the
+restatement an export should delete. It is not, for two reasons that only show
+up when you try:
+
+- **It cannot live in `index.ts`.** `@modelcontextprotocol/sdk`'s
+  `server/stdio.js` imports `node:process`, so exporting the composition from
+  the library entry puts a Node builtin in the graph the Workers-hosted
+  transport imports — the exact invariant that makes `version` a parameter.
+  Measured, not assumed; `worker-safety.test.ts` is now the fence. Shipping it
+  anyway would mean a SECOND published entry point (`@shipstatic/mcp/stdio`),
+  an `exports` map row, and a recorded exemption from that fence — more
+  machinery than the five lines it deletes.
+- **The hazard it was really aimed at is fenced elsewhere.** The argument for
+  it was deleting the extension's direct `@modelcontextprotocol/sdk`
+  dependency, whose version range must stay matched with this package's or
+  esbuild bundles two SDK copies and `connect()` receives a transport from
+  another realm. The extension's build now asserts single-copy resolution
+  across both bundles, so that failure is caught at build time where it
+  happens.
+
+Two thin `main()` functions with different version sources and different
+process policies are not a restatement of a rule. They are two executables.
 
 Until 1.0.0-beta.2 they were one file — `main` and `bin` in `package.json`
 both pointed at `index.ts`, so importing the package started a stdio server
@@ -166,27 +192,42 @@ server.registerTool('deployments_get', {
 
 `call()` handles try/catch, JSON serialization, void→"Done.", and ShipError→MCP error conversion.
 
-**The typed error contract terminates here, and that is the protocol's shape
-rather than a bug.** `CallToolResult` carries text plus `isError`, so an agent
-sees prose: `status`, `ErrorType`, and every `details` payload are dropped
-except the Validation arm's, which is appended as text. A 429's
-`details.expires` and its `Retry-After` header do not survive, so the caller
-most in need of a precise backoff gets "try again in 9 minutes" and must read
-English. This is survivable **only because the API's message law makes the
-prose authoritative** — the wire message is authored for the end user at the
-throw site (`cloudflare/api/CLAUDE.md`, "Message authoring law"), so it always
-contains what the agent needs.
+**The typed error contract reaches the agent — text authoritative, structure
+beside it.** Taken in 1.0.0-beta.8, and it was the first of the two futures
+this paragraph used to name.
 
-Recorded so nobody "fixes" it by rewording a message — the message is not the
-problem. Two real futures if it ever bites: carry the machine-readable payload
-in `structuredContent` on error results, or accept the prose permanently. The
-hosted transport feels this hardest (a 5/hr per-caller anonymous bucket), and
-it is the transport that already has `structuredContent` — see
-`cloudflare/mcp/CLAUDE.md` for why adopting it here is a surface-wide call.
+`CallToolResult` carries text plus `isError`, so for most of this package's
+life an agent saw prose alone: `status`, `ErrorType`, and every `details`
+payload were dropped except the Validation arm's. The platform's own law is
+that *clients branch on error type and status, never on message strings* — and
+the agent, the consumer best equipped to obey it, was the only one that could
+not. The recorded bite is a 429, whose `details.expires` died here, leaving the
+caller most in need of a precise backoff to parse "try again in 9 minutes" out
+of English. The hosted transport feels it hardest (a 5/hr per-caller anonymous
+bucket).
+
+`toErrorResult` now attaches `structuredContent: error.toResponse()` — the same
+`ErrorResponse` the wire itself carries — on every ShipError arm. Three things
+make that safe rather than a surface expansion:
+
+- **The text is unchanged and stays the contract**, hints included. It has to
+  be: the API authors its messages for the end user at the throw site
+  (`cloudflare/api/CLAUDE.md`, "Message authoring law"), so a client that reads
+  only prose still works. Structure rides BESIDE it, never instead.
+- **The MCP SDK validates `structuredContent` only against a declared
+  `outputSchema`, and returns early again when `isError` is set.** No tool here
+  declares one, so this is additive for every client and invisible to any that
+  does not look. Checked in the pinned SDK, not assumed.
+- **It is deliberately NOT behind `CallOptions.structuredContent`.** That flag
+  governs SUCCESS shapes, where the objection is fifteen hand-maintained zod
+  twins. A failure has exactly one published shape on every transport.
+
+A non-ShipError still answers text-only: there is no wire shape to report, and
+inventing one would tell an agent the failure came from the platform.
 
 ### Dependency Injection
 
-`bin.ts` owns the process: reads `SHIP_TOKEN` from the environment, constructs `new Ship({ token })`, passes it to `createServer(ship, version)`. The factory never touches `process.env` or constructs its own dependencies. Tests pass a fake directly, and `tests/bin.test.ts` fences the split — `server.ts`, `call.ts`, `vocabulary.ts` and `index.ts` must contain no `process.env` read at all.
+`bin.ts` owns the process: reads `SHIP_TOKEN` from the environment, constructs `new Ship({ token })`, passes it to `createServer(ship, { version })`. The factory never touches `process.env` or constructs its own dependencies. Tests pass a fake directly, and `tests/bin.test.ts` fences the split — `server.ts`, `call.ts`, `vocabulary.ts` and `index.ts` must contain no `process.env` read at all.
 
 The **version** is an argument for the same reason: the executable knows its own manifest, a library must not assume it has one, and reading it inside `server.ts` would put `node:module` — a Node builtin — in the import graph of a module the Workers-hosted transport also loads.
 
@@ -200,7 +241,16 @@ The SDK's strict-isolation contract (synchronous constructor, no filesystem read
 
 ### Deployment Tracking
 
-`deployments_upload` sets `via: 'mcp'` — matching CLI's `via: 'cli'` for origin tracking.
+`deployments_upload` sets `via` — matching CLI's `via: 'cli'` for origin
+tracking. It **defaults to `'mcp'` and is a `ServerOptions` field**, because
+`via` names the DISTRIBUTION SURFACE rather than the protocol: the GitHub
+Action reports `git` whatever invoked the workflow, and the web apps report
+`web`. `bin.ts` passes nothing, because this executable IS the `mcp` origin.
+
+The VS Code extension bundles `createServer` into its `.vsix` and passes
+`'vsc'`. Without the parameter every agent-mode deploy from the editor reported
+as generic `mcp`, indistinguishable from an npx install in some other client —
+nobody decided that; the composition simply had nowhere to say otherwise.
 
 ## Testing
 
@@ -216,7 +266,8 @@ pnpm smoke          # the PUBLISHED artifact, live — see below. Manual, never 
 tests/
 ├── architecture/
 │   ├── test-integrity.test.ts   # fence: every test file reaches src/
-│   └── test-naming.test.ts      # fence: the layout law
+│   ├── test-naming.test.ts      # fence: the layout law
+│   └── worker-safety.test.ts    # fence: no node: builtin in the LIBRARY graph
 ├── fixtures/builders.ts         # the only fixture source — wire shapes, cited
 ├── mocks/ship.ts                # the one fake, typed against the SDK contract
 ├── harness.ts                   # real Client ↔ real server, InMemoryTransport
@@ -280,6 +331,7 @@ configured" assertions) and wraps `fetch` to throw on any non-loopback host
 | the `ErrorType` sweep in `call.test.ts` | An error arm nobody thought about. It enumerates `Object.values(ErrorType)` rather than a hand-written list, so "exhaustive" is derived from types, not claimed in prose. Coverage is blind to this class: `handleError` has three branches, so six arms exercise them all and the other five sit untested at 100% — which is how a transport failure moving from `internal_server_error` to `network_error` reached agents unasserted. Bidirectional: a hint added to `call.ts` without recording it in `HINTED` turns the arm red, and a hint removed turns it red too. |
 | `test-naming.test.ts` | Layout drift: a filename describing the test instead of its subject, a mirror file with no `src/` counterpart, an aspect split not recorded below. |
 | `coverage.thresholds` | Coverage decay. 100/100/100/100 — MCP has no in-process-unreachable corner, so the bar is the ceiling and an untested new tool fails the run. |
+| `worker-safety.test.ts` | A `node:` builtin entering the graph `index.ts` exposes — which the Workers-hosted transport imports. It was proven only by that PRIVATE repo's build failing: late, elsewhere, and after a publish. Not hypothetical — the obvious next admission to the public surface was a `startStdio` composing the transport for consumers, and the MCP SDK's `server/stdio.js` imports `node:process`. It would have built green and published green. `bin.ts` is exempt by construction (unreachable from `index.ts`), and a second assertion proves the probe can SEE a builtin, so the first cannot pass vacuously. |
 | the `ACCOUNT_TOOL_NAMES` comparison in `server.test.ts` | The exported name list drifting from the registrations it names. Both directions, through a real `tools/list`: a registration added without its name, a name without its registration, a typo in either. It is what lets the hosted transport state its expected catalogue as `[UPLOAD_TOOL_NAME, ...ACCOUNT_TOOL_NAMES]` instead of counting to fifteen in a second repo. |
 
 **Recorded aspect splits** — one subject, more than one mirror file. The

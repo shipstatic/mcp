@@ -31,7 +31,8 @@ async function main() {
   // bearer) and the server classifies it. MCP never has to know which kind it
   // holds.
   const ship = new Ship({ token: process.env.SHIP_TOKEN });
-  const server = createServer(ship, version);
+  // No `via` — this executable IS the `mcp` origin, which is the default.
+  const server = createServer(ship, { version });
   const transport = new StdioServerTransport();
   await server.connect(transport);
   console.error('ShipStatic MCP Server running on stdio');
