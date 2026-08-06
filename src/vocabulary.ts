@@ -33,6 +33,25 @@ import {
   LABEL_CONSTRAINTS,
   PASSWORD_CONSTRAINTS,
 } from '@shipstatic/ship';
+import { PUBLIC_DEPLOYMENT_TTL_SECONDS } from '@shipstatic/types';
+
+/**
+ * Two packages, and the split is a rule rather than an accident: **read a
+ * constant from whatever will act on it.**
+ *
+ * The label, password and idempotency-key constraints come from
+ * `@shipstatic/ship` because the SDK is what validates a value against them
+ * before it reaches the wire — describing a bound the client in the same
+ * process will not honour is the drift that matters, and reading both from one
+ * module makes it impossible. `@shipstatic/types` declares them, but ship
+ * bundles its own copy, so importing them from types here would let a describe
+ * advertise a limit the validator beside it rejects.
+ *
+ * The public-deploy lifetime is the other kind of fact. Ship never reads it —
+ * the API stamps it — so there is no validator to agree with, and taking it
+ * from the package that merely forwards it would mean a ship release every
+ * time the platform's own vocabulary grows.
+ */
 
 /**
  * The server name every transport reports in `serverInfo`.
@@ -55,18 +74,25 @@ export const UPLOAD_TOOL_NAME = 'deployments_upload';
 /**
  * How long an anonymous deployment lives, in the words an agent reads.
  *
- * **The fact is owned by `cloudflare/api` (`DEPLOYMENT.PUBLIC_TTL`), which
- * `@shipstatic/types` does not yet export** — so this is a restatement, and it
- * is deliberately the ONLY one. It previously appeared in eight places across
- * the two servers and the widget; a TTL change had to find all eight. When
- * types exports the constant, this line becomes a derivation and nothing above
- * it moves.
+ * **Derived, since `@shipstatic/types@2.5.0-beta.19`.** It was a restatement
+ * until then, and deliberately the only one — the duration had appeared in
+ * eight places across the two servers and the widget, so a TTL change had to
+ * find all eight. Both halves of the fix landed together: types declares the
+ * number and `cloudflare/api` imports it back, because exporting without the
+ * import-back would have given the fact two owners instead of ending the
+ * duplication.
  *
  * A phrase rather than a number because every consumer is prose: the value has
- * to carry its own unit, and `PUBLIC_TTL / 86400` interpolated at eight sites
- * would restate the unit eight times instead of the number.
+ * to carry its own unit, and dividing by 86400 at eight sites would restate the
+ * unit eight times instead of the number.
+ *
+ * The unit stays literal, and that is the one assumption here: this reads
+ * correctly while the TTL is a whole number of days, which it has always been.
+ * A TTL of hours would need the prose reviewed anyway — the widget's own
+ * `formatExpires` speaks in days and hours too — so the honest failure is a
+ * sentence someone must rewrite, not a number that silently rounds.
  */
-export const PUBLIC_EXPIRY = '3 days';
+export const PUBLIC_EXPIRY = `${PUBLIC_DEPLOYMENT_TTL_SECONDS / 86_400} days`;
 
 const OPEN_WORLD = { openWorldHint: true } as const;
 

@@ -3,8 +3,9 @@ import {
   LABEL_CONSTRAINTS,
   PASSWORD_CONSTRAINTS,
 } from '@shipstatic/ship';
+import { PUBLIC_DEPLOYMENT_TTL_SECONDS } from '@shipstatic/types';
 import { describe, expect, it } from 'vitest';
-import { ANNOTATIONS, PARAM_DESCRIPTIONS } from '../src/vocabulary.js';
+import { ANNOTATIONS, PARAM_DESCRIPTIONS, PUBLIC_EXPIRY } from '../src/vocabulary.js';
 
 /**
  * @file The shared vocabulary — `src/vocabulary.ts`.
@@ -47,6 +48,24 @@ describe('parameter descriptions', () => {
     // not just the number.
     expect(PARAM_DESCRIPTIONS.idempotencyKey).toContain('Key the ATTEMPT');
     expect(PARAM_DESCRIPTIONS.idempotencyKey).toContain('never one minted fresh on each retry');
+  });
+});
+
+describe('the public-deploy expiry', () => {
+  it('is derived from the platform constant, not written out', () => {
+    // The whole point of the export it reads. Every agent-facing "3 days" on
+    // both transports resolves through this one value, so a TTL change reaches
+    // the prose without anyone editing prose — and the assertion computes the
+    // expectation the same way rather than pinning the string, which would put
+    // the literal back in a second place.
+    expect(PUBLIC_EXPIRY).toBe(`${PUBLIC_DEPLOYMENT_TTL_SECONDS / 86_400} days`);
+  });
+
+  it('reads as a duration a sentence can contain', () => {
+    // It is interpolated mid-sentence on both doors ("expire in …", "the site
+    // expires in … unless claimed"), so it must carry its unit and nothing
+    // else — no leading article, no trailing period.
+    expect(PUBLIC_EXPIRY).toMatch(/^\d+ (day|days|hour|hours)$/);
   });
 });
 

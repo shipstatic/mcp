@@ -14,6 +14,9 @@ importers:
       '@shipstatic/ship':
         specifier: 2.0.0-beta.15
         version: 2.0.0-beta.15
+      '@shipstatic/types':
+        specifier: 2.5.0-beta.19
+        version: 2.5.0-beta.19
       zod:
         specifier: ^4.4.3
         version: 4.4.3
@@ -21,9 +24,6 @@ importers:
       '@biomejs/biome':
         specifier: 2.5.5
         version: 2.5.5
-      '@shipstatic/types':
-        specifier: 2.5.0-beta.18
-        version: 2.5.0-beta.18
       '@types/node':
         specifier: ^25.9.5
         version: 25.9.5
@@ -425,8 +425,8 @@ packages:
     engines: {node: '>=20.0.0'}
     hasBin: true
 
-  '@shipstatic/types@2.5.0-beta.18':
-    resolution: {integrity: sha512-7Ixhrd4fQs+b4yWIddpiMO1LnZK1cRXrfniNGCWBtkGjYtZgZ/NN6MvPbclDDA7vQ/25hPvHPZ5DM0a7hyOzZQ==}
+  '@shipstatic/types@2.5.0-beta.19':
+    resolution: {integrity: sha512-aUlOXJr1GU70c2NrSShaRHR/xSEmyLTao/Nbhi2FZHkSPSo0IowrirNpJQKRHgd5+Lakm8WE1uXOS+g3fRqPmw==}
     engines: {node: '>=20.0.0'}
 
   '@standard-schema/spec@1.1.0':
@@ -1371,7 +1371,7 @@ snapshots:
       yoctocolors: 2.2.0
       zod: 4.4.3
 
-  '@shipstatic/types@2.5.0-beta.18': {}
+  '@shipstatic/types@2.5.0-beta.19': {}
 
   '@standard-schema/spec@1.1.0': {}
 
