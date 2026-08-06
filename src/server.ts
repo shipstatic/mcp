@@ -4,26 +4,32 @@ import { IDEMPOTENCY_KEY_CONSTRAINTS } from '@shipstatic/ship';
 import { z } from 'zod';
 import { call } from './call.js';
 import { registerAccountTools } from './tools.js';
-import { ANNOTATIONS, PARAM_DESCRIPTIONS } from './vocabulary.js';
+import { ANNOTATIONS, INSTRUCTION_BLOCKS, PARAM_DESCRIPTIONS } from './vocabulary.js';
 
 // Destructured so the fifteen registrations below read as they always have.
 // The definitions live in `vocabulary.ts` because the hosted transport speaks
 // the same ones — that file records what is shared, what is not, and why.
 const { CREATE } = ANNOTATIONS;
 
-const INSTRUCTIONS = `ShipStatic deploys static websites instantly. Free, no account required.
+const B = INSTRUCTION_BLOCKS;
 
-To deploy: call deployments_upload with the build output directory path. The site is live immediately. To make the site private, pass \`password\` — visitors must unlock before viewing, including on any custom domains pointing at it.
+// Composed from the shared blocks plus the two sentences that are genuinely
+// stdio's: how files arrive (a filesystem path) and how a caller
+// authenticates (`SHIP_TOKEN`). The hosted transport composes the same blocks
+// around its own two.
+const INSTRUCTIONS = `${B.opening}
 
-Without SHIP_TOKEN, deployments are public and expire in 3 days. The response includes a claim URL — always show the deployment URL and the claim URL to the user so they can keep the site permanently.
+To deploy: call deployments_upload with the build output directory path. ${B.liveAndPassword}
+
+Without SHIP_TOKEN, deployments are public and expire in 3 days. ${B.claim}
 
 With SHIP_TOKEN configured, deployments go to the user's account and never expire. Listing, managing, and domain operations also require SHIP_TOKEN.
 
-Concepts:
-- Deployment: an immutable set of files with an instant URL (e.g. happy-cat-abc1234.shipstatic.com). No setup needed.
-- Domain: a custom domain (e.g. www.example.com) pointing to a deployment. Optional. Subdomains only — not apex domains.
+${B.conceptsHeader}
+${B.deploymentConcept}
+${B.domainConcept}
 
-To add a custom domain: domains_validate → domains_set → domains_records (show DNS records to user) → user configures DNS → domains_verify.`;
+${B.domainWorkflow}`;
 
 /**
  * Builds the stdio server's full 15-tool surface over an injected client.

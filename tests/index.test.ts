@@ -17,22 +17,24 @@ import * as library from '../src/index.js';
  * that is easy to get wrong and free to fix.
  */
 
-/** Every name `src/index.ts` is meant to expose. Runtime values only — types erase. */
+/**
+ * Every name `src/index.ts` is meant to expose — which is exactly what a
+ * SECOND TRANSPORT needs to speak this product, and nothing else. Runtime
+ * values only; types erase.
+ */
 const PUBLIC_API = [
-  // The server factory: the whole 15-tool surface over an injected client.
-  'createServer',
-  // The result wrapper. `call` is stdio's configured instance; `createCall`
-  // is what the hosted transport builds its own from, so the success envelope,
-  // the `'Done.'` sentinel and the error-arm order are one implementation.
-  'call',
-  'createCall',
-  // The shared agent-facing vocabulary.
+  // What an agent reads: annotations, the deploy-param descriptions, and the
+  // INSTRUCTIONS sentences both transports say.
   'ANNOTATIONS',
   'PARAM_DESCRIPTIONS',
+  'INSTRUCTION_BLOCKS',
   // The fourteen account-tied tools, identical on every transport. Exported
   // so the hosted transport registers them rather than copying them when it
   // gains OAuth — the copy is what would start the drift.
   'registerAccountTools',
+  // The result envelope, so both transports answer in one shape. A consumer
+  // configures its own hints; `call` (stdio's instance) stays internal.
+  'createCall',
 ] as const;
 
 describe('public surface', () => {
@@ -46,7 +48,7 @@ describe('public surface', () => {
     // stdio server and could `process.exit` in its consumer. If that ever
     // returns, this suite hangs or dies rather than failing politely — so the
     // assertion is simply that we got here, having imported at module scope.
-    expect(typeof library.createServer).toBe('function');
+    expect(typeof library.registerAccountTools).toBe('function');
   });
 
   it('createCall builds an independent wrapper, so a consumer configures its own hints', async () => {
