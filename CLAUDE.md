@@ -2,7 +2,9 @@
 
 Claude Code instructions for the **ShipStatic MCP Server**.
 
-**@shipstatic/mcp** — MCP server that exposes the ShipStatic SDK to AI agents via stdio. Thin wrapper over `@shipstatic/ship`. Published to the MCP Registry as `com.shipstatic/mcp`. **Maturity:** v0.6.x — Deployments + Domains (15 tools).
+**@shipstatic/mcp** — MCP server that exposes the ShipStatic SDK to AI agents via stdio. Thin wrapper over `@shipstatic/ship`. Published to the MCP Registry as `com.shipstatic/mcp`. **Maturity:** v1.0.x — Deployments + Domains (15 tools).
+
+**The version says which platform it speaks to: the 1.x MCP is the one that speaks to the 2.x platform.** 1.0.0 is a true major for consumers — `SHIP_API_KEY` is no longer read (every existing server config breaks until its env var is renamed) and the delete tools were renamed (`deployments_remove` → `deployments_delete`, `domains_remove` → `domains_delete`), so a saved agent workflow naming the old tool stops resolving.
 
 A **hosted Streamable-HTTP variant** lives at `https://mcp.shipstatic.com`, registered alongside this package under the same `com.shipstatic/mcp` registry entry (see `server.json` `remotes`). Source: `cloudflare/mcp/` in the monorepo. The hosted variant exposes only `deployments_upload` (anonymous-only). The user-facing strings — tool description, INSTRUCTIONS — must stay coordinated where they overlap; the hosted side documents the divergence boundaries.
 
@@ -151,6 +153,7 @@ configured" assertions) and wraps `fetch` to throw on any non-loopback host
 | Fence | Catches |
 |---|---|
 | `test-integrity.test.ts` | A test file reaching NO production code — the tautology class. Acute here, where most assertions are about strings: a file asserting its own constants looks exactly like a test of the tool surface. Reach resolves transitively through `harness.ts`/`mocks/`, but importing only `fixtures/builders` does not count. |
+| the `ErrorType` sweep in `call.test.ts` | An error arm nobody thought about. It enumerates `Object.values(ErrorType)` rather than a hand-written list, so "exhaustive" is derived from types, not claimed in prose. Coverage is blind to this class: `handleError` has three branches, so six arms exercise them all and the other five sit untested at 100% — which is how a transport failure moving from `internal_server_error` to `network_error` reached agents unasserted. Bidirectional: a hint added to `call.ts` without recording it in `HINTED` turns the arm red, and a hint removed turns it red too. |
 | `test-naming.test.ts` | Layout drift: a filename describing the test instead of its subject, a mirror file with no `src/` counterpart, an aspect split not recorded below. |
 | `coverage.thresholds` | Coverage decay. 100/100/100/100 — MCP has no in-process-unreachable corner, so the bar is the ceiling and an untested new tool fails the run. |
 
@@ -163,7 +166,7 @@ naming fence fails the suite if a split is not named here by full basename.
 
 ## Publishing
 
-The CI workflow (`.github/workflows/npm-publish.yml`) runs on pushes to `main` and `development`. The guarded publish step publishes to npm only when `package.json` holds a version not yet on the registry, with the dist-tag derived from the version (`-` suffix → `beta`, else `latest`). The MCP Registry publish is **stable-only** — the registry has no channel concept, so betas live on npm's `beta` dist-tag alone. `package.json` is the single source of truth for the version — CI patches `server.json` with `jq` before registry publish. DNS authentication uses an Ed25519 key on `shipstatic.com`.
+The CI workflow (`.github/workflows/ci.yml`) runs on pushes to `main` and `development`. The guarded publish step publishes to npm only when `package.json` holds a version not yet on the registry, with the dist-tag derived from the version (`-` suffix → `beta`, else `latest`). The MCP Registry publish is **stable-only** — the registry has no channel concept, so betas live on npm's `beta` dist-tag alone. `package.json` is the single source of truth for the version — CI patches both `.version` and `.packages[0].version` in `server.json` with `jq` before registry publish. **The version in the tracked `server.json` is therefore a placeholder and is stale on purpose** (it reads `0.2.0`); never run `mcp-publisher publish` by hand from a checkout, which would register that literal. DNS authentication uses an Ed25519 key on `shipstatic.com`.
 
 **`server.json`** — MCP Registry metadata. `mcpName` in `package.json` must match `name` in `server.json` (`com.shipstatic/mcp`).
 
@@ -186,6 +189,24 @@ The CI workflow (`.github/workflows/npm-publish.yml`) runs on pushes to `main` a
   }
 }
 ```
+
+## Post-Launch
+
+**Pagination — a product call, deliberately not taken.** ship 2.0's
+`list(options?: ListOptions)` accepts `limit`/`cursor` and the responses carry
+`cursor`, but `deployments_list` and `domains_list` take no arguments, so an
+agent sees page one and cannot reach page two. This is *pinned* rather than
+merely absent: two wiring cases in `server-calls.test.ts` assert `list()` is
+called with **zero** arguments, so adding pagination means deliberately editing
+a test that states today's behaviour. Decide whether an agent should page at
+all before wiring it — an agent that pages a large account burns context on
+data it did not ask for.
+
+**No `tokens_*` tools — recorded, do not add without a new product call.** The
+SDK has `tokens.get`/`tokens.list`/`tokens.create`; this server exposes none.
+An MCP server's credential is *configured by the human* in the server config,
+never minted by the agent that would then hold it. Same shape as web/my's
+"deploy tokens are CLI-only" and the SDK's own `/activities` absence.
 
 ---
 

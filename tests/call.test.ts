@@ -1,4 +1,4 @@
-import { ShipError } from '@shipstatic/types';
+import { ErrorType, ShipError } from '@shipstatic/types';
 import { describe, expect, it } from 'vitest';
 import { call } from '../src/call.js';
 import { textOf } from './harness.js';
@@ -11,6 +11,15 @@ import { textOf } from './harness.js';
  * protocol round trip; this file covers every arm, including the ones no tool
  * can plausibly produce on demand (a circular details object, a rejected
  * non-Error).
+ *
+ * "Exhaustive" is DERIVED, not claimed — the sweep below enumerates
+ * `ErrorType` itself rather than restating a hand-written list, the same way
+ * the catalogue interpolates `LABEL_CONSTRAINTS` and the ship fake is
+ * `Pick<Ship, …>`. Coverage cannot police this: `handleError` has three
+ * branches, so six arms exercise them all and the remaining five would sit
+ * untested at 100%. That gap was live when types moved a transport failure
+ * from `internal_server_error` to `network_error` — a type this server
+ * relays straight to an agent, with nothing asserting what it looks like.
  *
  * The through-line: an agent cannot see an exception, only text. So every arm
  * below is judged by what the text lets the agent DO next — retry with a
@@ -96,18 +105,37 @@ describe('ShipError mapping', () => {
     expect(textOf(result)).toContain('Details:');
   });
 
-  it.each([
-    ['not found', ShipError.notFound('Deployment', 'brave-otter-a1b2c3d')],
-    ['business', ShipError.business('Quota exceeded')],
-    ['rate limit', ShipError.rateLimit('Too many requests')],
-  ])('relays a %s error with no hint attached', async (_label, error) => {
-    // Only authentication and forbidden earn a hint. A hint on any other type
-    // would send the agent chasing a credential that is not the problem.
-    const result = await call(() => Promise.reject(error));
+  /**
+   * The two arms that earn a hint, and the phrase each must carry. Everything
+   * NOT listed here relays verbatim — a hint on any other type would send the
+   * agent chasing a credential that is not the problem.
+   *
+   * The tests above pin what these two hints SAY; this table pins only that
+   * they are the complete set of arms that get one.
+   */
+  const HINTED: Partial<Record<ErrorType, string>> = {
+    [ErrorType.Authentication]: 'SHIP_TOKEN',
+    [ErrorType.Forbidden]: 'Stop retrying',
+  };
 
-    expect(result.isError).toBe(true);
-    expect(textOf(result)).toBe(error.message);
-  });
+  it.each(Object.values(ErrorType))(
+    'relays a %s error, with a hint only where one is earned',
+    async (type) => {
+      // Constructed through the public constructor rather than a named factory
+      // so the sweep stays a statement about the TYPE DOMAIN — every arm, no
+      // exceptions — instead of the subset that happens to have a factory.
+      const result = await call(() => Promise.reject(new ShipError(type, 'Upstream said no')));
+
+      expect(result.isError).toBe(true);
+
+      const hint = HINTED[type];
+      if (hint) expect(textOf(result)).toContain(hint);
+      // Verbatim: no prefix, no suffix, nothing the SDK did not say. This is
+      // what makes the assertion bidirectional — a hint added to `call.ts`
+      // without a decision recorded above turns this red.
+      else expect(textOf(result)).toBe('Upstream said no');
+    },
+  );
 });
 
 describe('non-ShipError failures', () => {
