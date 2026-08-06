@@ -20,7 +20,7 @@ import {
   timestamps,
 } from './fixtures/builders.js';
 import { connect, type Harness, jsonOf, textOf } from './harness.js';
-import type { ShipFake } from './mocks/ship.js';
+import { createShipFake, type ShipFake } from './mocks/ship.js';
 
 /**
  * @file Tool CALLS — what happens when an agent invokes a tool. The catalogue
@@ -462,6 +462,26 @@ describe('the anonymous claim story', () => {
       ABS_PATH,
       expect.objectContaining({ via: 'mcp' }),
     );
+  });
+
+  it('reports the HOST’s origin when one is supplied, not the protocol’s', async () => {
+    // `via` names the distribution surface, not the transport — the GitHub
+    // Action reports `git` whatever invoked the workflow. The VS Code
+    // extension bundles this exact server into its `.vsix`, so without the
+    // parameter every agent-mode deploy from the editor was indistinguishable
+    // from an npx install in some other client. Nobody decided that; the
+    // composition simply had nowhere to say otherwise.
+    const host = await connect(createShipFake(), { via: 'vsc' });
+    try {
+      await host.client.callTool({ name: 'deployments_upload', arguments: { path: ABS_PATH } });
+
+      expect(host.ship.deployments.upload).toHaveBeenCalledWith(
+        ABS_PATH,
+        expect.objectContaining({ via: 'vsc' }),
+      );
+    } finally {
+      await host.close();
+    }
   });
 
   it('an authenticated deploy carries no claim URL and never expires', async () => {

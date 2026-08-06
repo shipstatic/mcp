@@ -29,12 +29,16 @@ export type CallFn = <T>(fn: () => Promise<T>) => Promise<CallToolResult>;
 export interface CallOptions {
   hints: ErrorHints;
   /**
-   * Attach a plain-object result as `structuredContent` beside the text.
-   * Hosted-only today: it is what feeds the Apps-SDK widget, and the MCP spec
+   * Attach a plain-object SUCCESS result as `structuredContent` beside the
+   * text. Hosted-only: it is what feeds the Apps-SDK widget, and the MCP spec
    * pairs it with an `outputSchema`, which is a hand-maintained zod twin of a
    * published type. One such twin is worth it for a widget; fifteen would be a
    * drift surface with no consumer asking for it. See
    * `cloudflare/mcp/CLAUDE.md`, "What deliberately differs".
+   *
+   * It does NOT gate the ERROR envelope, which every transport carries — see
+   * `toErrorResult`. The objection above is about fifteen success shapes; a
+   * failure has exactly one published shape, and no schema to keep in step.
    */
   structuredContent?: boolean;
 }
@@ -78,6 +82,34 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+/**
+ * The failure envelope: authoritative prose, with the wire's own structure
+ * riding beside it.
+ *
+ * The TEXT is unchanged and stays the contract — hints included. It has to be:
+ * the API authors its messages for the end user at the throw site
+ * (`cloudflare/api/CLAUDE.md`, "Message authoring law"), so the sentence
+ * always contains what the agent needs, and a client that ignores everything
+ * else still works.
+ *
+ * `structuredContent` carries `ShipError.toResponse()` verbatim — the same
+ * `ErrorResponse` the wire itself uses. Until 1.0.0-beta.8 the typed contract
+ * terminated here: `status`, `ErrorType`, and every `details` payload except
+ * the Validation arm's were dropped, so the platform's own law — *clients
+ * branch on error type and status, never on message strings* — held for every
+ * consumer EXCEPT the one best equipped to obey it. The recorded bite was a
+ * 429: `details.expires` died at this boundary, leaving the caller most in
+ * need of a precise backoff to parse "try again in 9 minutes" out of English.
+ *
+ * Safe on every arm, and checked rather than assumed: the MCP SDK validates
+ * `structuredContent` only when a tool declares an `outputSchema`, and returns
+ * early again when `isError` is set. No tool here declares one. So this is
+ * additive for every client and invisible to any that does not look.
+ *
+ * It is deliberately NOT behind `CallOptions.structuredContent` — that flag
+ * governs success shapes, where the schema-twin objection lives. A failure has
+ * one published shape on every transport.
+ */
 function toErrorResult(error: unknown, hints: ErrorHints): CallToolResult {
   if (isShipError(error)) {
     let message = error.message;
@@ -96,10 +128,13 @@ function toErrorResult(error: unknown, hints: ErrorHints): CallToolResult {
 
     return {
       content: [{ type: 'text', text: message }],
+      structuredContent: { ...error.toResponse() },
       isError: true,
     };
   }
 
+  // No structure for a non-ShipError: there is no wire shape to report, and
+  // inventing one would tell an agent this failure came from the platform.
   const fallback = error instanceof Error ? error.message : 'An unexpected error occurred';
   return {
     content: [{ type: 'text', text: fallback }],

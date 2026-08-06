@@ -26,7 +26,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import type Ship from '@shipstatic/ship';
-import { createServer } from '../src/server.js';
+import { createServer, type ServerOptions } from '../src/server.js';
 import { createShipFake, type ShipFake } from './mocks/ship.js';
 
 /**
@@ -48,11 +48,18 @@ export interface Harness {
   close: () => Promise<void>;
 }
 
-export async function connect(ship: ShipFake = createShipFake()): Promise<Harness> {
+export async function connect(
+  ship: ShipFake = createShipFake(),
+  /** Host facts a caller wants to vary — today only `via`; `version` defaults. */
+  options: Partial<ServerOptions> = {},
+): Promise<Harness> {
   // `ShipSurface` proves the fake covers everything `createServer` consumes;
   // the cast past `Ship` itself is unavoidable and inert — a class type also
   // carries private and protected members no structural value can supply.
-  const server = createServer(ship as unknown as Ship, PACKAGE_VERSION);
+  const server = createServer(ship as unknown as Ship, {
+    version: PACKAGE_VERSION,
+    ...options,
+  });
   const client = new Client({ name: 'mcp-test-client', version: '0.0.0' });
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
 
