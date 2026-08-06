@@ -1,5 +1,9 @@
 import { createRequire } from 'node:module';
-import { LABEL_CONSTRAINTS, PASSWORD_CONSTRAINTS } from '@shipstatic/ship';
+import {
+  IDEMPOTENCY_KEY_CONSTRAINTS,
+  LABEL_CONSTRAINTS,
+  PASSWORD_CONSTRAINTS,
+} from '@shipstatic/ship';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { connect, type Harness, textOf } from './harness.js';
 
@@ -45,7 +49,13 @@ interface ToolSurface {
 
 const OPEN_WORLD = { openWorldHint: true };
 const READ = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, ...OPEN_WORLD };
-/** Deploys are NOT idempotent: every call creates a new deployment. */
+/**
+ * Deploys carry NO `idempotentHint` — and the reason changed with this wave.
+ * It used to be "every call creates a new deployment", which `idempotencyKey`
+ * made conditionally false. The hint stays absent because the property is
+ * per-CALL, not per-tool: true only when a key is supplied, false for the
+ * keyless caller. A static hint cannot say "sometimes".
+ */
 const CREATE = { readOnlyHint: false, destructiveHint: false, ...OPEN_WORLD };
 const WRITE = { readOnlyHint: false, destructiveHint: false, idempotentHint: true, ...OPEN_WORLD };
 const DESTRUCTIVE = {
@@ -72,6 +82,37 @@ const strArray = (description: string, required = true): ParamSurface => ({
 /** The `deployment` argument, described identically wherever it is accepted. */
 const DEPLOYMENT_EXAMPLE = 'happy-cat-abc1234.shipstatic.com';
 
+/**
+ * The paging surface both list tools expose. Written once here because it is
+ * ONE contract — but restated rather than imported from `src/server.ts`, since
+ * importing would make the assertion "the tool is shaped the way the source
+ * shapes it", which is true by construction.
+ *
+ * `maximum` is zod's safe-integer bound on `.int()` — NOT a product cap. The
+ * API owns the real page-size limit and clamps server-side, which is exactly
+ * why no such number is stated here; if one ever appears in this schema, one
+ * fact has grown two owners.
+ */
+const PAGING_PARAMS: Record<string, ParamSurface> = {
+  limit: {
+    required: false,
+    schema: {
+      type: 'integer',
+      description: 'Maximum number of items to return in one page. Omit for the server default.',
+      minimum: 1,
+      maximum: Number.MAX_SAFE_INTEGER,
+    },
+  },
+  cursor: str(
+    "Opaque position from the previous response's `cursor` field; omit for the first page.",
+    false,
+  ),
+};
+
+/** Every list tool's description ends with the paging contract, stated once. */
+const PAGING_NOTE =
+  " The response's `cursor` is null on the last page; pass it back as `cursor` to fetch the next.";
+
 // =============================================================================
 // THE PINNED CATALOGUE
 // =============================================================================
@@ -93,20 +134,25 @@ const CATALOGUE: Record<string, ToolSurface> = {
         'Absolute path to the build output directory to deploy (e.g. "/Users/me/project/dist")',
       ),
       labels: strArray(
-        `Labels for organizing deployments (e.g. ["production", "v1.2"]). Lowercase, ${LABEL_CONSTRAINTS.MIN_LENGTH}-${LABEL_CONSTRAINTS.MAX_LENGTH} chars, allows . _ - separators.`,
+        `Labels for organizing deployments (e.g. ["production", "v1.2"]). Lowercase, ${LABEL_CONSTRAINTS.MIN_LENGTH}-${LABEL_CONSTRAINTS.MAX_LENGTH} chars, allows . _ - separators. Up to ${LABEL_CONSTRAINTS.MAX_COUNT}.`,
         false,
       ),
       password: str(
         `Optional password to gate the deployment behind an unlock prompt (${PASSWORD_CONSTRAINTS.MIN_LENGTH}–${PASSWORD_CONSTRAINTS.MAX_LENGTH} characters; whitespace significant). Visitors must enter this password before viewing the site, including on any custom domains pointing at it.`,
         false,
       ),
+      // The window is interpolated from the SDK constant for the same reason
+      // the label lengths are: the prose is pinned, the number stays derived.
+      idempotencyKey: str(
+        `Makes this deploy replayable instead of repeatable. A deploy is not naturally idempotent: if a call times out you cannot tell "it never landed" from "it landed and the response was lost", and retrying creates a second deployment. Send the same key on the retry and the original deployment is replayed instead (within ${IDEMPOTENCY_KEY_CONSTRAINTS.WINDOW_SECONDS / 3600} hours). Key the ATTEMPT — a run id, a commit sha, a uuid minted before the first try — never one minted fresh on each retry, which would defeat the point.`,
+        false,
+      ),
     },
   },
   deployments_list: {
-    description:
-      'List all deployments with their URLs, status, labels, and password protection state.',
+    description: `List all deployments with their URLs, status, labels, and password protection state.${PAGING_NOTE}`,
     annotations: READ,
-    params: {},
+    params: PAGING_PARAMS,
   },
   deployments_get: {
     description:
@@ -152,9 +198,9 @@ const CATALOGUE: Record<string, ToolSurface> = {
     },
   },
   domains_list: {
-    description: 'List all domains with their URLs, linked deployment, and verification status.',
+    description: `List all domains with their URLs, linked deployment, and verification status.${PAGING_NOTE}`,
     annotations: READ,
-    params: {},
+    params: PAGING_PARAMS,
   },
   domains_get: {
     description:
