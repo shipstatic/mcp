@@ -128,7 +128,7 @@ const CATALOGUE: Record<string, ToolSurface> = {
       labels: strArray('Labels to set. Replaces all existing labels. Pass empty array to clear.'),
     },
   },
-  deployments_remove: {
+  deployments_delete: {
     description:
       'Permanently delete a deployment and its files. You MUST confirm with the user before calling this tool, referencing the deployment.',
     annotations: DESTRUCTIVE,
@@ -210,7 +210,7 @@ const CATALOGUE: Record<string, ToolSurface> = {
       ),
     },
   },
-  domains_remove: {
+  domains_delete: {
     description:
       'Permanently delete a domain. You MUST confirm with the user before calling this tool, referencing the domain name.',
     annotations: DESTRUCTIVE,
@@ -348,7 +348,7 @@ describe('tool doctrine', () => {
   // rewrite that keeps the sentence but drops the rule is still caught.
 
   it('both destructive tools demand user confirmation, naming the resource', () => {
-    for (const name of ['deployments_remove', 'domains_remove'] as const) {
+    for (const name of ['deployments_delete', 'domains_delete'] as const) {
       expect(CATALOGUE[name].description, name).toContain('You MUST confirm with the user');
       expect(CATALOGUE[name].annotations.destructiveHint, name).toBe(true);
     }
@@ -437,9 +437,13 @@ describe('input validation', () => {
   });
 
   it('reports an unknown tool rather than failing silently', async () => {
-    const result = await harness.client.callTool({ name: 'deployments_delete', arguments: {} });
+    // The name must be one no tool can ever take. This read `deployments_delete`
+    // until the platform standardised its verb on `delete` — at which point the
+    // "obviously nonexistent" name became a real, registered tool and the test
+    // asserted a validation error instead of a lookup failure.
+    const result = await harness.client.callTool({ name: 'deployments_nonesuch', arguments: {} });
 
     expect(result.isError).toBe(true);
-    expect(textOf(result)).toContain('Tool deployments_delete not found');
+    expect(textOf(result)).toContain('Tool deployments_nonesuch not found');
   });
 });

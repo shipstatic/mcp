@@ -132,7 +132,7 @@ export function createServer(ship: Ship): McpServer {
   );
 
   server.registerTool(
-    'deployments_remove',
+    'deployments_delete',
     {
       description:
         'Permanently delete a deployment and its files. You MUST confirm with the user before calling this tool, referencing the deployment.',
@@ -143,7 +143,7 @@ export function createServer(ship: Ship): McpServer {
           .describe('Deployment hostname to delete (e.g. "happy-cat-abc1234.shipstatic.com")'),
       },
     },
-    ({ deployment }) => call(() => ship.deployments.remove(deployment)),
+    ({ deployment }) => call(() => ship.deployments.delete(deployment)),
   );
 
   // Domains
@@ -278,7 +278,7 @@ export function createServer(ship: Ship): McpServer {
   );
 
   server.registerTool(
-    'domains_remove',
+    'domains_delete',
     {
       description:
         'Permanently delete a domain. You MUST confirm with the user before calling this tool, referencing the domain name.',
@@ -287,7 +287,7 @@ export function createServer(ship: Ship): McpServer {
         domain: z.string().describe('Domain name to delete (e.g. "www.example.com")'),
       },
     },
-    ({ domain }) => call(() => ship.domains.remove(domain)),
+    ({ domain }) => call(() => ship.domains.delete(domain)),
   );
 
   // Debugging
