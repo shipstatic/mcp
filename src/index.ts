@@ -16,11 +16,28 @@
  * offer a Worker. Exporting them would make this package's API "stdio's
  * internals, plus some shared bits" instead of a contract.
  *
+ * Every name below answers a question the second transport must otherwise
+ * answer for itself, and each admission was a restatement deleted, not a
+ * convenience added: `SERVER_NAME` and `UPLOAD_TOOL_NAME` were literals in two
+ * repos (the first also correlates the Apps-SDK widget to the connector),
+ * `PUBLIC_EXPIRY` was the same duration written out eight times,
+ * `DESCRIPTION_BLOCKS` the fragments two tool descriptions genuinely share,
+ * and `ACCOUNT_TOOL_NAMES` is what lets the hosted catalogue fence name the
+ * fourteen without counting them again.
+ *
  * `tests/index.test.ts` fences both directions — nothing missing, nothing
  * extra — because adding an export is the quiet failure: everything published
  * becomes a breaking change to remove.
  */
 
 export { type CallFn, type CallOptions, createCall, type ErrorHints } from './call.js';
-export { registerAccountTools } from './tools.js';
-export { ANNOTATIONS, INSTRUCTION_BLOCKS, PARAM_DESCRIPTIONS } from './vocabulary.js';
+export { ACCOUNT_TOOL_NAMES, registerAccountTools } from './tools.js';
+export {
+  ANNOTATIONS,
+  DESCRIPTION_BLOCKS,
+  INSTRUCTION_BLOCKS,
+  PARAM_DESCRIPTIONS,
+  PUBLIC_EXPIRY,
+  SERVER_NAME,
+  UPLOAD_TOOL_NAME,
+} from './vocabulary.js';

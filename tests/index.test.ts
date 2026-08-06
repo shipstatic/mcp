@@ -23,15 +23,25 @@ import * as library from '../src/index.js';
  * values only; types erase.
  */
 const PUBLIC_API = [
-  // What an agent reads: annotations, the deploy-param descriptions, and the
-  // INSTRUCTIONS sentences both transports say.
+  // What an agent reads: annotations, the deploy-param descriptions, the
+  // INSTRUCTIONS sentences and the tool-description fragments both transports
+  // say, and the one duration all of them quote.
   'ANNOTATIONS',
   'PARAM_DESCRIPTIONS',
   'INSTRUCTION_BLOCKS',
+  'DESCRIPTION_BLOCKS',
+  'PUBLIC_EXPIRY',
+  // The two identifiers a transport cannot invent for itself: the name a host
+  // correlates the widget against, and the name of the tool each transport
+  // authors on its own.
+  'SERVER_NAME',
+  'UPLOAD_TOOL_NAME',
   // The fourteen account-tied tools, identical on every transport. Exported
   // so the hosted transport registers them rather than copying them when it
-  // gains OAuth — the copy is what would start the drift.
+  // gains OAuth — the copy is what would start the drift — and names them
+  // rather than counting them.
   'registerAccountTools',
+  'ACCOUNT_TOOL_NAMES',
   // The result envelope, so both transports answer in one shape. A consumer
   // configures its own hints; `call` (stdio's instance) stays internal.
   'createCall',

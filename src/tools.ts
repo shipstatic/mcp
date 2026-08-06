@@ -37,6 +37,42 @@ import { ANNOTATIONS } from './vocabulary.js';
 const { READ, WRITE, DESTRUCTIVE } = ANNOTATIONS;
 
 /**
+ * The fourteen, by name, in registration order.
+ *
+ * Exported so a second transport can state its expected catalogue as
+ * `[UPLOAD_TOOL_NAME, ...ACCOUNT_TOOL_NAMES]` instead of listing fifteen
+ * strings it would then have to keep in agreement with this file — the hosted
+ * parity fence is the consumer, and "fifteen" is otherwise a number two repos
+ * count separately.
+ *
+ * **Deliberately a list beside the registrations rather than a table they are
+ * generated from.** A `Record<name, factory>` would make the pairing
+ * structural, and it would cost the zod→handler inference every one of the
+ * fourteen one-liners below relies on: `({ deployment }) => …` is typed today
+ * from the `inputSchema` literal in the same call, and a loop over a
+ * heterogeneous table cannot correlate the two. The same guarantee costs
+ * nothing as a set comparison, and `tests/server.test.ts` makes it — through a
+ * real `tools/list`, so a registration without a name, a name without a
+ * registration, and a typo in either all turn it red.
+ */
+export const ACCOUNT_TOOL_NAMES = [
+  'deployments_list',
+  'deployments_get',
+  'deployments_set',
+  'deployments_delete',
+  'domains_set',
+  'domains_list',
+  'domains_get',
+  'domains_records',
+  'domains_dns',
+  'domains_share',
+  'domains_validate',
+  'domains_verify',
+  'domains_delete',
+  'whoami',
+] as const;
+
+/**
  * The pagination surface, shared by every list tool because it is one
  * contract, not two. A list answers `{<collection>, cursor}` and nothing
  * else — `cursor` carries the whole has-more signal and is null on the last

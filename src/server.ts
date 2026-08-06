@@ -1,10 +1,17 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type Ship from '@shipstatic/ship';
-import { IDEMPOTENCY_KEY_CONSTRAINTS } from '@shipstatic/ship';
 import { z } from 'zod';
 import { call } from './call.js';
 import { registerAccountTools } from './tools.js';
-import { ANNOTATIONS, INSTRUCTION_BLOCKS, PARAM_DESCRIPTIONS } from './vocabulary.js';
+import {
+  ANNOTATIONS,
+  DESCRIPTION_BLOCKS,
+  INSTRUCTION_BLOCKS,
+  PARAM_DESCRIPTIONS,
+  PUBLIC_EXPIRY,
+  SERVER_NAME,
+  UPLOAD_TOOL_NAME,
+} from './vocabulary.js';
 
 // Destructured so the fifteen registrations below read as they always have.
 // The definitions live in `vocabulary.ts` because the hosted transport speaks
@@ -12,6 +19,7 @@ import { ANNOTATIONS, INSTRUCTION_BLOCKS, PARAM_DESCRIPTIONS } from './vocabular
 const { CREATE } = ANNOTATIONS;
 
 const B = INSTRUCTION_BLOCKS;
+const D = DESCRIPTION_BLOCKS;
 
 // Composed from the shared blocks plus the two sentences that are genuinely
 // stdio's: how files arrive (a filesystem path) and how a caller
@@ -21,7 +29,7 @@ const INSTRUCTIONS = `${B.opening}
 
 To deploy: call deployments_upload with the build output directory path. ${B.liveAndPassword}
 
-Without SHIP_TOKEN, deployments are public and expire in 3 days. ${B.claim}
+Without SHIP_TOKEN, deployments are public and expire in ${PUBLIC_EXPIRY}. ${B.claim}
 
 With SHIP_TOKEN configured, deployments go to the user's account and never expire. Listing, managing, and domain operations also require SHIP_TOKEN.
 
@@ -42,7 +50,7 @@ ${B.domainWorkflow}`;
 export function createServer(ship: Ship, version: string): McpServer {
   const server = new McpServer(
     {
-      name: 'shipstatic',
+      name: SERVER_NAME,
       version,
     },
     {
@@ -53,10 +61,9 @@ export function createServer(ship: Ship, version: string): McpServer {
   // Deployments
 
   server.registerTool(
-    'deployments_upload',
+    UPLOAD_TOOL_NAME,
     {
-      description:
-        'Deploy a static site instantly — free, no account or API key required. Returns the live URL, file count, and size. Without SHIP_TOKEN, the response includes a claim URL (site expires in 3 days) — always show both the deployment URL and claim URL to the user. To make the site private, pass `password`; always show the password to the user if you set one.',
+      description: `Deploy a static site instantly — ${D.free}. Returns the live URL, file count, and size. Without SHIP_TOKEN, the response includes a claim URL (site expires in ${PUBLIC_EXPIRY}) — always show both the deployment URL and claim URL to the user. ${D.password}`,
       annotations: CREATE,
       inputSchema: {
         path: z
@@ -66,12 +73,7 @@ export function createServer(ship: Ship, version: string): McpServer {
           ),
         labels: z.array(z.string()).optional().describe(PARAM_DESCRIPTIONS.labels),
         password: z.string().optional().describe(PARAM_DESCRIPTIONS.password),
-        idempotencyKey: z
-          .string()
-          .optional()
-          .describe(
-            `Makes this deploy replayable instead of repeatable. A deploy is not naturally idempotent: if a call times out you cannot tell "it never landed" from "it landed and the response was lost", and retrying creates a second deployment. Send the same key on the retry and the original deployment is replayed instead (within ${IDEMPOTENCY_KEY_CONSTRAINTS.WINDOW_SECONDS / 3600} hours). Key the ATTEMPT — a run id, a commit sha, a uuid minted before the first try — never one minted fresh on each retry, which would defeat the point.`,
-          ),
+        idempotencyKey: z.string().optional().describe(PARAM_DESCRIPTIONS.idempotencyKey),
       },
     },
     ({ path, labels, password, idempotencyKey }) =>
