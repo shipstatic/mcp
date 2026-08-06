@@ -21,12 +21,24 @@
  * would actually observe.
  */
 
+import { createRequire } from 'node:module';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import type Ship from '@shipstatic/ship';
 import { createServer } from '../src/server.js';
 import { createShipFake, type ShipFake } from './mocks/ship.js';
+
+/**
+ * The version the harness reports, read from the manifest exactly as the
+ * executable does. `createServer` takes it as an argument now (a library must
+ * not assume it has a package.json), so the suite supplies what `bin.ts`
+ * would — which keeps `server.test.ts`'s `serverInfo.version` assertion a
+ * statement about the published artifact rather than about a test constant.
+ */
+export const { version: PACKAGE_VERSION } = createRequire(import.meta.url)('../package.json') as {
+  version: string;
+};
 
 export interface Harness {
   /** A real MCP client, connected. Drive the server only through this. */
@@ -40,7 +52,7 @@ export async function connect(ship: ShipFake = createShipFake()): Promise<Harnes
   // `ShipSurface` proves the fake covers everything `createServer` consumes;
   // the cast past `Ship` itself is unavoidable and inert — a class type also
   // carries private and protected members no structural value can supply.
-  const server = createServer(ship as unknown as Ship);
+  const server = createServer(ship as unknown as Ship, PACKAGE_VERSION);
   const client = new Client({ name: 'mcp-test-client', version: '0.0.0' });
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
 

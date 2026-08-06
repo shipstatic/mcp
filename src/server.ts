@@ -1,45 +1,14 @@
-import { createRequire } from 'node:module';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type Ship from '@shipstatic/ship';
-import {
-  IDEMPOTENCY_KEY_CONSTRAINTS,
-  LABEL_CONSTRAINTS,
-  PASSWORD_CONSTRAINTS,
-} from '@shipstatic/ship';
+import { IDEMPOTENCY_KEY_CONSTRAINTS } from '@shipstatic/ship';
 import { z } from 'zod';
 import { call } from './call.js';
+import { ANNOTATIONS, PARAM_DESCRIPTIONS } from './vocabulary.js';
 
-const { version } = createRequire(import.meta.url)('../package.json') as { version: string };
-
-const OPEN_WORLD = { openWorldHint: true } as const;
-const READ = {
-  readOnlyHint: true,
-  destructiveHint: false,
-  idempotentHint: true,
-  ...OPEN_WORLD,
-} as const;
-/**
- * Deploys carry no `idempotentHint`, and that stays true now that
- * `idempotencyKey` exists. The annotation is a STATIC per-tool claim; the
- * property it would assert is per-CALL — true only when the caller supplies a
- * key, false for the keyless caller, who is the common one. Advertising it
- * would tell every agent that any retry is free, which is exactly wrong for
- * the majority. An annotation an agent trusts wrongly is worse than one it
- * never reads.
- */
-const CREATE = { readOnlyHint: false, destructiveHint: false, ...OPEN_WORLD } as const;
-const WRITE = {
-  readOnlyHint: false,
-  destructiveHint: false,
-  idempotentHint: true,
-  ...OPEN_WORLD,
-} as const;
-const DESTRUCTIVE = {
-  readOnlyHint: false,
-  destructiveHint: true,
-  idempotentHint: true,
-  ...OPEN_WORLD,
-} as const;
+// Destructured so the fifteen registrations below read as they always have.
+// The definitions live in `vocabulary.ts` because the hosted transport speaks
+// the same ones — that file records what is shared, what is not, and why.
+const { READ, CREATE, WRITE, DESTRUCTIVE } = ANNOTATIONS;
 
 /**
  * The pagination surface, shared by every list tool because it is one
@@ -85,7 +54,15 @@ Concepts:
 
 To add a custom domain: domains_validate → domains_set → domains_records (show DNS records to user) → user configures DNS → domains_verify.`;
 
-export function createServer(ship: Ship): McpServer {
+/**
+ * Builds the stdio server's full 15-tool surface over an injected client.
+ *
+ * `version` is a parameter rather than something this module reads for itself:
+ * the executable knows its own package manifest, a library must not assume it
+ * has one, and reaching for `node:module` here would put a Node builtin in the
+ * import graph of a module the Workers-hosted transport also loads.
+ */
+export function createServer(ship: Ship, version: string): McpServer {
   const server = new McpServer(
     {
       name: 'shipstatic',
@@ -110,18 +87,8 @@ export function createServer(ship: Ship): McpServer {
           .describe(
             'Absolute path to the build output directory to deploy (e.g. "/Users/me/project/dist")',
           ),
-        labels: z
-          .array(z.string())
-          .optional()
-          .describe(
-            `Labels for organizing deployments (e.g. ["production", "v1.2"]). Lowercase, ${LABEL_CONSTRAINTS.MIN_LENGTH}-${LABEL_CONSTRAINTS.MAX_LENGTH} chars, allows . _ - separators. Up to ${LABEL_CONSTRAINTS.MAX_COUNT}.`,
-          ),
-        password: z
-          .string()
-          .optional()
-          .describe(
-            `Optional password to gate the deployment behind an unlock prompt (${PASSWORD_CONSTRAINTS.MIN_LENGTH}–${PASSWORD_CONSTRAINTS.MAX_LENGTH} characters; whitespace significant). Visitors must enter this password before viewing the site, including on any custom domains pointing at it.`,
-          ),
+        labels: z.array(z.string()).optional().describe(PARAM_DESCRIPTIONS.labels),
+        password: z.string().optional().describe(PARAM_DESCRIPTIONS.password),
         idempotencyKey: z
           .string()
           .optional()

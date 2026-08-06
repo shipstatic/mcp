@@ -1,24 +1,21 @@
-#!/usr/bin/env node
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import Ship from '@shipstatic/ship';
-import { createServer } from './server.js';
+/**
+ * The library entry — importing this file has NO side effects.
+ *
+ * That is the whole point of it: `bin.ts` is the executable, and this is what
+ * a consumer imports. Today there is exactly one such consumer, the hosted
+ * Streamable-HTTP transport in the platform's private `cloudflare/mcp`, which
+ * takes the vocabulary below rather than re-authoring the strings an agent
+ * reads. "One product, two transports" is only true if one of them can import
+ * the other.
+ *
+ * **The surface is curated, not swept.** Every export here is a deliberate
+ * public commitment under semver; the modules behind it hold plenty that is
+ * not (`toErrorResult`, `safeStringify`, the INSTRUCTIONS template, every tool
+ * registration). `export *` would publish implementation detail and make the
+ * next refactor a breaking change. `tests/index.test.ts` fences both
+ * directions — nothing missing, nothing extra.
+ */
 
-async function main() {
-  // SHIP_TOKEN is optional — without it, deployments are public (3-day expiry).
-  // The SDK coerces empty strings to undefined, so we can pass through directly.
-  //
-  // One credential slot, any platform token: the value's prefix says what it
-  // is (`ship-` API key, `deploy-` deploy token, anything else an opaque
-  // bearer) and the server classifies it. MCP never has to know which kind it
-  // holds.
-  const ship = new Ship({ token: process.env.SHIP_TOKEN });
-  const server = createServer(ship);
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
-  console.error('ShipStatic MCP Server running on stdio');
-}
-
-main().catch((error) => {
-  console.error('Fatal error:', error);
-  process.exit(1);
-});
+export { type CallOptions, call, createCall, type ErrorHints } from './call.js';
+export { createServer } from './server.js';
+export { ANNOTATIONS, PARAM_DESCRIPTIONS } from './vocabulary.js';
