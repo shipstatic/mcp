@@ -60,6 +60,34 @@ export const ANNOTATIONS = {
  * without anyone editing prose — the same reason the API and the SDK import
  * them instead of restating them.
  */
+/**
+ * INSTRUCTIONS sentences both transports say.
+ *
+ * `initialize`'s instructions are the other half of what an agent reads
+ * before acting (the catalogue is the first). Each transport composes its own
+ * from these blocks plus the two things that are genuinely its own: how files
+ * arrive, and how a caller authenticates.
+ *
+ * Three of these are duplicated prose TODAY, kept equal by review. The last
+ * two are stdio-only only because the hosted transport has no domain tools
+ * yet — when it gains them with OAuth they become shared too, which is
+ * precisely when someone would otherwise copy them across.
+ */
+export const INSTRUCTION_BLOCKS = {
+  opening: 'ShipStatic deploys static websites instantly. Free, no account required.',
+  liveAndPassword:
+    'The site is live immediately. To make the site private, pass `password` — visitors must unlock before viewing, including on any custom domains pointing at it.',
+  claim:
+    'The response includes a claim URL — always show the deployment URL and the claim URL to the user so they can keep the site permanently.',
+  conceptsHeader: 'Concepts:',
+  deploymentConcept:
+    '- Deployment: an immutable set of files with an instant URL (e.g. happy-cat-abc1234.shipstatic.com). No setup needed.',
+  domainConcept:
+    '- Domain: a custom domain (e.g. www.example.com) pointing to a deployment. Optional. Subdomains only — not apex domains.',
+  domainWorkflow:
+    'To add a custom domain: domains_validate → domains_set → domains_records (show DNS records to user) → user configures DNS → domains_verify.',
+} as const;
+
 export const PARAM_DESCRIPTIONS = {
   labels: `Labels for organizing deployments (e.g. ["production", "v1.2"]). Lowercase, ${LABEL_CONSTRAINTS.MIN_LENGTH}-${LABEL_CONSTRAINTS.MAX_LENGTH} chars, allows . _ - separators. Up to ${LABEL_CONSTRAINTS.MAX_COUNT}.`,
   password: `Optional password to gate the deployment behind an unlock prompt (${PASSWORD_CONSTRAINTS.MIN_LENGTH}–${PASSWORD_CONSTRAINTS.MAX_LENGTH} characters; whitespace significant). Visitors must enter this password before viewing the site, including on any custom domains pointing at it.`,
