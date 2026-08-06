@@ -16,6 +16,7 @@
  * directions — nothing missing, nothing extra.
  */
 
-export { type CallOptions, call, createCall, type ErrorHints } from './call.js';
+export { type CallFn, type CallOptions, call, createCall, type ErrorHints } from './call.js';
 export { createServer } from './server.js';
+export { registerAccountTools } from './tools.js';
 export { ANNOTATIONS, PARAM_DESCRIPTIONS } from './vocabulary.js';
