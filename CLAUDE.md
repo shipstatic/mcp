@@ -30,10 +30,34 @@ Keep the public surface coherent: one ShipStatic MCP, two doors in.
 
 ```
 src/
-├── index.ts     # Entry: env validation, Ship construction, stdio transport
-├── server.ts    # createServer(ship) — pure factory, all 15 tools
-└── call.ts      # call() wrapper + error mapping
+├── bin.ts        # THE EXECUTABLE (dist/bin.js) — env read, Ship construction, stdio transport
+├── index.ts      # The LIBRARY entry — curated exports, no side effects
+├── server.ts     # createServer(ship, version) — pure factory, all 15 tools
+├── call.ts       # createCall() — the result envelope + error mapping, parameterised by hints
+└── vocabulary.ts # What BOTH transports say: annotations + shared param descriptions
 ```
+
+**`bin.ts` is the executable; `index.ts` is a library.** Importing the package
+has no side effects, which is what lets the hosted transport
+(`cloudflare/mcp`, private) import this package's vocabulary rather than
+re-authoring the strings an agent reads.
+
+Until 1.0.0-beta.2 they were one file — `main` and `bin` in `package.json`
+both pointed at `index.ts`, so importing the package started a stdio server
+and could `process.exit` in its consumer. Nothing could be shared because
+there was nothing importable to share, and the two servers kept ten
+user-visible strings equal by hand instead. They did not stay equal: a tool
+description diverged unnoticed, a one-word correction had to be applied at
+three sites, and the hosted test mock invented constraint numbers production
+never used. `npm/ship` had already untied the same knot the same way (see its
+CLAUDE.md, "`bin.ts` is the executable; `index.ts` is a library") — a module
+boundary says the same thing to every caller.
+
+**What is shared, and what is deliberately not**, lives in `vocabulary.ts`'s
+header and in `cloudflare/mcp/CLAUDE.md`'s divergence table. The short form:
+annotations and the deploy-param descriptions are imported by both; the
+file-input schema, the tool descriptions, and everything Apps-SDK are forced
+apart by the transport and stay separate.
 
 ## Quick Reference
 
@@ -98,7 +122,9 @@ it is the transport that already has `structuredContent` — see
 
 ### Dependency Injection
 
-`index.ts` owns the process: reads `SHIP_TOKEN` from the environment, constructs `new Ship({ token })`, passes it to `createServer(ship)`. The factory never touches `process.env` or constructs its own dependencies. Tests pass a fake directly, and `tests/index.test.ts` fences the split — `server.ts` and `call.ts` must contain no `process.env` read at all.
+`bin.ts` owns the process: reads `SHIP_TOKEN` from the environment, constructs `new Ship({ token })`, passes it to `createServer(ship, version)`. The factory never touches `process.env` or constructs its own dependencies. Tests pass a fake directly, and `tests/bin.test.ts` fences the split — `server.ts`, `call.ts`, `vocabulary.ts` and `index.ts` must contain no `process.env` read at all.
+
+The **version** is an argument for the same reason: the executable knows its own manifest, a library must not assume it has one, and reading it inside `server.ts` would put `node:module` — a Node builtin — in the import graph of a module the Workers-hosted transport also loads.
 
 ### Credential Isolation
 
@@ -131,7 +157,9 @@ tests/
 ├── harness.ts                   # real Client ↔ real server, InMemoryTransport
 ├── setup.ts                     # SHIP_* scrub + no-network guard
 ├── call.test.ts                 # call() → CallToolResult, every error arm
-├── index.test.ts                # the process boundary + credential isolation
+├── bin.test.ts                  # the process boundary + credential isolation
+├── index.test.ts                # the PUBLIC SURFACE — curated exports, both directions
+├── vocabulary.test.ts           # the shared values: numbers stay derived, CREATE withholds its hint
 ├── server.test.ts               # the tool CATALOGUE (tools/list, instructions)
 └── server-calls.test.ts         # tool CALLS (wiring, payloads, claim, errors)
 ```

@@ -1,215 +1,100 @@
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import * as library from '../src/index.js';
 
 /**
- * @file The process boundary — `src/index.ts`.
+ * @file The PUBLIC SURFACE — `src/index.ts`.
  *
- * This file had NO coverage before 2026-07-27, which meant the entire
- * credential-isolation doctrine was untested: the one line that decides which
- * identity every deployment lands under had nothing asserting it.
+ * This package is consumed two ways, and they have opposite requirements. As
+ * an executable (`npx @shipstatic/mcp`) nothing here matters. As a library it
+ * is a semver commitment: the hosted transport imports the vocabulary below
+ * so that the strings an agent reads exist once rather than twice.
  *
- * The doctrine (`integrations/mcp/CLAUDE.md`, "Credential Isolation" and
- * "Dependency Injection") is a division of labour:
- *
- *   - `index.ts` owns the process. It reads the environment ONCE, forwards
- *     what it finds to the `Ship` constructor, and connects stdio.
- *   - `server.ts` and `call.ts` own no process state. They receive a
- *     constructed client and never reach for a credential themselves.
- *
- * That split is what makes an embedded MCP server predictable: the host's
- * environment cannot leak a credential in through a side door, because there
- * is exactly one door and it is in this file.
- *
- * **Recorded module mocks.** `index.ts` calls `main()` at module scope and
- * owns real stdio — it cannot be driven any other way, so two collaborators
- * are replaced: the `Ship` constructor (to observe what it receives) and
- * `StdioServerTransport` (which would otherwise bind this process's stdin and
- * write JSON-RPC frames into the test runner's stdout). The stdio stand-in is
- * the SDK's own `InMemoryTransport`, not a hand-rolled fake, so the server
- * still performs a real connect.
+ * The fence runs BOTH directions on purpose. Missing an export breaks the
+ * consumer at build time, which is loud and cheap. Adding one is the quiet
+ * failure: `export *` would publish `toErrorResult`, `safeStringify`, the
+ * INSTRUCTIONS template and every internal, and each of those would then be a
+ * breaking change to delete. A package with one known consumer is exactly when
+ * that is easy to get wrong and free to fix.
  */
 
-const mocks = vi.hoisted(() => ({
-  shipConstructed: vi.fn<(options: unknown) => void>(),
-  stdioConstructed: vi.fn<() => void>(),
-  /** Set by a test to make construction fail, exercising the fatal path. */
-  constructorError: null as Error | null,
-}));
+/** Every name `src/index.ts` is meant to expose. Runtime values only — types erase. */
+const PUBLIC_API = [
+  // The server factory: the whole 15-tool surface over an injected client.
+  'createServer',
+  // The result wrapper. `call` is stdio's configured instance; `createCall`
+  // is what the hosted transport builds its own from, so the success envelope,
+  // the `'Done.'` sentinel and the error-arm order are one implementation.
+  'call',
+  'createCall',
+  // The shared agent-facing vocabulary.
+  'ANNOTATIONS',
+  'PARAM_DESCRIPTIONS',
+] as const;
 
-vi.mock('@shipstatic/ship', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@shipstatic/ship')>();
-  class MockShip {
-    constructor(options: unknown) {
-      mocks.shipConstructed(options);
-      if (mocks.constructorError) throw mocks.constructorError;
-    }
-  }
-  // Everything else stays real — `server.ts` imports LABEL_CONSTRAINTS and
-  // PASSWORD_CONSTRAINTS from here, and stubbing those would silently change
-  // the tool descriptions this suite pins elsewhere.
-  return { ...actual, default: MockShip, Ship: MockShip };
-});
-
-vi.mock('@modelcontextprotocol/sdk/server/stdio.js', async () => {
-  const { InMemoryTransport } = await import('@modelcontextprotocol/sdk/inMemory.js');
-  return {
-    StdioServerTransport: class extends InMemoryTransport {
-      constructor() {
-        super();
-        mocks.stdioConstructed();
-      }
-    },
-  };
-});
-
-/** Re-executes `src/index.ts` from scratch and waits for `main()` to settle. */
-async function boot(): Promise<void> {
-  vi.resetModules();
-  await import('../src/index.js');
-  await vi.waitFor(() =>
-    expect(
-      mocks.stdioConstructed.mock.calls.length + (mocks.constructorError ? 1 : 0),
-    ).toBeGreaterThan(0),
-  );
-}
-
-/** The options object handed to `new Ship(...)` on the most recent boot. */
-const constructedWith = () => mocks.shipConstructed.mock.calls.at(-1)?.[0];
-
-describe('credential isolation', () => {
-  beforeEach(() => {
-    mocks.constructorError = null;
-    // `tests/setup.ts` has already scrubbed every SHIP_* variable, so each
-    // test starts from a genuinely unconfigured host.
-    vi.spyOn(console, 'error').mockImplementation(() => {});
+describe('public surface', () => {
+  it('exports exactly the curated API — nothing missing, nothing extra', () => {
+    expect(Object.keys(library).sort()).toEqual([...PUBLIC_API].sort());
   });
 
-  afterEach(() => {
-    delete process.env.SHIP_TOKEN;
+  it('importing the library has no side effects', () => {
+    // The reason this file can exist at all. Before the bin/library split,
+    // `main` and `bin` were the same module: importing the package started a
+    // stdio server and could `process.exit` in its consumer. If that ever
+    // returns, this suite hangs or dies rather than failing politely — so the
+    // assertion is simply that we got here, having imported at module scope.
+    expect(typeof library.createServer).toBe('function');
   });
 
-  it('forwards a configured SHIP_TOKEN to the Ship constructor', async () => {
-    const token = `ship-${'a'.repeat(64)}`;
-    process.env.SHIP_TOKEN = token;
+  it('createCall builds an independent wrapper, so a consumer configures its own hints', async () => {
+    // The hosted transport's whole use of this package: same envelope, its own
+    // hints. Proving it here means the shared implementation is genuinely
+    // parameterised rather than stdio's behaviour with a seam drawn around it.
+    const custom = library.createCall({
+      hints: { authentication: 'AUTH-HINT', forbidden: 'FORBIDDEN-HINT' },
+    });
 
-    await boot();
+    const result = await custom(async () => ({ ok: true }));
 
-    expect(constructedWith()).toEqual({ token });
+    expect(result.content).toEqual([{ type: 'text', text: JSON.stringify({ ok: true }, null, 2) }]);
+    // No structuredContent unless the consumer asks for it — stdio does not.
+    expect(result).not.toHaveProperty('structuredContent');
   });
 
-  it.each([
-    ['an API key', `ship-${'a'.repeat(64)}`],
-    ['a deploy token', `deploy-${'b'.repeat(64)}`],
-    ['an opaque bearer', 'ya29.a0AfH6SMBexample-oauth-access-token'],
-  ])('forwards %s unchanged — MCP never classifies the credential', async (_kind, token) => {
-    // One slot, any platform token. The value's PREFIX says what it is and the
-    // server classifies it; a client that tried to route by kind would have to
-    // be redeployed every time the platform learned a new one.
-    process.env.SHIP_TOKEN = token;
+  describe('structuredContent, the configuration only the hosted transport uses', () => {
+    // Exercised HERE rather than left to the consumer's own suite: it is this
+    // package's published behaviour, in another repo's build. A branch whose
+    // only proof lives downstream is a branch that breaks downstream.
+    const hosted = library.createCall({
+      hints: { authentication: 'a', forbidden: 'f' },
+      structuredContent: true,
+    });
 
-    await boot();
+    it('attaches a plain object beside the text, for a host that renders it', async () => {
+      const wire = { deployment: 'happy-cat-abc1234.shipstatic.com', files: 1 };
 
-    expect(constructedWith()).toEqual({ token });
-  });
+      const result = await hosted(async () => wire);
 
-  it('constructs an anonymous client when no token is configured', async () => {
-    await boot();
+      expect(result.structuredContent).toEqual(wire);
+      // The text block is unchanged — a client that ignores structuredContent
+      // sees exactly what stdio's clients see.
+      expect(result.content).toEqual([{ type: 'text', text: JSON.stringify(wire, null, 2) }]);
+    });
 
-    // `{ token: undefined }`, not `{}` — the variable is read unconditionally
-    // and forwarded as whatever it is. Anonymous deploys are a first-class
-    // mode here, not an error path: they are the product's headline promise.
-    expect(constructedWith()).toEqual({ token: undefined });
-  });
+    it('withholds it for a non-object result, which no schema could describe', async () => {
+      // `structuredContent` is spec'd as an object. An array or a scalar would
+      // be a shape no `outputSchema` can validate, so it rides the text channel
+      // alone rather than being coerced into one.
+      const result = await hosted(async () => [1, 2, 3]);
 
-  it('forwards an empty SHIP_TOKEN verbatim rather than guessing', async () => {
-    // Empty is what shell expansion of an unset variable produces in CI and
-    // Docker. `index.ts` deliberately does not special-case it: the SDK
-    // coerces empty to absent (its own contract, proved in ship's suite), so
-    // a branch here would be a second, divergent opinion about credentials.
-    process.env.SHIP_TOKEN = '';
+      expect(result).not.toHaveProperty('structuredContent');
+      expect(result.content).toEqual([{ type: 'text', text: JSON.stringify([1, 2, 3], null, 2) }]);
+    });
 
-    await boot();
+    it('still answers the void sentinel, with nothing structured to carry', async () => {
+      const result = await hosted(async () => undefined);
 
-    expect(constructedWith()).toEqual({ token: '' });
-  });
-
-  it('passes no other option — the client gets a credential and nothing else', async () => {
-    process.env.SHIP_TOKEN = `ship-${'b'.repeat(64)}`;
-
-    await boot();
-
-    // Notably no `apiUrl`, and no `session`. An MCP server that let its host
-    // redirect the API would ship a user's files somewhere they did not
-    // choose; the SDK's own documented `SHIP_API_URL` fallback is the host's
-    // decision to make, not one MCP re-implements.
-    expect(Object.keys(constructedWith() as object)).toEqual(['token']);
-  });
-
-  it('reads the environment exactly once, at construction', async () => {
-    process.env.SHIP_TOKEN = `ship-${'c'.repeat(64)}`;
-
-    await boot();
-
-    expect(mocks.shipConstructed).toHaveBeenCalledTimes(1);
-  });
-
-  it('no module below the process boundary reaches for the environment', async () => {
-    // The other half of the dependency-injection doctrine. `createServer` is a
-    // pure factory over an injected client; if it — or `call()` — grew a
-    // `process.env` read, credentials would have two sources of truth and the
-    // tests above would stop describing the whole story.
-    const sourceOf = (file: string) =>
-      readFileSync(fileURLToPath(new URL(`../src/${file}`, import.meta.url)), 'utf8');
-
-    for (const file of ['server.ts', 'call.ts']) {
-      expect(sourceOf(file), file).not.toMatch(/process\.env/);
-    }
-
-    // …and the boundary itself does read it, so this fence cannot pass by
-    // the environment simply never being consulted anywhere.
-    expect(sourceOf('index.ts')).toMatch(/process\.env\.SHIP_TOKEN/);
-  });
-});
-
-describe('stdio startup', () => {
-  beforeEach(() => {
-    mocks.constructorError = null;
-  });
-
-  it('connects the server over a stdio transport', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {});
-
-    await boot();
-
-    expect(mocks.stdioConstructed).toHaveBeenCalledTimes(1);
-  });
-
-  it('announces readiness on stderr, never on stdout', async () => {
-    // Load-bearing for a stdio MCP server: stdout IS the JSON-RPC channel. A
-    // single `console.log` anywhere in the startup path emits a non-frame line
-    // into it and every client fails to parse the session.
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
-    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
-
-    await boot();
-
-    expect(error).toHaveBeenCalledWith('ShipStatic MCP Server running on stdio');
-    expect(log).not.toHaveBeenCalled();
-  });
-
-  it('reports a startup failure on stderr and exits non-zero', async () => {
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
-    const exit = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
-    mocks.constructorError = new Error('boom');
-
-    await boot();
-    await vi.waitFor(() => expect(exit).toHaveBeenCalled());
-
-    expect(error).toHaveBeenCalledWith('Fatal error:', mocks.constructorError);
-    expect(exit).toHaveBeenCalledWith(1);
-    // The banner must NOT appear — a server that failed to start must not
-    // claim it is running.
-    expect(error).not.toHaveBeenCalledWith('ShipStatic MCP Server running on stdio');
+      expect(result.content).toEqual([{ type: 'text', text: 'Done.' }]);
+      expect(result).not.toHaveProperty('structuredContent');
+    });
   });
 });
