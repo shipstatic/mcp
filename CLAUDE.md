@@ -132,16 +132,11 @@ up when you try:
 Two thin `main()` functions with different version sources and different
 process policies are not a restatement of a rule. They are two executables.
 
-Until 1.0.0-beta.2 they were one file — `main` and `bin` in `package.json`
-both pointed at `index.ts`, so importing the package started a stdio server
-and could `process.exit` in its consumer. Nothing could be shared because
-there was nothing importable to share, and the two servers kept ten
-user-visible strings equal by hand instead. They did not stay equal: a tool
-description diverged unnoticed, a one-word correction had to be applied at
-three sites, and the hosted test mock invented constraint numbers production
-never used. `npm/ship` had already untied the same knot the same way (see its
-CLAUDE.md, "`bin.ts` is the executable; `index.ts` is a library") — a module
-boundary says the same thing to every caller.
+Until 1.0.0-beta.2 they were one file — importing the package started a
+stdio server that could `process.exit` in its consumer, nothing was
+importable, and the two servers kept ten user-visible strings equal by hand
+(they did not stay equal). `npm/ship` untied the same knot the same way — a
+module boundary says the same thing to every caller.
 
 **What is shared, and what is deliberately not**, lives in `vocabulary.ts`'s
 header and in `cloudflare/mcp/CLAUDE.md`'s divergence table. The short form:
