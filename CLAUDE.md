@@ -74,6 +74,18 @@ has no side effects, which is what lets the hosted transport
 (`cloudflare/mcp`, private) import this package's vocabulary rather than
 re-authoring the strings an agent reads.
 
+That claim is stated three ways, and the third is the one bundlers can read:
+the docblocks say it, `tests/index.test.ts` proves it, and
+**`sideEffects: ["./dist/bin.js"]` in `package.json` declares it** — exactly
+one entry because exactly one module runs on import. Load-bearing for
+consumers that bundle: without the field, esbuild must assume every
+re-exported module might matter, so a host importing one vocabulary string
+drags the whole MCP SDK along (measured in the VS Code extension: +142KB on a
+bundle that never starts a server). The surface ledger pins the field
+verbatim, and a bare `false` is refused there by design — claiming inertness
+for `bin.js` too is one refactor away from a bundler dropping the
+executable's body.
+
 **Two consumers, not one — and the second one widened the export rule.** The
 VS Code extension (`integrations/vscode`) bundles a stdio server into its
 `.vsix`, so it wants stdio's composition verbatim. It used to get it by
