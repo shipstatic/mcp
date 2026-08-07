@@ -33,6 +33,13 @@ interface ParamSurface {
 }
 
 interface ToolSurface {
+  /**
+   * The human-readable label a client shows beside the tool. Pinned like the
+   * description because it is the same kind of fact — copy an agent's user
+   * reads — and load-bearing beyond taste: the Claude connectors directory
+   * refuses submission for a tool without one.
+   */
+  title: string;
   description: string;
   annotations: Record<string, boolean>;
   params: Record<string, ParamSurface>;
@@ -128,6 +135,7 @@ const PAGING_NOTE =
 const CATALOGUE: Record<string, ToolSurface> = {
   // ---------------------------------------------------------------- deployments
   deployments_upload: {
+    title: 'Deploy Static Site',
     description:
       'Deploy a static site instantly — free, no account or API key required. Returns the live URL, file count, and size. Without SHIP_TOKEN, the response includes a claim URL (site expires in 3 days) — always show both the deployment URL and claim URL to the user. To make the site private, pass `password`; always show the password to the user if you set one.',
     annotations: CREATE,
@@ -152,11 +160,13 @@ const CATALOGUE: Record<string, ToolSurface> = {
     },
   },
   deployments_list: {
+    title: 'List Deployments',
     description: `List all deployments with their URLs, status, labels, and password protection state.${PAGING_NOTE}`,
     annotations: READ,
     params: PAGING_PARAMS,
   },
   deployments_get: {
+    title: 'Get Deployment',
     description:
       'Get deployment details including URL, status, file count, size, labels, and password protection state.',
     annotations: READ,
@@ -167,6 +177,7 @@ const CATALOGUE: Record<string, ToolSurface> = {
     },
   },
   deployments_set: {
+    title: 'Update Deployment Labels',
     description: 'Update deployment labels. Replaces all existing labels.',
     annotations: WRITE,
     params: {
@@ -177,6 +188,7 @@ const CATALOGUE: Record<string, ToolSurface> = {
     },
   },
   deployments_delete: {
+    title: 'Delete Deployment',
     description:
       'Permanently delete a deployment and its files. You MUST confirm with the user before calling this tool, referencing the deployment.',
     annotations: DESTRUCTIVE,
@@ -187,6 +199,7 @@ const CATALOGUE: Record<string, ToolSurface> = {
 
   // -------------------------------------------------------------------- domains
   domains_set: {
+    title: 'Connect Custom Domain',
     description:
       'Create or update a custom domain. Can reserve a name (omit deployment), link it to a deployment, switch deployments, or update labels. After creating, call domains_records and show the DNS records to the user.',
     annotations: WRITE,
@@ -200,11 +213,13 @@ const CATALOGUE: Record<string, ToolSurface> = {
     },
   },
   domains_list: {
+    title: 'List Domains',
     description: `List all domains with their URLs, linked deployment, and verification status.${PAGING_NOTE}`,
     annotations: READ,
     params: PAGING_PARAMS,
   },
   domains_get: {
+    title: 'Get Domain',
     description:
       'Get domain details including URL, linked deployment, verification status, and labels.',
     annotations: READ,
@@ -213,6 +228,7 @@ const CATALOGUE: Record<string, ToolSurface> = {
     },
   },
   domains_records: {
+    title: 'Get DNS Records',
     description:
       'Get the DNS records the user needs to configure at their DNS provider. Call after domains_set. You MUST show the returned records to the user.',
     annotations: READ,
@@ -221,6 +237,7 @@ const CATALOGUE: Record<string, ToolSurface> = {
     },
   },
   domains_dns: {
+    title: 'Look Up DNS Provider',
     description:
       'Look up the DNS provider for a domain (e.g. Cloudflare, Namecheap). Helps the user know where to configure their DNS records.',
     annotations: READ,
@@ -229,6 +246,7 @@ const CATALOGUE: Record<string, ToolSurface> = {
     },
   },
   domains_share: {
+    title: 'Share DNS Setup',
     description:
       'Get a shareable DNS setup hash for a domain. The hash can be shared with the user so they can view the required DNS records without needing an API key.',
     annotations: READ,
@@ -239,6 +257,7 @@ const CATALOGUE: Record<string, ToolSurface> = {
     },
   },
   domains_validate: {
+    title: 'Check Domain Availability',
     description:
       'Check if a domain name is valid and available before creating it. Returns the normalized form and availability.',
     annotations: READ,
@@ -249,6 +268,7 @@ const CATALOGUE: Record<string, ToolSurface> = {
     },
   },
   domains_verify: {
+    title: 'Verify Domain DNS',
     description:
       'Trigger DNS verification for a custom domain. Call after the user has configured DNS records from domains_records. Verification is asynchronous — the domain status updates once DNS propagates.',
     annotations: WRITE,
@@ -259,6 +279,7 @@ const CATALOGUE: Record<string, ToolSurface> = {
     },
   },
   domains_delete: {
+    title: 'Delete Domain',
     description:
       'Permanently delete a domain. You MUST confirm with the user before calling this tool, referencing the domain name.',
     annotations: DESTRUCTIVE,
@@ -269,6 +290,7 @@ const CATALOGUE: Record<string, ToolSurface> = {
 
   // ------------------------------------------------------------------ debugging
   whoami: {
+    title: 'Show Account',
     description: 'Show authenticated account details including email, plan, and usage.',
     annotations: READ,
     params: {},
@@ -306,7 +328,17 @@ describe('tool catalogue', () => {
     );
   });
 
-  it('every tool matches its pinned surface — name, description, schema, annotations', () => {
+  it('every tool carries a title — the connectors directory refuses a submission without one', () => {
+    // The pinned surface below already holds each title byte-for-byte. This
+    // says the thing the pin cannot: that the rule applies to tools nobody has
+    // written yet. A new tool added without a title fails HERE with the reason
+    // in the test name, rather than in a portal review weeks later.
+    const untitled = listed.filter((tool) => !tool.title?.trim()).map((tool) => tool.name);
+
+    expect(untitled).toEqual([]);
+  });
+
+  it('every tool matches its pinned surface — name, title, description, schema, annotations', () => {
     // One assertion over the whole catalogue rather than 15 separate ones: a
     // rename, a dropped tool, and a reworded description all surface in the
     // same diff, and no tool can be added without appearing in it.
@@ -324,6 +356,7 @@ describe('tool catalogue', () => {
         return [
           tool.name,
           {
+            title: tool.title,
             description: tool.description,
             annotations: tool.annotations,
             params: Object.fromEntries(

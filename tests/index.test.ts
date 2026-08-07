@@ -31,11 +31,15 @@ const PUBLIC_API = [
   'INSTRUCTION_BLOCKS',
   'DESCRIPTION_BLOCKS',
   'PUBLIC_EXPIRY',
-  // The two identifiers a transport cannot invent for itself: the name a host
-  // correlates the widget against, and the name of the tool each transport
-  // authors on its own.
+  // The three identifiers a transport cannot invent for itself: the name a
+  // host correlates the widget against, and the name and human-readable title
+  // of the tool each transport authors on its own. The title is shared and the
+  // description is not, because a title names the OPERATION — identical on
+  // both doors — while the description addresses the caller, which is exactly
+  // what differs.
   'SERVER_NAME',
   'UPLOAD_TOOL_NAME',
+  'UPLOAD_TOOL_TITLE',
   // The fourteen account-tied tools, identical on every transport. Exported
   // so the hosted transport registers them rather than copying them when it
   // gains OAuth — the copy is what would start the drift — and names them

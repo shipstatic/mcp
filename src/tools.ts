@@ -26,6 +26,15 @@
  * on *this* transport (the hint is `createCall`'s one per-transport argument).
  * A tool list that changes shape under the caller would be a second, dynamic
  * contract for an agent to track, and MCP clients cache the catalogue.
+ *
+ * **Every tool carries a `title`, and it is a gate rather than a nicety.** The
+ * Claude connectors directory refuses submission for a tool that lacks one, so
+ * a titleless tool is not a shabby tool — it is an unlistable product. The
+ * style is short Title Case verb phrases naming what the USER gets ("List
+ * Deployments", "Connect Custom Domain"); the name obeys `resource_action` for
+ * the agent, the title reads as English for the human, and the description
+ * carries every precision neither can. Both catalogue pins assert a title on
+ * every tool, so the next one cannot be added without one.
  */
 
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -111,6 +120,7 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
   server.registerTool(
     'deployments_list',
     {
+      title: 'List Deployments',
       description: `List all deployments with their URLs, status, labels, and password protection state.${PAGING_NOTE}`,
       annotations: READ,
       inputSchema: PAGINATION_INPUT,
@@ -121,6 +131,7 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
   server.registerTool(
     'deployments_get',
     {
+      title: 'Get Deployment',
       description:
         'Get deployment details including URL, status, file count, size, labels, and password protection state.',
       annotations: READ,
@@ -138,6 +149,7 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
   server.registerTool(
     'deployments_set',
     {
+      title: 'Update Deployment Labels',
       description: 'Update deployment labels. Replaces all existing labels.',
       annotations: WRITE,
       inputSchema: {
@@ -157,6 +169,7 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
   server.registerTool(
     'deployments_delete',
     {
+      title: 'Delete Deployment',
       description:
         'Permanently delete a deployment and its files. You MUST confirm with the user before calling this tool, referencing the deployment.',
       annotations: DESTRUCTIVE,
@@ -174,6 +187,7 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
   server.registerTool(
     'domains_set',
     {
+      title: 'Connect Custom Domain',
       description:
         'Create or update a custom domain. Can reserve a name (omit deployment), link it to a deployment, switch deployments, or update labels. After creating, call domains_records and show the DNS records to the user.',
       annotations: WRITE,
@@ -198,6 +212,7 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
   server.registerTool(
     'domains_list',
     {
+      title: 'List Domains',
       description: `List all domains with their URLs, linked deployment, and verification status.${PAGING_NOTE}`,
       annotations: READ,
       inputSchema: PAGINATION_INPUT,
@@ -208,6 +223,7 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
   server.registerTool(
     'domains_get',
     {
+      title: 'Get Domain',
       description:
         'Get domain details including URL, linked deployment, verification status, and labels.',
       annotations: READ,
@@ -223,6 +239,7 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
   server.registerTool(
     'domains_records',
     {
+      title: 'Get DNS Records',
       description:
         'Get the DNS records the user needs to configure at their DNS provider. Call after domains_set. You MUST show the returned records to the user.',
       annotations: READ,
@@ -238,6 +255,7 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
   server.registerTool(
     'domains_dns',
     {
+      title: 'Look Up DNS Provider',
       description:
         'Look up the DNS provider for a domain (e.g. Cloudflare, Namecheap). Helps the user know where to configure their DNS records.',
       annotations: READ,
@@ -253,6 +271,7 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
   server.registerTool(
     'domains_share',
     {
+      title: 'Share DNS Setup',
       description:
         'Get a shareable DNS setup hash for a domain. The hash can be shared with the user so they can view the required DNS records without needing an API key.',
       annotations: READ,
@@ -270,6 +289,7 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
   server.registerTool(
     'domains_validate',
     {
+      title: 'Check Domain Availability',
       description:
         'Check if a domain name is valid and available before creating it. Returns the normalized form and availability.',
       annotations: READ,
@@ -287,6 +307,7 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
   server.registerTool(
     'domains_verify',
     {
+      title: 'Verify Domain DNS',
       description:
         'Trigger DNS verification for a custom domain. Call after the user has configured DNS records from domains_records. Verification is asynchronous — the domain status updates once DNS propagates.',
       annotations: WRITE,
@@ -304,6 +325,7 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
   server.registerTool(
     'domains_delete',
     {
+      title: 'Delete Domain',
       description:
         'Permanently delete a domain. You MUST confirm with the user before calling this tool, referencing the domain name.',
       annotations: DESTRUCTIVE,
@@ -319,6 +341,7 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
   server.registerTool(
     'whoami',
     {
+      title: 'Show Account',
       description: 'Show authenticated account details including email, plan, and usage.',
       annotations: READ,
     },
