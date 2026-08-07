@@ -15,6 +15,7 @@
 import { createRequire } from 'node:module';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import Ship from '@shipstatic/ship';
+import { SHIP_ENV } from '@shipstatic/types';
 import { createServer } from './server.js';
 
 // The executable knows its own manifest; the library it drives does not have
@@ -30,7 +31,7 @@ async function main() {
   // is (`ship-` API key, `deploy-` deploy token, anything else an opaque
   // bearer) and the server classifies it. MCP never has to know which kind it
   // holds.
-  const ship = new Ship({ token: process.env.SHIP_TOKEN });
+  const ship = new Ship({ token: process.env[SHIP_ENV.TOKEN] });
   // No `via` — this executable IS the `mcp` origin, which is the default.
   const server = createServer(ship, { version });
   const transport = new StdioServerTransport();

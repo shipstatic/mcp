@@ -167,8 +167,11 @@ describe('credential isolation', () => {
     }
 
     // …and the boundary itself does read it, so this fence cannot pass by
-    // the environment simply never being consulted anywhere.
-    expect(sourceOf('bin.ts')).toMatch(/process\.env\.SHIP_TOKEN/);
+    // the environment simply never being consulted anywhere. The key derives
+    // from `SHIP_ENV` (types 2.5.0-beta.21) — the SDK's own statement of its
+    // ambient pair — matching ship's `readEnvConfig` and the extension's
+    // `mcp-entry.ts`, so the pattern pins the derived read, not a literal.
+    expect(sourceOf('bin.ts')).toMatch(/process\.env\[SHIP_ENV\.TOKEN\]/);
   });
 });
 
