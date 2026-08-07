@@ -72,6 +72,27 @@ export const SERVER_NAME = 'shipstatic';
 export const UPLOAD_TOOL_NAME = 'deployments_upload';
 
 /**
+ * The upload tool's human-readable `title`, shared for the same reason the
+ * name is — and NOT for the reason the description is not.
+ *
+ * A title names the OPERATION, and the operation is identical on both doors:
+ * a user reading "Deploy Static Site" in a client's tool list learns nothing
+ * about how the bytes got there. The description is the opposite — hosted
+ * spends a paragraph telling an Apps-SDK caller not to base64-encode text, a
+ * hazard a filesystem path cannot have — which is why one is exported whole
+ * and the other only in fragments.
+ *
+ * The other fourteen titles live inline in `tools.ts`: one definition, both
+ * transports, nothing to keep in agreement. This one is authored per transport
+ * (upload is the tool each door writes for itself), so without an owner it
+ * would be two literals in two repos with nothing comparing them.
+ *
+ * Titles are not decoration here: the Claude connectors directory refuses
+ * submission for a tool that lacks one.
+ */
+export const UPLOAD_TOOL_TITLE = 'Deploy Static Site';
+
+/**
  * How long an anonymous deployment lives, in the words an agent reads.
  *
  * **Derived, since `@shipstatic/types@2.5.0-beta.19`.** It was a restatement

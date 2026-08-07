@@ -20,7 +20,9 @@
  * Every name below answers a question a consumer must otherwise answer for
  * itself, and each admission was a restatement deleted, not a convenience
  * added: `SERVER_NAME` and `UPLOAD_TOOL_NAME` were literals in two repos (the
- * first also correlates the Apps-SDK widget to the connector), `PUBLIC_EXPIRY`
+ * first also correlates the Apps-SDK widget to the connector; the third,
+ * `UPLOAD_TOOL_TITLE`, is the same shape — one operation, one English name for
+ * it, authored per transport only because upload itself is), `PUBLIC_EXPIRY`
  * was the same duration written out eight times, `DESCRIPTION_BLOCKS` the
  * fragments two tool descriptions genuinely share, `ACCOUNT_TOOL_NAMES` is
  * what lets the hosted catalogue fence name the fourteen without counting them
@@ -70,4 +72,5 @@ export {
   PUBLIC_EXPIRY,
   SERVER_NAME,
   UPLOAD_TOOL_NAME,
+  UPLOAD_TOOL_TITLE,
 } from './vocabulary.js';

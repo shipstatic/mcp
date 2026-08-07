@@ -149,7 +149,9 @@ transport and stay separate.
 **The export list is the drift ledger, and it only grows by deletion.** Every
 name in `index.ts` was a restatement somewhere before it was an export —
 `SERVER_NAME` was two literals in two repos that an Apps host compares to each
-other, `PUBLIC_EXPIRY` was the same duration written out eight times,
+other, `UPLOAD_TOOL_TITLE` was on its way to being the same pair (the hosted
+side had `'Deploy Static Site'` inline before this package had titles at all),
+`PUBLIC_EXPIRY` was the same duration written out eight times,
 `DESCRIPTION_BLOCKS` were fragments with three copies each (both servers plus a
 test literal that could only prove one of them matched itself), and
 `createServer` was three regexes patching this package's compiled output in the
@@ -401,7 +403,12 @@ shared file, not this server's:
    `ACCOUNT_TOOL_NAMES` — the comparison in `server.test.ts` fails until both
    exist, in either order.
 2. Handler is a one-liner: `(args) => call(() => ship.resource.action(args))`
-3. Pin the new tool in `server.test.ts`'s `CATALOGUE` and its SDK wiring in
+3. Give it a **`title`** — a short Title Case verb phrase naming what the user
+   gets ("List Deployments", "Connect Custom Domain"). Not optional and not
+   cosmetic: the Claude connectors directory refuses submission for a tool
+   without one, so a titleless tool makes the whole product unlistable. Both
+   catalogue pins fail on an untitled tool by name.
+4. Pin the new tool in `server.test.ts`'s `CATALOGUE` and its SDK wiring in
    `server-calls.test.ts`. Add the live assertion to `smoke.mjs` — the matrix
    is "all fifteen tools" precisely so a tool no run has ever invoked cannot
    exist.
