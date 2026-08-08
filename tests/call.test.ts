@@ -1,6 +1,6 @@
 import { ErrorType, ShipError } from '@shipstatic/types';
 import { describe, expect, it } from 'vitest';
-import { call } from '../src/call.js';
+import { type AuthFailure, call, createCall } from '../src/call.js';
 import { textOf } from './harness.js';
 
 /**
@@ -175,6 +175,119 @@ describe('ShipError mapping', () => {
       error: ErrorType.Authentication,
       status: 401,
     });
+  });
+});
+
+describe('onAuthFailure — the credential-refusal seam', () => {
+  /**
+   * A `call` that records refusals instead of only rendering them. An HTTP
+   * transport needs this because a client learns it must authenticate from a
+   * real `401`, and ignores a `WWW-Authenticate` header on a `200` — so
+   * "please authenticate" as tool TEXT is a dead end there.
+   *
+   * The hints are stdio's own; what is under test is which arms report, and
+   * that the reporting changes nothing the agent receives.
+   */
+  function recording() {
+    const failures: AuthFailure[] = [];
+    const recordingCall = createCall({
+      hints: { authentication: 'auth hint', forbidden: 'forbidden hint' },
+      onAuthFailure: (failure) => failures.push(failure),
+    });
+    return { failures, call: recordingCall };
+  }
+
+  const reject = (error: unknown) => () => Promise.reject(error);
+
+  it('reports an authentication refusal, naming no scope', async () => {
+    // Absent, malformed, unknown or expired — the transport cannot tell which
+    // and does not need to: all four mean "no usable credential".
+    const { failures, call: c } = recording();
+
+    await c(reject(ShipError.authentication('Authentication required')));
+
+    expect(failures).toEqual([{}]);
+  });
+
+  it('reports a scope refusal, naming the scope the API named', async () => {
+    // The scope is what lets a client drive re-consent rather than report a
+    // dead end, so it is carried through verbatim from `details`.
+    const { failures, call: c } = recording();
+
+    await c(
+      reject(
+        new ShipError(ErrorType.Forbidden, 'The connected app was not granted access', 403, {
+          requiredScope: 'domains:write',
+        }),
+      ),
+    );
+
+    expect(failures).toEqual([{ requiredScope: 'domains:write' }]);
+  });
+
+  it('stays SILENT on a forbidden refusal that no scope could fix', async () => {
+    // The load-bearing half. Plan limits, a terminated account, and the
+    // actions the ceiling refuses outright all land on the Forbidden arm.
+    // Reporting them would turn an honest answer into an authentication
+    // challenge, and send the caller round a consent flow that changes
+    // nothing — on the one door whose anonymous half must never regress.
+    const { failures, call: c } = recording();
+
+    await c(reject(ShipError.forbidden('Plan limits reached')));
+    await c(reject(ShipError.forbidden('This action is not available to connected apps')));
+
+    expect(failures).toEqual([]);
+  });
+
+  it.each(Object.values(ErrorType).filter((t) => t !== ErrorType.Authentication))(
+    'stays silent on a %s error',
+    async (type) => {
+      // Swept over the type domain rather than spot-checked: the question is
+      // not "does it fire for the arms I thought of" but "does it fire for
+      // anything else at all". A scope-less Forbidden is included here.
+      const { failures, call: c } = recording();
+
+      await c(reject(new ShipError(type, 'Upstream said no')));
+
+      expect(failures).toEqual([]);
+    },
+  );
+
+  it.each([
+    ['a non-string scope', { requiredScope: 42 }],
+    ['an empty scope', { requiredScope: '' }],
+    ['unrelated details', { limit: 'free' }],
+    ['no details at all', undefined],
+  ])('treats forbidden with %s as an ordinary refusal', async (_case, details) => {
+    // `details` is `unknown` on the wire by design, so the read narrows
+    // rather than casts — and anything that is not a usable scope name means
+    // no scope was named.
+    const { failures, call: c } = recording();
+
+    await c(reject(new ShipError(ErrorType.Forbidden, 'No', 403, details)));
+
+    expect(failures).toEqual([]);
+  });
+
+  it('changes nothing the agent receives', async () => {
+    // A notification, not a substitution: the text envelope and its hint are
+    // the contract, and observing a refusal must not quietly alter them.
+    const { call: c } = recording();
+
+    const observed = await c(reject(ShipError.authentication('Authentication required')));
+    const plain = await call(reject(ShipError.authentication('Authentication required')));
+
+    expect(observed.isError).toBe(true);
+    expect(observed.structuredContent).toEqual(plain.structuredContent);
+    expect(textOf(observed)).toContain('Authentication required');
+    expect(textOf(observed)).toContain('Hint: auth hint');
+  });
+
+  it('is optional — a call without it behaves exactly as before', async () => {
+    const result = await call(reject(ShipError.authentication('Authentication required')));
+
+    expect(result.isError).toBe(true);
+    expect(textOf(result)).toContain('SHIP_TOKEN');
   });
 });
 
