@@ -61,7 +61,13 @@
  * becomes a breaking change to remove.
  */
 
-export { type CallFn, type CallOptions, createCall, type ErrorHints } from './call.js';
+export {
+  type AuthFailure,
+  type CallFn,
+  type CallOptions,
+  createCall,
+  type ErrorHints,
+} from './call.js';
 export { createServer } from './server.js';
 export { ACCOUNT_TOOL_NAMES, registerAccountTools } from './tools.js';
 export {

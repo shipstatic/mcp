@@ -41,6 +41,58 @@ export interface CallOptions {
    * failure has exactly one published shape, and no schema to keep in step.
    */
   structuredContent?: boolean;
+
+  /**
+   * Called when the API refuses on CREDENTIAL grounds — and only then.
+   *
+   * An HTTP transport has an obligation stdio does not: a client learns it
+   * must authenticate from a real `401` with a `WWW-Authenticate` header, and
+   * ignores that header entirely on a `200`. So a tool error saying "please
+   * authenticate" is, on that transport, a dead end — the caller is told
+   * something it has no way to act on.
+   *
+   * This is the seam that lets the transport answer properly, and the
+   * decision of WHAT counts as a credential failure stays here, beside the
+   * hints, rather than being made a second time by each consumer:
+   *
+   * - **Authentication** always reports. The credential was absent, malformed,
+   *   unknown, or expired — the transport cannot tell which, and does not
+   *   need to.
+   * - **Forbidden reports only when it carries `requiredScope`.** That field
+   *   is the API's own signal that a valid grant simply lacks a permission,
+   *   which re-consent can fix. Every other refusal on that arm — plan limits,
+   *   a terminated account, an action no scope can authorize — is a genuine
+   *   answer to the question asked, and stays an ordinary in-band tool error.
+   *
+   * The result is unchanged either way: the agent still receives the full
+   * text envelope, hints included. This is a notification, not a substitution.
+   *
+   * Why an observer at all, rather than the transport inspecting the request:
+   * peeking at a JSON-RPC body to guess whether a call needs a credential
+   * means parsing it twice — on the deploy path, that is tens of megabytes of
+   * base64 re-parsed before the size caps run — and it can only ever guess at
+   * PRESENCE, so an EXPIRED token would answer in-band and a connected client
+   * would never refresh. Reporting what the API actually answered costs
+   * nothing and is correct for both.
+   */
+  onAuthFailure?: (failure: AuthFailure) => void;
+}
+
+/**
+ * What a credential refusal was, in the only two shapes a transport acts on
+ * differently.
+ *
+ * Deliberately not an HTTP status or an RFC 6750 error code: those are the
+ * consuming transport's vocabulary, and stdio — which also builds a `call` —
+ * has neither. The presence of `requiredScope` is the whole discriminator, so
+ * there is no second field restating it.
+ */
+export interface AuthFailure {
+  /**
+   * The scope the grant is missing, from the API's `details.requiredScope`.
+   * Absent when the credential itself was refused rather than its permissions.
+   */
+  requiredScope?: string;
 }
 
 /**
@@ -53,7 +105,7 @@ export interface CallOptions {
  * kept equal by review.
  */
 export function createCall(options: CallOptions): CallFn {
-  const { hints, structuredContent = false } = options;
+  const { hints, structuredContent = false, onAuthFailure } = options;
 
   return async function call<T>(fn: () => Promise<T>): Promise<CallToolResult> {
     try {
@@ -73,9 +125,22 @@ export function createCall(options: CallOptions): CallFn {
         ...(structured ? { structuredContent: structured } : {}),
       };
     } catch (error) {
-      return toErrorResult(error, hints);
+      return toErrorResult(error, hints, onAuthFailure);
     }
   };
+}
+
+/**
+ * Read the API's `details.requiredScope`, if this refusal carries one.
+ *
+ * `details` is `unknown` on the wire by design — every arm shapes it
+ * differently — so the read is a narrowing rather than a cast, and anything
+ * that is not a non-empty string means "no scope was named".
+ */
+function requiredScopeOf(details: unknown): string | undefined {
+  if (!details || typeof details !== 'object') return undefined;
+  const scope = (details as { requiredScope?: unknown }).requiredScope;
+  return typeof scope === 'string' && scope ? scope : undefined;
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -110,16 +175,26 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
  * governs success shapes, where the schema-twin objection lives. A failure has
  * one published shape on every transport.
  */
-function toErrorResult(error: unknown, hints: ErrorHints): CallToolResult {
+function toErrorResult(
+  error: unknown,
+  hints: ErrorHints,
+  onAuthFailure?: (failure: AuthFailure) => void,
+): CallToolResult {
   if (isShipError(error)) {
     let message = error.message;
 
     if (error.isType(ErrorType.Authentication)) {
       message += `\n\nHint: ${hints.authentication}`;
+      onAuthFailure?.({});
     }
 
     if (error.isType(ErrorType.Forbidden)) {
       message += `\n\nHint: ${hints.forbidden}`;
+      // Only a MISSING SCOPE is a credential problem. The same arm carries
+      // plan limits and terminated accounts, which re-consenting cannot fix
+      // and which the caller should read as the answer it is.
+      const requiredScope = requiredScopeOf(error.details);
+      if (requiredScope) onAuthFailure?.({ requiredScope });
     }
 
     if (error.isType(ErrorType.Validation) && error.details) {
