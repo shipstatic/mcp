@@ -1,5 +1,9 @@
 name: CI
 
+# This filename is load-bearing: npm's trusted-publisher registration for this
+# package names the repo AND this workflow file. Renaming ci.yml breaks
+# publishing silently.
+
 on:
   push:
     branches: [main, development]
@@ -92,13 +96,20 @@ jobs:
     # `npm-latest` carries a main-only deployment branch policy, so publishing
     # `latest` off `main` is refused by GitHub before a step runs.
     environment: npm-${{ needs.version.outputs.tag }}
+    # One job, one credential. `id-token` is job-scoped — any step in this job
+    # could mint an OIDC token that npm would exchange for a publish credential
+    # — so this job holds the OIDC grant and nothing else, and runs first-party
+    # steps only. The tag lives in `release`, notification in `notify`, each
+    # with its own lesser permission.
     permissions:
-      # `contents: write` is for the git tag and GitHub Release created after a
-      # successful publish — never for pushing code.
-      contents: write
+      contents: read
       id-token: write
     steps:
       - uses: actions/checkout@v7
+        with:
+          # Nothing after checkout touches git, so no credential needs to sit
+          # in .git/config for the lifetime of the OIDC-privileged job.
+          persist-credentials: false
 
       - uses: pnpm/action-setup@v6
 
@@ -113,8 +124,11 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       # OIDC needs npm >= 11.5.1; node 22 bundles 10.x, and pnpm has no OIDC
-      # support — hence `npm`, not `pnpm`, for the publish.
-      - run: npm install -g npm@latest
+      # support — hence `npm`, not `pnpm`, for the publish. Exact-pinned like
+      # every tool that emits a published artifact — this one assembles the
+      # tarball and mints the provenance attestation, and it is the only tool
+      # in the pipeline the lockfile cannot hold.
+      - run: npm install -g npm@12.0.2
 
       # No build step here on purpose: `prepack` builds, so the tarball cannot
       # contain a stale dist however it is produced — CI, or a local `npm pack`.
@@ -128,58 +142,125 @@ jobs:
       # only in its absence.
       - run: npm publish --tag "${{ needs.version.outputs.tag }}"
 
-      # The registry is the source of truth for "released", so the tag follows
-      # the publish rather than preceding it: a failed publish leaves no tag
-      # claiming a release that does not exist. `gh release create` creates the
-      # annotated tag at this commit, and the notes are generated from the
-      # commits since the last release — which is why commit subjects are
-      # written to be read.
+  # The registry is the source of truth for "released", so the tag follows the
+  # publish rather than preceding it: a failed publish leaves no tag claiming a
+  # release that does not exist. Its own job, its own credential: it can tag,
+  # and nothing else. No checkout — `gh` talks to the API directly, so no repo
+  # credential exists in this job at all.
+  #
+  # If this job fails after a successful publish, the repair is GitHub's
+  # "Re-run failed jobs": it re-runs exactly this job at the original SHA with
+  # `publish`'s success retained. A later push could not repair it — the tag
+  # must point at the commit that was published.
+  release:
+    needs: [version, publish]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
       - name: Tag the release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           VERSION="${{ needs.version.outputs.version }}"
           # A prerelease is marked as one, so `latest` on GitHub means the same
-          # thing it means on npm.
+          # thing it means on npm. The notes are generated from the commits
+          # since the last release — which is why commit subjects are written
+          # to be read.
           PRERELEASE=""
           [[ "$VERSION" == *-* ]] && PRERELEASE="--prerelease"
           gh release create "v$VERSION" \
+            --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" \
             --title "v$VERSION" \
             --generate-notes \
             $PRERELEASE
 
-      # The MCP Registry carries stable releases only — a beta on npm must not
-      # become the version agents discover.
+  # The MCP Registry is a second registry with its own credential, so it has
+  # its own job by the same law that split the tail: one job, one credential.
+  # It carries MCP_PRIVATE_KEY and nothing else — critically NOT the OIDC
+  # grant, because mcp-publisher is a downloaded binary and must not run
+  # where a token could be minted that npm would exchange for a publish
+  # credential. Stable releases only: a beta on npm must not become the
+  # version agents discover.
+  registry:
+    needs: [version, publish]
+    if: needs.version.outputs.tag == 'latest'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      # Exact-pinned like every tool that emits a published artifact — this
+      # one writes the registry entry. (`releases/latest` here was the same
+      # floating-tool defect the npm pin fixed.)
       - name: Install mcp-publisher
-        if: needs.version.outputs.tag == 'latest'
         run: |
-          curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
+          curl -fL "https://github.com/modelcontextprotocol/registry/releases/download/v1.8.1/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
 
       - name: Sync server.json version from package.json
-        if: needs.version.outputs.tag == 'latest'
         run: |
           jq --arg v "${{ needs.version.outputs.version }}" '.version = $v | .packages[0].version = $v' server.json > server.tmp && mv server.tmp server.json
 
       - name: Authenticate to MCP Registry
-        if: needs.version.outputs.tag == 'latest'
         run: ./mcp-publisher login dns --domain shipstatic.com --private-key ${{ secrets.MCP_PRIVATE_KEY }}
 
       - name: Publish to MCP Registry
-        if: needs.version.outputs.tag == 'latest'
         run: ./mcp-publisher publish
 
-      - uses: slackapi/slack-github-action@v4
+  # Notification is third-party code (the Slack action), so it runs where no
+  # credential exists: an empty permissions map, after both outcomes are known.
+  notify:
+    needs: [version, publish, release, registry]
+    if: always() && needs.version.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      # A skipped `registry` is green: betas never touch the MCP Registry by
+      # design, so "did not run" is the correct outcome for every prerelease.
+      - if: needs.publish.result == 'success' && needs.release.result == 'success' && (needs.registry.result == 'success' || needs.registry.result == 'skipped')
+        uses: slackapi/slack-github-action@v4
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
           webhook-type: incoming-webhook
           payload: |
             text: "✅ @shipstatic/mcp ${{ needs.version.outputs.version }} published (${{ needs.version.outputs.tag }})"
 
-      - if: failure()
+      - if: needs.publish.result != 'success'
         uses: slackapi/slack-github-action@v4
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
           webhook-type: incoming-webhook
           payload: |
             text: "🔴 @shipstatic/mcp publish failed"
+
+      # The honest middle state: the version IS on the registry but carries no
+      # tag. Before the job split this reported as "publish failed", which was
+      # false during exactly the window where the truth matters. It wins over
+      # the registry state below when both failed — the missing tag is the
+      # louder problem, and one re-run repairs both.
+      - if: needs.publish.result == 'success' && needs.release.result != 'success'
+        uses: slackapi/slack-github-action@v4
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            text: "🟡 @shipstatic/mcp ${{ needs.version.outputs.version }} published but UNTAGGED — the release job failed. Repair: Re-run failed jobs on this run."
+
+      # mcp's own fourth state, by the same reasoning: npm has the version and
+      # the tag exists, but the registry agents discover from does not know it.
+      # A registry failure fired the red "publish failed" before this wave —
+      # false, the npm publish had succeeded.
+      - if: needs.publish.result == 'success' && needs.release.result == 'success' && needs.registry.result != 'success' && needs.registry.result != 'skipped'
+        uses: slackapi/slack-github-action@v4
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            text: "🟠 @shipstatic/mcp ${{ needs.version.outputs.version }} published to npm but NOT to the MCP Registry — the registry job failed. Repair: Re-run failed jobs on this run."
