@@ -59,19 +59,25 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
-          # The BRANCH decides whether that channel may be published from here.
-          # `latest` is main-only. A stable version on an integration branch is a
-          # STAGED release, and staging one before merging is the normal flow — so
-          # this skips rather than fails, exactly like the idempotence check below.
-          if [[ "$TAG" == "latest" && "$GITHUB_REF_NAME" != "main" ]]; then
-            echo "::notice title=Release staged::$NAME@$VERSION is a stable version. latest publishes only from main, so nothing was published from $GITHUB_REF_NAME. Merge to main to release it."
+          # Idempotence FIRST, because "already released" is true regardless of
+          # which branch is asking — and it is the more informative answer. Order
+          # matters: with the branch check first, every push to an integration
+          # branch after a release told the operator to "merge to main to release
+          # it" for a version already on the registry, and kept saying so until
+          # the next version bump. Once the version is published, any push is a
+          # no-op and says exactly that.
+          if npm view "$NAME@$VERSION" version >/dev/null 2>&1; then
+            echo "::notice title=Already released::$NAME@$VERSION is on the registry — nothing to publish. Bump the version to release again."
             echo "publish=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          # Idempotence: once the version is on the registry, any push is a no-op.
-          if npm view "$NAME@$VERSION" version >/dev/null 2>&1; then
-            echo "$NAME@$VERSION already on the registry — nothing to publish"
+          # The BRANCH decides whether that channel may be published from here.
+          # `latest` is main-only. A stable version on an integration branch is a
+          # STAGED release, and staging one before merging is the normal flow — so
+          # this skips rather than fails, exactly like the idempotence check above.
+          if [[ "$TAG" == "latest" && "$GITHUB_REF_NAME" != "main" ]]; then
+            echo "::notice title=Release staged::$NAME@$VERSION is a stable version. latest publishes only from main, so nothing was published from $GITHUB_REF_NAME. Merge to main to release it."
             echo "publish=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -87,7 +93,9 @@ jobs:
     # `latest` off `main` is refused by GitHub before a step runs.
     environment: npm-${{ needs.version.outputs.tag }}
     permissions:
-      contents: read
+      # `contents: write` is for the git tag and GitHub Release created after a
+      # successful publish — never for pushing code.
+      contents: write
       id-token: write
     steps:
       - uses: actions/checkout@v7
@@ -104,16 +112,42 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - run: pnpm run build
-
       # OIDC needs npm >= 11.5.1; node 22 bundles 10.x, and pnpm has no OIDC
       # support — hence `npm`, not `pnpm`, for the publish.
       - run: npm install -g npm@latest
 
+      # No build step here on purpose: `prepack` builds, so the tarball cannot
+      # contain a stale dist however it is produced — CI, or a local `npm pack`.
+      # `--access` and `--provenance` live in the package's own publishConfig
+      # for the same reason: the publish contract belongs to the package, not to
+      # the one caller that happens to be CI today. The tag is the exception —
+      # it is a property of THIS release, not of the package.
+      #
       # Trusted publishing: no NODE_AUTH_TOKEN anywhere in this job — npm
       # authenticates with a token whenever one is present and attempts OIDC
       # only in its absence.
-      - run: npm publish --access public --provenance --tag "${{ needs.version.outputs.tag }}"
+      - run: npm publish --tag "${{ needs.version.outputs.tag }}"
+
+      # The registry is the source of truth for "released", so the tag follows
+      # the publish rather than preceding it: a failed publish leaves no tag
+      # claiming a release that does not exist. `gh release create` creates the
+      # annotated tag at this commit, and the notes are generated from the
+      # commits since the last release — which is why commit subjects are
+      # written to be read.
+      - name: Tag the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${{ needs.version.outputs.version }}"
+          # A prerelease is marked as one, so `latest` on GitHub means the same
+          # thing it means on npm.
+          PRERELEASE=""
+          [[ "$VERSION" == *-* ]] && PRERELEASE="--prerelease"
+          gh release create "v$VERSION" \
+            --target "$GITHUB_SHA" \
+            --title "v$VERSION" \
+            --generate-notes \
+            $PRERELEASE
 
       # The MCP Registry carries stable releases only — a beta on npm must not
       # become the version agents discover.
