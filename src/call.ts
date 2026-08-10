@@ -2,16 +2,36 @@ import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { ErrorType, isShipError } from '@shipstatic/ship';
 
 /**
- * The two error arms that earn a hint. Everything else relays verbatim — a
- * hint on any other type sends the agent chasing a credential that is not the
- * problem.
+ * The two CREDENTIAL arms that earn a per-transport hint. Everything else
+ * relays verbatim — a credential hint on any other type sends the agent
+ * chasing a problem it does not have.
  *
  * They are ARGUMENTS rather than constants because they are the one part of
  * the mapping that legitimately differs per transport: stdio can name the
  * environment variable it owns, and the hosted endpoint deliberately cannot
  * (it has no configuration of its own, and naming another package's variable
  * is how this pair silently desynchronised once already).
+ *
+ * A third arm — maintenance — is hinted too, but it is NOT a member here: a
+ * closed platform is closed identically on every transport, so its text is a
+ * module constant (`MAINTENANCE_HINT`) rather than a per-transport argument.
+ * The membership test for this interface is "does the text differ per
+ * transport?", not "does the arm get a hint?".
  */
+/**
+ * The maintenance hint — a CONSTANT, for the reason stated on `ErrorHints`:
+ * this text does not differ per transport, so making it an argument would ask
+ * two callers to agree on one sentence forever.
+ *
+ * The instruction to an agent matters more here than on any other arm. A tool
+ * failure normally invites a retry, and retrying is exactly wrong against a
+ * platform that is closed on purpose: the loop cannot succeed, and it spends
+ * the caller's budget discovering that. So the hint leads with the refusal to
+ * retry and closes with the reassurance the agent should relay to its user.
+ */
+const MAINTENANCE_HINT =
+  'The platform is temporarily closed for scheduled maintenance. Do not retry in a loop — wait and try again later. Deployed sites are unaffected and stay online.';
+
 export interface ErrorHints {
   /** Appended after `Hint: ` when the SDK rejects the credential. */
   authentication: string;
@@ -182,6 +202,13 @@ function toErrorResult(
 ): CallToolResult {
   if (isShipError(error)) {
     let message = error.message;
+
+    // First, because it is the one arm that is not about this caller at all:
+    // the platform is closed, nothing the agent sends can succeed, and the
+    // useful instruction is to stop rather than to fix something.
+    if (error.isType(ErrorType.Maintenance)) {
+      message += `\n\nHint: ${MAINTENANCE_HINT}`;
+    }
 
     if (error.isType(ErrorType.Authentication)) {
       message += `\n\nHint: ${hints.authentication}`;

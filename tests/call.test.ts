@@ -74,6 +74,25 @@ describe('ShipError mapping', () => {
     expect(textOf(result)).toContain('upgrade or contact support');
   });
 
+  it('appends a do-not-loop hint to maintenance failures', async () => {
+    // The platform is closed on purpose, so no retry can succeed and a loop
+    // only spends the caller's budget discovering that. The reassurance is
+    // carried too, because the agent is the one relaying it to a person.
+    const result = await call(() =>
+      Promise.reject(
+        ShipError.maintenance('ShipStatic is briefly down for scheduled maintenance.'),
+      ),
+    );
+
+    expect(result.isError).toBe(true);
+    expect(textOf(result)).toContain('ShipStatic is briefly down for scheduled maintenance.');
+    expect(textOf(result)).toContain('Do not retry in a loop');
+    expect(textOf(result)).toContain('Deployed sites are unaffected');
+    // Not a credential problem — the auth hint would send the agent to
+    // reconnect against a door that is closed for everyone.
+    expect(textOf(result)).not.toContain('Authenticate');
+  });
+
   it('appends field-level details to validation failures', async () => {
     const result = await call(() =>
       Promise.reject(ShipError.validation('Invalid input', { field: 'name', reason: 'too short' })),
@@ -106,16 +125,20 @@ describe('ShipError mapping', () => {
   });
 
   /**
-   * The two arms that earn a hint, and the phrase each must carry. Everything
-   * NOT listed here relays verbatim — a hint on any other type would send the
-   * agent chasing a credential that is not the problem.
+   * The arms that earn a hint, and the phrase each must carry. Everything NOT
+   * listed here relays verbatim — a hint on any other type would send the
+   * agent chasing a problem it does not have.
    *
-   * The tests above pin what these two hints SAY; this table pins only that
-   * they are the complete set of arms that get one.
+   * The tests above pin what these hints SAY; this table pins only that they
+   * are the complete set of arms that get one. Two are per-transport
+   * (`ErrorHints`); maintenance is a module constant, because a closed
+   * platform is closed identically everywhere — the table does not care about
+   * that distinction, only about which arms speak.
    */
   const HINTED: Partial<Record<ErrorType, string>> = {
     [ErrorType.Authentication]: 'SHIP_TOKEN',
     [ErrorType.Forbidden]: 'Stop retrying',
+    [ErrorType.Maintenance]: 'Do not retry in a loop',
   };
 
   it.each(Object.values(ErrorType))(

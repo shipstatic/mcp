@@ -172,7 +172,17 @@ pnpm test --run     # All tests
 Every MCP tool maps 1:1 to a single `@shipstatic/ship` SDK method. The MCP layer handles only:
 - Tool registration (name, schema, description)
 - Response formatting (`call()` — JSON.stringify for data, "Done." for void)
-- Error mapping (ShipError → `{ content, isError: true }` with auth hints)
+- Error mapping (ShipError → `{ content, isError: true }` with hints)
+
+Three arms earn a hint, and they split on ONE question — does the text differ
+per transport? The two credential arms (authentication, forbidden) do, so they
+are `ErrorHints` arguments: stdio can name the environment variable it owns and
+the hosted endpoint deliberately cannot. **Maintenance does not** — a closed
+platform is closed identically everywhere — so it is a module constant,
+`MAINTENANCE_HINT`, and the hosted transport inherits it with no code of its
+own. It also does NOT notify `onAuthFailure`: a maintenance window is not a
+credential problem, and answering one with a 401 challenge would send a client
+round a consent flow against a door that is closed for everyone.
 
 No HTTP calls, no auth logic, no domain validation. The SDK handles everything.
 
