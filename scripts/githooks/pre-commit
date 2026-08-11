@@ -2,22 +2,19 @@
 # Platform-standard pre-commit (byte-identical across ShipStatic repos).
 # Fast gate only — the full suite lives in CI.
 
-# No platform credential may enter history. All THREE minted populations are
-# scanned — `ship-` keys, `deploy-` tokens, and `claim-` codes, which became
-# scannable the day they gained a prefix: a bare hex claim code was
-# indistinguishable from a checksum, so no scanner could ever have caught one.
+# No platform credential may enter history. Every minted population is scanned:
+# `ship-` keys, `deploy-` tokens, `claim-` codes — 32 hex each. A prefix is
+# what makes a secret recognisable away from the route that consumes it, which
+# is why all three carry one and why all three are matchable here.
 #
-# The width is a FLOOR, not the current number. Credentials are 32 hex today
-# and were 64 before; pinning either would make this guard blind to half the
-# population it exists to catch, which is exactly what pinning {64} did. A
-# leaked secret is worth over-matching for.
+# The match is unanchored, so a longer hex run trips it too.
 #
 # Test and example paths are excluded — fixtures hold fake keys by design — as
 # is the repeating fake test key.
 LEAKS=$(git diff --cached --no-color --unified=0 --diff-filter=ACMR -- . \
   ':(exclude)**/tests/**' ':(exclude)**/__tests__/**' ':(exclude)**/*.test.*' \
   ':(exclude)test-utils/**' ':(exclude)examples/**' ':(exclude)e2e/**' \
-  | grep -E '^\+' | grep -E '(ship|deploy|claim)-[0-9a-f]{32,}' \
+  | grep -E '^\+' | grep -E '(ship|deploy|claim)-[0-9a-f]{32}' \
   | grep -v '1234567890abcdef' || true)
 if [ -n "$LEAKS" ]; then
   echo "credential detected in staged changes:" >&2
