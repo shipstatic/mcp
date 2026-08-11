@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { apiKey, deployToken } from './fixtures/builders';
 
 /**
  * @file The process boundary — `src/bin.ts`.
@@ -90,7 +91,7 @@ describe('credential isolation', () => {
   });
 
   it('forwards a configured SHIP_TOKEN to the Ship constructor', async () => {
-    const token = `ship-${'a'.repeat(64)}`;
+    const token = apiKey('a');
     process.env.SHIP_TOKEN = token;
 
     await boot();
@@ -99,8 +100,8 @@ describe('credential isolation', () => {
   });
 
   it.each([
-    ['an API key', `ship-${'a'.repeat(64)}`],
-    ['a deploy token', `deploy-${'b'.repeat(64)}`],
+    ['an API key', apiKey('a')],
+    ['a deploy token', deployToken('b')],
     ['an opaque bearer', 'ya29.a0AfH6SMBexample-oauth-access-token'],
   ])('forwards %s unchanged — MCP never classifies the credential', async (_kind, token) => {
     // One slot, any platform token. The value's PREFIX says what it is and the
@@ -135,7 +136,7 @@ describe('credential isolation', () => {
   });
 
   it('passes no other option — the client gets a credential and nothing else', async () => {
-    process.env.SHIP_TOKEN = `ship-${'b'.repeat(64)}`;
+    process.env.SHIP_TOKEN = apiKey('b');
 
     await boot();
 
@@ -147,7 +148,7 @@ describe('credential isolation', () => {
   });
 
   it('reads the environment exactly once, at construction', async () => {
-    process.env.SHIP_TOKEN = `ship-${'c'.repeat(64)}`;
+    process.env.SHIP_TOKEN = apiKey('c');
 
     await boot();
 
