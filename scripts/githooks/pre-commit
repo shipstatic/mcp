@@ -2,10 +2,12 @@
 # Platform-standard pre-commit (byte-identical across ShipStatic repos).
 # Fast gate only — the full suite lives in CI.
 
-# No platform credential may enter history. Every minted population is scanned:
-# `ship-` keys, `deploy-` tokens, `claim-` codes — 32 hex each. A prefix is
-# what makes a secret recognisable away from the route that consumes it, which
-# is why all three carry one and why all three are matchable here.
+# No platform credential may enter history. Every prefixed population is
+# scanned: `ship-` keys, `deploy-` tokens — 32 hex each. A prefix is what
+# makes a secret recognisable away from the route that consumes it, which is
+# why both carry one and why both are matchable here. (The claim code is bare
+# hex by design and cannot be named by shape; it is single-use and TTL-bound,
+# which is what pays for that.)
 #
 # The match is unanchored, so a longer hex run trips it too.
 #
@@ -14,7 +16,7 @@
 LEAKS=$(git diff --cached --no-color --unified=0 --diff-filter=ACMR -- . \
   ':(exclude)**/tests/**' ':(exclude)**/__tests__/**' ':(exclude)**/*.test.*' \
   ':(exclude)test-utils/**' ':(exclude)examples/**' ':(exclude)e2e/**' \
-  | grep -E '^\+' | grep -E '(ship|deploy|claim)-[0-9a-f]{32}' \
+  | grep -E '^\+' | grep -E '(ship|deploy)-[0-9a-f]{32}' \
   | grep -v '1234567890abcdef' || true)
 if [ -n "$LEAKS" ]; then
   echo "credential detected in staged changes:" >&2
