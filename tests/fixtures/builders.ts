@@ -78,12 +78,11 @@ export const timestamps = {
  */
 export const deploymentId = (slug = 'brave-otter-a1b2c3d') => `${slug}.${PLATFORM_DOMAIN}`;
 
-/** Claim URL: 32 random bytes as hex, on the `my.` host. wire: deployment-orchestrator.ts:309 */
 /**
- * The two prefixed populations and the unprefixed claim code, all built from
- * their shape constants. Widths are read, never written — a literal here would
- * keep passing while the population it stands for moved. wire: types
- * CREDENTIAL SHAPES.
+ * The three minted populations, each built from its shape constants: every
+ * one is named by its prefix, and every one is the platform's single entropy
+ * width. Widths are read, never written — a literal here would keep passing
+ * while the population it stands for moved. wire: types CREDENTIAL SHAPES.
  */
 export const apiKey = (fill = 'a') => `${API_KEY.PREFIX}${fill.repeat(API_KEY.HEX_LENGTH)}`;
 
