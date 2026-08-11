@@ -89,8 +89,8 @@ export const apiKey = (fill = 'a') => `${API_KEY.PREFIX}${fill.repeat(API_KEY.HE
 export const deployToken = (fill = 'b') =>
   `${DEPLOY_TOKEN.PREFIX}${fill.repeat(DEPLOY_TOKEN.HEX_LENGTH)}`;
 
-export const claimUrl = (code = `claim-${'c'.repeat(API_KEY.HEX_LENGTH)}`) =>
-  `https://my.${PLATFORM_DOMAIN}/claims/${code}`;
+export const claimUrl = (code = 'c'.repeat(API_KEY.HEX_LENGTH)) =>
+  `https://my.${PLATFORM_DOMAIN}/claim/${code}`;
 
 /** The custom domain every domain tool is exercised against. */
 export const CUSTOM_DOMAIN = 'www.example.com';
