@@ -41,6 +41,7 @@ import type {
   DomainValidateResponse,
   DomainVerifyResponse,
 } from '@shipstatic/types';
+import { API_KEY, DEPLOY_TOKEN } from '@shipstatic/types';
 
 // =============================================================================
 // PLATFORM CONSTANTS (wire truth)
@@ -78,7 +79,19 @@ export const timestamps = {
 export const deploymentId = (slug = 'brave-otter-a1b2c3d') => `${slug}.${PLATFORM_DOMAIN}`;
 
 /** Claim URL: 32 random bytes as hex, on the `my.` host. wire: deployment-orchestrator.ts:309 */
-export const claimUrl = (code = 'c'.repeat(64)) => `https://my.${PLATFORM_DOMAIN}/claim/${code}`;
+/**
+ * The two prefixed populations and the unprefixed claim code, all built from
+ * their shape constants. Widths are read, never written — a literal here would
+ * keep passing while the population it stands for moved. wire: types
+ * CREDENTIAL SHAPES.
+ */
+export const apiKey = (fill = 'a') => `${API_KEY.PREFIX}${fill.repeat(API_KEY.HEX_LENGTH)}`;
+
+export const deployToken = (fill = 'b') =>
+  `${DEPLOY_TOKEN.PREFIX}${fill.repeat(DEPLOY_TOKEN.HEX_LENGTH)}`;
+
+export const claimUrl = (code = 'c'.repeat(API_KEY.HEX_LENGTH)) =>
+  `https://my.${PLATFORM_DOMAIN}/claim/${code}`;
 
 /** The custom domain every domain tool is exercised against. */
 export const CUSTOM_DOMAIN = 'www.example.com';
