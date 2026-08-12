@@ -1,6 +1,6 @@
 {
   "name": "@shipstatic/mcp",
-  "version": "1.1.1-beta.4",
+  "version": "1.1.1",
   "mcpName": "com.shipstatic/mcp",
   "description": "ShipStatic MCP — deploy static websites from AI agents. Full toolset incl. custom domains. Free hosted endpoint at mcp.shipstatic.com — no install.",
   "type": "module",
@@ -67,8 +67,8 @@
   "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
-    "@shipstatic/ship": "2.2.0-beta.8",
-    "@shipstatic/types": "2.7.0-beta.4",
+    "@shipstatic/ship": "2.2.0",
+    "@shipstatic/types": "2.7.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
