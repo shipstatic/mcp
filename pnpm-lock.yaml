@@ -12,11 +12,11 @@ importers:
         specifier: ^1.30.0
         version: 1.30.0(zod@4.4.3)
       '@shipstatic/ship':
-        specifier: 2.2.0-beta.7
-        version: 2.2.0-beta.7
+        specifier: 2.2.0-beta.8
+        version: 2.2.0-beta.8
       '@shipstatic/types':
-        specifier: 2.7.0-beta.3
-        version: 2.7.0-beta.3
+        specifier: 2.7.0-beta.4
+        version: 2.7.0-beta.4
       zod:
         specifier: ^4.4.3
         version: 4.4.3
@@ -579,13 +579,13 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@shipstatic/ship@2.2.0-beta.7':
-    resolution: {integrity: sha512-7Nknaw+sA3SKSq4FPJclTopFW0CqLAw0k5jJkwYi8/haydLT4v+Pk3Unb+Fv/3ZDV5dh1qGQBhna//cRUKH34w==}
+  '@shipstatic/ship@2.2.0-beta.8':
+    resolution: {integrity: sha512-8cXtbDqDua/J+30laT5FXg3NUrE1YKv4hcVKgVu/w6IFVoN24rS0Gr7wCjbyGG7P4FsopowcuR0KC6L71cBxeA==}
     engines: {node: '>=20.0.0'}
     hasBin: true
 
-  '@shipstatic/types@2.7.0-beta.3':
-    resolution: {integrity: sha512-136vImHAXaYJ8gC63krO9NDa/Enxu5KWZnmn5kW4X3uZkH2Pjq61oKwDd4E9arztddS1vEHxlAk0b7HhdEo72Q==}
+  '@shipstatic/types@2.7.0-beta.4':
+    resolution: {integrity: sha512-EjcP47p5M80hmsWB1Pr4GHf6nVSApoqmTQcp7FczRJzGZqKrZ8vUiq/CynWxVYeKm1f5ioPNo/U3g2dDbZMxJw==}
     engines: {node: '>=20.0.0'}
 
   '@standard-schema/spec@1.1.0':
@@ -813,14 +813,6 @@ packages:
   finalhandler@2.1.1:
     resolution: {integrity: sha512-S8KoZgRZN+a5rNwqTxlZZePjT/4cnm0ROV70LedRHZ0p8u9fRID0hJUZQpkKLzro8LfmC8sx23bY6tVNxv8pQA==}
     engines: {node: '>= 18.0.0'}
-
-  form-data-encoder@4.1.0:
-    resolution: {integrity: sha512-G6NsmEW15s0Uw9XnCg+33H3ViYRyiM0hMrMhhqQOR8NFc5GhYrI+6I3u7OTw7b91J2g8rtvMBZJDbcGb2YUniw==}
-    engines: {node: '>= 18'}
-
-  formdata-node@6.0.3:
-    resolution: {integrity: sha512-8e1++BCiTzUno9v5IZ2J6bv4RU+3UKDmqWUQD0MIMVCd9AdhWkO1gw57oo1mNEX1dMq2EGI+FbWz4B92pscSQg==}
-    engines: {node: '>= 18'}
 
   forwarded@0.2.0:
     resolution: {integrity: sha512-buRG0fpBtRHSTCOASe6hD258tEubFoRLb4ZNA6NxMVHNw2gOcwHo9wyablzMzOA5z9xA9L1KNjk/Nt6MT9aYow==}
@@ -1567,15 +1559,13 @@ snapshots:
   '@rollup/rollup-win32-x64-msvc@4.62.3':
     optional: true
 
-  '@shipstatic/ship@2.2.0-beta.7':
+  '@shipstatic/ship@2.2.0-beta.8':
     dependencies:
-      form-data-encoder: 4.1.0
-      formdata-node: 6.0.3
       junk: 4.0.1
       spark-md5: 3.0.2
       zod: 4.4.3
 
-  '@shipstatic/types@2.7.0-beta.3': {}
+  '@shipstatic/types@2.7.0-beta.4': {}
 
   '@standard-schema/spec@1.1.0': {}
 
@@ -1881,10 +1871,6 @@ snapshots:
       statuses: 2.0.2
     transitivePeerDependencies:
       - supports-color
-
-  form-data-encoder@4.1.0: {}
-
-  formdata-node@6.0.3: {}
 
   forwarded@0.2.0: {}
 
