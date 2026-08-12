@@ -61,7 +61,7 @@
     "url": "https://github.com/shipstatic/mcp/issues"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=20.19.0"
   },
   "author": "ShipStatic",
   "license": "MIT",
