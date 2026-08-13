@@ -29,6 +29,37 @@ describe('README', () => {
     expect(documented).toEqual([UPLOAD_TOOL_NAME, ...ACCOUNT_TOOL_NAMES].sort());
   });
 
+  it('tells the both-doors story with counts DERIVED from the catalogue', () => {
+    // The README sold a placeholder for months after it stopped being true:
+    // "the hosted endpoint exposes `deployments_upload` only", written while
+    // that was the case and left standing when the hosted door gained the
+    // other fourteen. Nothing failed, because prose has no compiler — the
+    // exact gap this file exists for, one altitude up from the tool names.
+    //
+    // Held by DERIVATION rather than by a literal: the two counts come from
+    // the catalogue, so adding a tool turns this red until the sentence
+    // follows. `word()` throws rather than returning undefined for a count it
+    // has no spelling for, because a fence that silently compares against
+    // `undefined` is the vacuous-pass class.
+    const word = (n: number) => {
+      const words: Record<number, string> = {
+        13: 'thirteen',
+        14: 'fourteen',
+        15: 'fifteen',
+        16: 'sixteen',
+      };
+      if (!words[n]) throw new Error(`No spelling for ${n} — add it here and to the README.`);
+      return words[n];
+    };
+    const total = 1 + ACCOUNT_TOOL_NAMES.length;
+
+    expect(README).toContain(`All ${word(total)} tools are on both doors`);
+    expect(README).toContain(`the other ${word(ACCOUNT_TOOL_NAMES.length)}`);
+    // The upload tool is the anonymous door on BOTH transports, and the
+    // sentence above only means something while it names the right one.
+    expect(README).toContain(`\`${UPLOAD_TOOL_NAME}\` is the one that needs no account`);
+  });
+
   it('states every duration as the public expiry the vocabulary owns', () => {
     // The README quotes the anonymous-deploy lifetime more than once. Every
     // duration it states must BE the owned phrase — a TTL change that edits
