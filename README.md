@@ -1,15 +1,15 @@
-# @shipstatic/mcp
-
-ShipStatic MCP — deploy static websites, landing pages, and prototypes from AI agents.
+# ShipStatic MCP
 
 **One URL. Your agent ships.**
+
+Give your AI a publish button for the internet: ask it to put your site online, and get back a real, shareable link in seconds. Landing pages, prototypes, portfolios — any static site.
 
 [![smithery badge](https://smithery.ai/badge/shipstatic/ship)](https://smithery.ai/servers/shipstatic/ship)
 [![glama badge](https://img.shields.io/badge/glama-MCP%20server-1f7ade)](https://glama.ai/mcp/servers/shipstatic/mcp)
 
-## Hosted — no install
+## Hosted — nothing to install
 
-Drop this URL into any MCP client. Your agent can publish a website in its next message — free, no install, no signup, no API key.
+Drop `https://mcp.shipstatic.com` into any MCP client. No install, no signup, no API key — your agent can publish a website in its next message.
 
 ```
 https://mcp.shipstatic.com
@@ -20,6 +20,10 @@ https://mcp.shipstatic.com
 ```bash
 claude mcp add --transport http shipstatic https://mcp.shipstatic.com
 ```
+
+### Claude Desktop and claude.ai
+
+**Settings → Connectors → Add custom connector**, paste `https://mcp.shipstatic.com`, save.
 
 ### Cursor, Antigravity, Windsurf, Zed — anywhere with `mcp.json`
 
@@ -33,20 +37,29 @@ claude mcp add --transport http shipstatic https://mcp.shipstatic.com
 }
 ```
 
-### Claude Desktop, Claude.ai web
+### Then just ask
 
-Add a custom connector pointing at `https://mcp.shipstatic.com`.
+> "Put my site online."
 
-The hosted endpoint exposes one tool: `deployments_upload`. Public deployments expire in 3 days unless claimed — the response includes a claim URL the user can visit to keep the site permanently. Set a `password` arg to gate the deployment behind an unlock prompt.
+Your agent publishes the files and answers with two links:
 
-## Local — full toolset
+- **The live site** — a real URL you can share right away.
+- **A claim link** — the site stays live for 3 days; open the claim link to keep it forever. A free account is all it takes.
 
-Install this package when you need to manage deployments, link custom domains, or use account-tied operations.
+Want the site private? Ask for a password — visitors must enter it before they can see anything.
+
+## Local — the full toolset
+
+The hosted URL does one thing: publish. Install this package for the full toolset (custom domains, listing, account-tied ops) — see everything you've shipped, connect your own domain, and publish sites that stay up permanently.
+
+`ship-...` in the snippets below is your API key — free at [my.shipstatic.com/api-key](https://my.shipstatic.com/api-key). With it, sites publish to your account, never expire, and get bigger limits. It's optional: leave it out and the local server behaves exactly like the hosted one (public sites, claim links, live for 3 days).
+
+The server runs with `npx`, which ships with [Node.js](https://nodejs.org) (20.19 or newer).
 
 ### Claude Code
 
 ```bash
-claude mcp add shipstatic -- npx @shipstatic/mcp
+claude mcp add shipstatic -e SHIP_TOKEN=ship-... -- npx -y @shipstatic/mcp
 ```
 
 ### Cursor
@@ -58,7 +71,8 @@ Add to `~/.cursor/mcp.json`:
   "mcpServers": {
     "shipstatic": {
       "command": "npx",
-      "args": ["@shipstatic/mcp"]
+      "args": ["-y", "@shipstatic/mcp"],
+      "env": { "SHIP_TOKEN": "ship-..." }
     }
   }
 }
@@ -73,7 +87,8 @@ Add to `~/.gemini/antigravity/mcp_config.json`:
   "mcpServers": {
     "shipstatic": {
       "command": "npx",
-      "args": ["@shipstatic/mcp"]
+      "args": ["-y", "@shipstatic/mcp"],
+      "env": { "SHIP_TOKEN": "ship-..." }
     }
   }
 }
@@ -81,17 +96,11 @@ Add to `~/.gemini/antigravity/mcp_config.json`:
 
 ### Windsurf, Zed, and other MCP clients
 
-Same config format — `npx @shipstatic/mcp`. Works with any MCP-compatible client.
+Same config shape — `npx -y @shipstatic/mcp`, with `SHIP_TOKEN` in `env`. Works with any MCP-compatible client.
 
-## Free API key — permanent deployments
+### VS Code
 
-`SHIP_TOKEN` is optional. Without it, deploys behave like the hosted endpoint (public, claim URL, expire in 3 days). With it, you get permanent deployments, the full toolset, and bigger limits.
-
-Get a free API key at [my.shipstatic.com/api-key](https://my.shipstatic.com/api-key):
-
-```bash
-claude mcp add shipstatic -e SHIP_TOKEN=ship-... -- npx @shipstatic/mcp
-```
+Prefer an editor extension? [ShipStatic for VS Code](https://marketplace.visualstudio.com/items?itemName=shipstatic.shipstatic) has this server built in — no config at all.
 
 ## Tools
 
@@ -127,7 +136,7 @@ The hosted endpoint exposes `deployments_upload` only. The local install exposes
 |------|-------------|
 | `whoami` | Get your account details including email, plan, and usage |
 
-### Paging
+### Paging long lists
 
 `deployments_list` and `domains_list` accept `limit` and `cursor`. Each response carries a `cursor` — pass it back to fetch the next page; `null` means you are on the last one.
 
@@ -149,7 +158,7 @@ It needs `SHIP_TOKEN`: a keyless deploy already expires on the platform's schedu
 
 ## Registry
 
-Published to the [MCP Registry](https://registry.modelcontextprotocol.io/v0.1/servers?search=com.shipstatic/mcp) as `com.shipstatic/mcp`. Registry-aware clients see both the hosted endpoint and the local install and pick the right transport for their environment.
+Published to the [MCP Registry](https://registry.modelcontextprotocol.io/v0.1/servers?search=com.shipstatic/mcp) as `com.shipstatic/mcp`. Registry-aware clients see both the hosted endpoint and the local install and pick whichever fits their environment.
 
 ## License
 
