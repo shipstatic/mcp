@@ -439,7 +439,7 @@ there instead would give the hosted door fourteen tools and this one fifteen.
   "mcpServers": {
     "shipstatic": {
       "command": "npx",
-      "args": ["@shipstatic/mcp"],
+      "args": ["-y", "@shipstatic/mcp"],
       "env": { "SHIP_TOKEN": "ship-..." }
     }
   }
