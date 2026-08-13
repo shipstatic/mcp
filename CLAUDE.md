@@ -6,18 +6,22 @@ Claude Code instructions for the **ShipStatic MCP Server**.
 
 **The version says which platform it speaks to: the 1.x MCP is the one that speaks to the 2.x platform.** 1.0.0 is a true major for consumers — `SHIP_API_KEY` is no longer read (every existing server config breaks until its env var is renamed) and the delete tools were renamed (`deployments_remove` → `deployments_delete`, `domains_remove` → `domains_delete`), so a saved agent workflow naming the old tool stops resolving.
 
-A **hosted Streamable-HTTP variant** lives at `https://mcp.shipstatic.com`, registered alongside this package under the same `com.shipstatic/mcp` registry entry (see `server.json` `remotes`). Source: `cloudflare/mcp/` in the monorepo. The hosted variant exposes only `deployments_upload` (anonymous-only). The user-facing strings — tool description, INSTRUCTIONS — must stay coordinated where they overlap; the hosted side documents the divergence boundaries.
+A **hosted Streamable-HTTP variant** lives at `https://mcp.shipstatic.com`, registered alongside this package under the same `com.shipstatic/mcp` registry entry (see `server.json` `remotes`). Source: `cloudflare/mcp/` in the monorepo. It serves the same fifteen tools: `deployments_upload` to anyone, the other fourteen to an OAuth-connected caller (since 2026-08-13 in production). The user-facing strings — tool description, INSTRUCTIONS — must stay coordinated where they overlap; the hosted side documents the divergence boundaries.
 
 ## README positioning (public docs)
 
-`README.md` ships to npm, Glama, and the MCP Registry. From the reader's perspective, **ShipStatic MCP is one product with two ways to use it**: the hosted endpoint (no install) and this package (full toolset). The README leads with hosted, presents the local install as the "want more" upgrade, and never reveals that the hosted variant lives in a separate, private repo (`cloudflare/mcp/`).
+`README.md` ships to npm, Glama, and the MCP Registry. From the reader's perspective, **ShipStatic MCP is one product with two doors in**: the hosted endpoint (no install) and this package (a folder on your own machine). The README leads with hosted, presents the local install as the door for a different NEED rather than a bigger feature set, and never reveals that the hosted variant lives in a separate, private repo (`cloudflare/mcp/`).
+
+**The upgrade line died on 2026-08-13 and its replacement is the law's own worked example.** "Install this package for the full toolset" was true while the hosted door was anonymous-only, and stopped being true the day OAuth landed there — but a README has no compiler, so it sold the placeholder for months while the product underneath it had changed. Nothing failed; nothing could. The lesson the anchor list now carries: **an anchor phrase that states a CAPABILITY has a shelf life, and one that states a NEED does not.** The three surviving anchors describe what the reader does; the dead one described what the product was.
 
 Voice mirrors the marketing site — keep these phrases verbatim when editing:
 
 - Slogan: **"One URL. Your agent ships."**
 - Action: **"Drop `https://mcp.shipstatic.com` into any MCP client."**
 - Qualifier: **"No install, no signup, no API key."**
-- Upgrade: **"Install this package for the full toolset (custom domains, listing, account-tied ops)."**
+- The two doors: **"the same fifteen tools, reached the other way"** — and the local door's reasons are a NEED, never a capability: a folder on your own machine, a token configured once instead of a sign-in, a client that doesn't speak OAuth yet.
+
+The counts in that sentence are fenced, not trusted: `tests/architecture/docs-contract.test.ts` derives both from `ACCOUNT_TOOL_NAMES`, so a sixteenth tool turns the README red until the prose follows. The retired spellings ("Single tool", "Anonymous-only", "exposes `deployments_upload` only") are held one level up by `scripts/check-prose-vocabulary.sh`, which reaches the www surfaces this suite cannot.
 
 Do not surface in the README:
 - That the hosted endpoint is a separate Worker / different codebase
@@ -40,12 +44,13 @@ src/
 
 ## One product, two transports — the shape that survives OAuth
 
-The hosted Streamable-HTTP server (`cloudflare/mcp`, private) is gaining OAuth,
-after which **both transports offer the complete toolset for authenticated
-callers and the anonymous deploy for everyone else**. The architecture is built
-for that end state, not the one-tool present, because the alternative is that
-someone copies fourteen tool definitions into a second repo — and the copy is
-the moment two surfaces begin to drift.
+The hosted Streamable-HTTP server (`cloudflare/mcp`, private) **gained OAuth on
+2026-08-08 and reached production on 2026-08-13**, so both transports now offer
+the complete toolset for authenticated callers and the anonymous deploy for
+everyone else. The architecture was built for that end state rather than the
+one-tool present, and the payoff was measured: the fourteen tools arrived in
+the hosted worker as ONE import, not as fourteen copies in a second repo — and
+the copy is the moment two surfaces begin to drift.
 
 **The 14 / 1 split is the product's own shape.** `deployments_upload` is the
 anonymous door: the one operation needing no account, and the one whose INPUT

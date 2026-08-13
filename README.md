@@ -7,6 +7,8 @@ Give your AI a publish button for the internet: ask it to put your site online, 
 [![smithery badge](https://smithery.ai/badge/shipstatic/ship)](https://smithery.ai/servers/shipstatic/ship)
 [![glama badge](https://img.shields.io/badge/glama-MCP%20server-1f7ade)](https://glama.ai/mcp/servers/shipstatic/mcp)
 
+One product, two doors in. Drop `https://mcp.shipstatic.com` into any MCP client — no install, no signup, no API key — and connect your account when your client asks: the full toolset, custom domains, sites that never expire. Install `@shipstatic/mcp` when your agent needs to deploy a folder on your own machine, when you'd rather configure a token once than sign in, or when your client doesn't speak OAuth yet — the same fifteen tools, reached the other way.
+
 ## Hosted — nothing to install
 
 Drop `https://mcp.shipstatic.com` into any MCP client. No install, no signup, no API key — your agent can publish a website in its next message.
@@ -48,13 +50,17 @@ Your agent publishes the files and answers with two links:
 
 Want the site private? Ask for a password — visitors must enter it before they can see anything.
 
-## Local — the full toolset
+### Then connect, if you want more
 
-The hosted URL does one thing: publish. Install this package for the full toolset (custom domains, listing, account-tied ops) — see everything you've shipped, connect your own domain, and publish sites that stay up permanently.
+Everything above works with no account at all. Connect one when your client offers to sign you in, and the same URL answers with the rest: everything you've shipped, your own domains, and sites that stay up permanently. Nothing to install, no key to paste — your client starts the sign-in itself.
+
+## Local — the same tools, from your own machine
+
+Install this package when your agent needs to deploy **a folder on your own machine** — the hosted endpoint takes files inline, so it has no path to read from — when you'd rather configure a token once than sign in, or when your MCP client doesn't speak OAuth yet.
 
 The config asks for one thing: `SHIP_TOKEN`. **Its value is your API key** — one credential, two names. The console mints it as an *API key* (it looks like `ship-...`), and the setting that carries it is called the *token*. Get yours free at [my.shipstatic.com/api-key](https://my.shipstatic.com/api-key), paste it where the snippets below show `ship-...`, and every site you publish lands in your account, never expires, and gets bigger limits.
 
-The key is optional: leave it out and the local server behaves exactly like the hosted one (public sites, claim links, live for 3 days).
+The key is optional: leave it out and the local server behaves like the hosted endpoint with no account connected (public sites, claim links, live for 3 days).
 
 The server runs with `npx`, which ships with [Node.js](https://nodejs.org) (20.19 or newer).
 
@@ -106,17 +112,17 @@ Prefer an editor extension? [ShipStatic for VS Code](https://marketplace.visuals
 
 ## Tools
 
-The hosted endpoint exposes `deployments_upload` only. The local install exposes everything below.
+All fifteen tools are on both doors. `deployments_upload` is the one that needs no account; connect on the hosted endpoint or set `SHIP_TOKEN` locally and the other fourteen answer too.
 
 ### Deployments
 
-| Tool | Description | Hosted |
-|------|-------------|:---:|
-| `deployments_upload` | Publish files and get a live URL instantly, optionally protected by a password | ✓ |
-| `deployments_list` | List all deployments with their URLs, status, labels, and password protection state. Pages with `limit` and `cursor` | |
-| `deployments_get` | Get deployment details including URL, status, file count, size, labels, and password protection state | |
-| `deployments_set` | Update the labels on a deployment for organization and filtering | |
-| `deployments_delete` | Permanently delete a deployment and all its files | |
+| Tool | Description |
+|------|-------------|
+| `deployments_upload` | Publish files and get a live URL instantly, optionally protected by a password |
+| `deployments_list` | List all deployments with their URLs, status, labels, and password protection state. Pages with `limit` and `cursor` |
+| `deployments_get` | Get deployment details including URL, status, file count, size, labels, and password protection state |
+| `deployments_set` | Update the labels on a deployment for organization and filtering |
+| `deployments_delete` | Permanently delete a deployment and all its files |
 
 ### Domains
 
