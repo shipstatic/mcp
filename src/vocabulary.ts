@@ -206,11 +206,11 @@ export const PARAM_DESCRIPTIONS = {
    */
   idempotencyKey: `Makes this deploy replayable instead of repeatable. A deploy is not naturally idempotent: if a call times out you cannot tell "it never landed" from "it landed and the response was lost", and retrying creates a second deployment. Send the same key on the retry and the original deployment is replayed instead (within ${IDEMPOTENCY_KEY_CONSTRAINTS.WINDOW_SECONDS / 3600} hours). Key the ATTEMPT — a run id, a commit sha, a uuid minted before the first try — never one minted fresh on each retry, which would defeat the point.`,
   /**
-   * Shared one door ahead of its offer, for the same reason `idempotencyKey`
-   * is: only stdio declares `ttl` today (`cloudflare/mcp/CLAUDE.md`'s
-   * divergence table records the hosted deferral and its trigger), and the two
-   * refusals this teaches belong to the platform, so they read identically on
-   * every door.
+   * Shared and spoken by BOTH doors — stdio declared it first (2026-08-13)
+   * and the hosted door converged the same day, importing this describe
+   * verbatim (its catalogue fence holds it to the import). The two refusals
+   * this teaches belong to the platform, so they read identically on every
+   * door.
    *
    * **Two things are deliberately absent, and both are the same rule.** The
    * RANGE, because `@shipstatic/ship` validates it in-process before a byte is
