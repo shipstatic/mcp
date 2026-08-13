@@ -137,6 +137,16 @@ The hosted endpoint exposes `deployments_upload` only. The local install exposes
 
 Key the *attempt*, not the try — a run id, a commit sha, or a uuid generated before the first call. A key that changes on every retry does nothing.
 
+### Deployments that clean themselves up
+
+`deployments_upload` accepts a `ttl` in seconds. The deployment expires when the time is up and the platform reclaims it — handy for previews and throwaway iterations you would otherwise have to remember to delete.
+
+```json
+{ "path": "/path/to/dist", "ttl": 3600 }
+```
+
+It needs `SHIP_TOKEN`: a keyless deploy already expires on the platform's schedule, so a `ttl` on one is refused rather than ignored. A deployment carrying a `ttl` cannot be linked to a custom domain — deploy without one when the site needs a domain.
+
 ## Registry
 
 Published to the [MCP Registry](https://registry.modelcontextprotocol.io/v0.1/servers?search=com.shipstatic/mcp) as `com.shipstatic/mcp`. Registry-aware clients see both the hosted endpoint and the local install and pick the right transport for their environment.

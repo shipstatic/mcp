@@ -88,6 +88,17 @@ const strArray = (description: string, required = true): ParamSurface => ({
   schema: { type: 'array', items: { type: 'string' }, description },
 });
 
+/**
+ * A bare number — no `minimum`, no `maximum`, and `number` rather than
+ * `integer`. That emptiness is the assertion: every bound on `ttl` belongs to
+ * `validateTtl`, which runs in the same process before the upload. A bound
+ * appearing in this schema means the tool has grown a second validator.
+ */
+const num = (description: string, required = true): ParamSurface => ({
+  required,
+  schema: { type: 'number', description },
+});
+
 /** The `deployment` argument, described identically wherever it is accepted. */
 const DEPLOYMENT_EXAMPLE = 'happy-cat-abc1234.shipstatic.com';
 
@@ -155,6 +166,14 @@ const CATALOGUE: Record<string, ToolSurface> = {
       // the label lengths are: the prose is pinned, the number stays derived.
       idempotencyKey: str(
         `Makes this deploy replayable instead of repeatable. A deploy is not naturally idempotent: if a call times out you cannot tell "it never landed" from "it landed and the response was lost", and retrying creates a second deployment. Send the same key on the retry and the original deployment is replayed instead (within ${IDEMPOTENCY_KEY_CONSTRAINTS.WINDOW_SECONDS / 3600} hours). Key the ATTEMPT — a run id, a commit sha, a uuid minted before the first try — never one minted fresh on each retry, which would defeat the point.`,
+        false,
+      ),
+      // No number appears in this string, and none should: the range lives in
+      // `TTL_CONSTRAINTS` and is enforced by the SDK in-process, so the prose
+      // teaches the two REFUSALS (anonymous, domain-linked) and leaves the
+      // bounds to the validator that owns them.
+      ttl: num(
+        "Seconds until this deployment expires and the platform reclaims it; omit for one that never does. Only for authenticated deploys — an anonymous deployment already expires on the platform's schedule, and a requested ttl on one is refused. A deployment carrying a ttl cannot be linked to a custom domain: deploy without one if the site needs a domain.",
         false,
       ),
     },
@@ -423,6 +442,14 @@ describe('server instructions', () => {
 
   it('names the credential that upgrades the session', () => {
     expect(instructions).toContain('SHIP_TOKEN');
+  });
+
+  it('offers the authenticated caller a deployment that expires on purpose, in seconds', () => {
+    // The UNIT is the load-bearing half. "Never expire" is the account default,
+    // so an agent only learns of the choice here — and a `ttl` read as minutes
+    // or days is a 60× or 86400× error the platform cannot detect, since every
+    // wrong value is a well-formed one.
+    expect(instructions).toContain('`ttl` (seconds)');
   });
 
   it('states the apex-domain exclusion — the platform hosts subdomains only', () => {

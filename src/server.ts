@@ -33,7 +33,7 @@ To deploy: call ${UPLOAD_TOOL_NAME} with the build output directory path. ${B.li
 
 Without SHIP_TOKEN, deployments are public and expire in ${PUBLIC_EXPIRY}. ${B.claim}
 
-With SHIP_TOKEN configured, deployments go to the user's account and never expire. Listing, managing, and domain operations also require SHIP_TOKEN.
+With SHIP_TOKEN configured, deployments go to the user's account and never expire — pass \`ttl\` (seconds) to ${UPLOAD_TOOL_NAME} for one that expires on its own. Listing, managing, and domain operations also require SHIP_TOKEN.
 
 ${B.conceptsHeader}
 ${B.deploymentConcept}
@@ -104,10 +104,17 @@ export function createServer(ship: Ship, options: ServerOptions): McpServer {
         labels: z.array(z.string()).optional().describe(PARAM_DESCRIPTIONS.labels),
         password: z.string().optional().describe(PARAM_DESCRIPTIONS.password),
         idempotencyKey: z.string().optional().describe(PARAM_DESCRIPTIONS.idempotencyKey),
+        // A bare `z.number()`, and the absences are the point. `.min()`/`.max()`
+        // would restate `TTL_CONSTRAINTS`, and `.int()` would restate the
+        // fraction rule — all three owned by `validateTtl`, which the SDK runs
+        // in-process before a byte is uploaded and which answers in the
+        // constitution's own words. A second validator here could only ever
+        // disagree with the first, silently; its absence fails loudly instead.
+        ttl: z.number().optional().describe(PARAM_DESCRIPTIONS.ttl),
       },
     },
-    ({ path, labels, password, idempotencyKey }) =>
-      call(() => ship.deployments.upload(path, { labels, password, idempotencyKey, via })),
+    ({ path, labels, password, idempotencyKey, ttl }) =>
+      call(() => ship.deployments.upload(path, { labels, password, idempotencyKey, ttl, via })),
   );
 
   // The other fourteen. Identical on every transport, so they live in the
