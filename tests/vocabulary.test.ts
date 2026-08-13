@@ -5,7 +5,13 @@ import {
 } from '@shipstatic/ship';
 import { PUBLIC_DEPLOYMENT_TTL_SECONDS } from '@shipstatic/types';
 import { describe, expect, it } from 'vitest';
-import { ANNOTATIONS, PARAM_DESCRIPTIONS, PUBLIC_EXPIRY } from '../src/vocabulary.js';
+import {
+  ANNOTATIONS,
+  DESCRIPTION_BLOCKS,
+  INSTRUCTION_BLOCKS,
+  PARAM_DESCRIPTIONS,
+  PUBLIC_EXPIRY,
+} from '../src/vocabulary.js';
 
 /**
  * @file The shared vocabulary — `src/vocabulary.ts`.
@@ -48,6 +54,60 @@ describe('parameter descriptions', () => {
     // not just the number.
     expect(PARAM_DESCRIPTIONS.idempotencyKey).toContain('Key the ATTEMPT');
     expect(PARAM_DESCRIPTIONS.idempotencyKey).toContain('never one minted fresh on each retry');
+  });
+
+  it('ttl teaches both refusals — either one omitted is a deploy an agent will attempt and lose', () => {
+    // The platform refuses a ttl twice, and the two are unrelated: an anonymous
+    // deploy has no deployer to hold a lease, and a domain is a commitment
+    // whose opposite is a deadline. An agent that learns neither discovers them
+    // as errors; the one that learns them sequences correctly the first time.
+    // `server.test.ts` pins the sentence, this pins the two rules inside it.
+    expect(PARAM_DESCRIPTIONS.ttl).toContain('Only for authenticated deploys');
+    expect(PARAM_DESCRIPTIONS.ttl).toContain('cannot be linked to a custom domain');
+  });
+
+  it('ttl states no number at all — the range has an owner, and this is not it', () => {
+    // `TTL_CONSTRAINTS` bounds the value and `validateTtl` enforces it in the
+    // same process, before a byte is uploaded, in the constitution's own words.
+    // A digit here would be either a bound (a second owner) or an example
+    // duration (a lease the platform did not choose). If a future author wants
+    // one anyway, that is a decision — made here, deliberately, not discovered
+    // later as prose disagreeing with a validator.
+    expect(PARAM_DESCRIPTIONS.ttl).not.toMatch(/\d/);
+  });
+});
+
+describe('the one-fact-one-owner rule, mechanized', () => {
+  // Everything exported here is read by BOTH transports, so a shared string
+  // that names how a caller authenticates puts one door's fact in the other's
+  // mouth. That is not hypothetical: both hosted strings named this package's
+  // env var, stdio 0.7.0 renamed it, and nothing failed — the Worker simply
+  // began giving advice that silently lands a user's deploy in the wrong
+  // account (`cloudflare/mcp/CLAUDE.md`, "The one-fact-one-owner rule").
+  //
+  // The hosted side fences its own error hints the same way. This is the half
+  // that lives with the shared vocabulary, so a describe added here can never
+  // become the next copy — and it is derived from the exports rather than a
+  // list, so a member nobody has written yet is covered already.
+  const SHARED_STRINGS = Object.entries({
+    ...PARAM_DESCRIPTIONS,
+    ...INSTRUCTION_BLOCKS,
+    ...DESCRIPTION_BLOCKS,
+  });
+
+  it.each(SHARED_STRINGS)('%s names no SHIP_* environment variable', (_name, text) => {
+    // stdio owns `SHIP_TOKEN` and says it in `server.ts`, where the sentence is
+    // genuinely its own; the hosted door owns "connect an account". Neither
+    // belongs in a string both of them read.
+    expect(text).not.toMatch(/SHIP_[A-Z_]+/);
+  });
+
+  it('sees a variable name when there is one to see, so the sweep above cannot pass vacuously', () => {
+    // A fence over derived input must be shown capable of failing: an empty
+    // export map, a renamed member, or a regex typo would otherwise report a
+    // clean surface it never actually read.
+    expect(SHARED_STRINGS.length).toBeGreaterThan(0);
+    expect('Set a free SHIP_TOKEN environment variable.').toMatch(/SHIP_[A-Z_]+/);
   });
 });
 

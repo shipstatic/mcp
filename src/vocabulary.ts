@@ -205,4 +205,20 @@ export const PARAM_DESCRIPTIONS = {
    * the same one on both. The window is derived, never typed out.
    */
   idempotencyKey: `Makes this deploy replayable instead of repeatable. A deploy is not naturally idempotent: if a call times out you cannot tell "it never landed" from "it landed and the response was lost", and retrying creates a second deployment. Send the same key on the retry and the original deployment is replayed instead (within ${IDEMPOTENCY_KEY_CONSTRAINTS.WINDOW_SECONDS / 3600} hours). Key the ATTEMPT — a run id, a commit sha, a uuid minted before the first try — never one minted fresh on each retry, which would defeat the point.`,
+  /**
+   * Shared one door ahead of its offer, for the same reason `idempotencyKey`
+   * is: only stdio declares `ttl` today (`cloudflare/mcp/CLAUDE.md`'s
+   * divergence table records the hosted deferral and its trigger), and the two
+   * refusals this teaches belong to the platform, so they read identically on
+   * every door.
+   *
+   * **Two things are deliberately absent, and both are the same rule.** The
+   * RANGE, because `@shipstatic/ship` validates it in-process before a byte is
+   * uploaded and relays the constitution's own sentence — a second copy here
+   * could only ever disagree with it. And the name of any credential: stdio
+   * owns `SHIP_TOKEN`, the hosted door owns "connect an account", and a SHARED
+   * string that named either would put one door's fact in the other's mouth.
+   * `tests/vocabulary.test.ts` fences the second half for every member.
+   */
+  ttl: "Seconds until this deployment expires and the platform reclaims it; omit for one that never does. Only for authenticated deploys — an anonymous deployment already expires on the platform's schedule, and a requested ttl on one is refused. A deployment carrying a ttl cannot be linked to a custom domain: deploy without one if the site needs a domain.",
 } as const;

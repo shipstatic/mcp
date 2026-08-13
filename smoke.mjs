@@ -77,6 +77,9 @@ const API_URL = FLAGS.get('api') ?? process.env.SHIP_API_URL ?? DEFAULT_API;
 /** Pagination and `idempotencyKey` arrived in this release; earlier ones skip that block. */
 const HAS_PAGING = compareVersions(VERSION, '1.0.0-beta.1') >= 0;
 
+/** `ttl` on `deployments_upload` arrived in this one; earlier ones skip its block. */
+const HAS_TTL = compareVersions(VERSION, '1.2.0-beta.1') >= 0;
+
 // ------------------------------------------------------------------ output
 
 let failed = 0;
@@ -328,11 +331,12 @@ async function anonymousHalf() {
       names.filter((n) => n.endsWith('_remove')).join(','),
     );
 
+    // Catalogue facts need no credential, so they are proven here even when
+    // the authenticated half is skipped.
+    const byName = Object.fromEntries((tools ?? []).map((t) => [t.name, t]));
+    const props = (name) => Object.keys(byName[name]?.inputSchema?.properties ?? {});
+
     if (HAS_PAGING) {
-      // Catalogue facts need no credential, so they are proven here even when
-      // the authenticated half is skipped.
-      const byName = Object.fromEntries((tools ?? []).map((t) => [t.name, t]));
-      const props = (name) => Object.keys(byName[name]?.inputSchema?.properties ?? {});
       check(
         'both list tools accept limit + cursor',
         ['deployments_list', 'domains_list'].every(
@@ -347,6 +351,16 @@ async function anonymousHalf() {
       );
     } else {
       skip('pagination + idempotency schema checks', `${VERSION} predates 1.0.0-beta.1`);
+    }
+
+    if (HAS_TTL) {
+      check(
+        'deployments_upload accepts ttl',
+        props('deployments_upload').includes('ttl'),
+        props('deployments_upload').join(','),
+      );
+    } else {
+      skip('the ttl schema check', `${VERSION} predates 1.2.0-beta.1`);
     }
 
     const upload = await client.call('deployments_upload', { path: scratch });
@@ -415,6 +429,8 @@ async function authenticatedHalf() {
     const owned = await deploymentBlock(client);
     if (HAS_PAGING) await paginationBlock(client);
     else skip('pagination + idempotency replay', `${VERSION} predates 1.0.0-beta.1`);
+    if (HAS_TTL) await ttlBlock(client);
+    else skip('the owned-and-expiring deploy', `${VERSION} predates 1.2.0-beta.1`);
     await domainBlock(client);
     await deleteBlock(client, owned);
     await errorRelayBlock(client);
@@ -523,6 +539,52 @@ async function paginationBlock(client) {
   // Housekeeping: the replay left one owned deployment behind that no
   // assertion below deletes. Litter on dev is still litter.
   if (replayed) await client.call('deployments_delete', { deployment: replayed });
+}
+
+/**
+ * The third deployment state: owned AND expiring, which until `ttl` could not
+ * exist — `expires` and `claim` arrived together and left together.
+ *
+ * Only a live run can prove it. The suite's ship fake resolves whatever it is
+ * handed, so nothing there can catch the API ignoring the option, refusing it,
+ * or granting a different lease than the one asked for; and the option would
+ * otherwise be a schema field no run has ever invoked, which is exactly the
+ * hole "all fifteen tools, live" exists to close.
+ */
+async function ttlBlock(client) {
+  // Short, because it is deleted below anyway — but long enough that a run
+  // reading the deployment back would still find it alive.
+  const TTL_SECONDS = 300;
+
+  const upload = await client.call('deployments_upload', { path: scratch, ttl: TTL_SECONDS });
+  if (upload.isError) {
+    fail(`authenticated deployments_upload {ttl:${TTL_SECONDS}}`, upload.text.slice(0, 200));
+    return;
+  }
+  const d = upload.data ?? {};
+  check(
+    `deployments_upload {ttl:${TTL_SECONDS}} → a deployment that expires`,
+    typeof d.deployment === 'string' && d.expires !== null && d.expires !== undefined,
+    JSON.stringify(d).slice(0, 200),
+  );
+  check(
+    '  the lease is exactly the one requested — created + ttl, stamped on one clock',
+    // Not merely "some expiry": an authenticated deploy defaults to null, so a
+    // non-null value proves the option was READ, and the arithmetic proves it
+    // was read at the value sent rather than rounded, clamped or defaulted.
+    d.expires === d.created + TTL_SECONDS,
+    `created=${d.created} expires=${d.expires} — wanted ${d.created + TTL_SECONDS}`,
+  );
+  check(
+    '  expiring yet NOT claimable — an owned deployment carries no claim URL',
+    !('claim' in d),
+    String(d.claim),
+  );
+
+  // Litter on dev is still litter, and the lease would outlive the run.
+  if (typeof d.deployment === 'string') {
+    await client.call('deployments_delete', { deployment: d.deployment });
+  }
 }
 
 /** validate → set → get → records → dns → share → verify → list → delete. */

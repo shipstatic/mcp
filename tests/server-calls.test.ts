@@ -77,7 +77,13 @@ const WIRING: WiringCase[] = [
     // distinguishes "not supplied" from "supplied empty" for `password`.
     received: [
       ABS_PATH,
-      { labels: undefined, password: undefined, idempotencyKey: undefined, via: 'mcp' },
+      {
+        labels: undefined,
+        password: undefined,
+        idempotencyKey: undefined,
+        ttl: undefined,
+        via: 'mcp',
+      },
     ],
   },
   {
@@ -95,8 +101,23 @@ const WIRING: WiringCase[] = [
         labels: undefined,
         password: undefined,
         idempotencyKey: 'run-2026-08-06-a1b2c3',
+        ttl: undefined,
         via: 'mcp',
       },
+    ],
+  },
+  {
+    tool: 'deployments_upload',
+    args: { path: ABS_PATH, ttl: 3600 },
+    method: (s) => s.deployments.upload,
+    // Its own case for the same reason `idempotencyKey` has one: `toEqual`
+    // cannot tell an absent key from an `undefined` one, so only a SUPPLIED
+    // value pins that the option survives the destructure. The number arrives
+    // verbatim — MCP neither validates nor converts it, because a duration the
+    // agent did not choose is not the agent's lease.
+    received: [
+      ABS_PATH,
+      { labels: undefined, password: undefined, idempotencyKey: undefined, ttl: 3600, via: 'mcp' },
     ],
   },
   {
@@ -493,6 +514,27 @@ describe('the anonymous claim story', () => {
 
     expect(payload.claim).toBeUndefined();
     expect(payload.expires).toBeNull();
+  });
+
+  it('a ttl deploy expires WITHOUT being claimable — the third state, which no surface may conflate', async () => {
+    // Until `ttl`, `expires` and `claim` arrived together and left together, so
+    // "expiring" and "claimable" were the same fact wearing two names. They are
+    // now independent: this deployment is owned, so nothing can claim it, and
+    // it still has a deadline. An agent that reads the pair as one tells the
+    // user to visit a claim URL that does not exist — or, worse, says a site
+    // is permanent because no claim URL came back.
+    const ephemeral = makeDeploymentCreateResponse({
+      created: timestamps.jan2022,
+      expires: timestamps.jan2022 + 3600,
+    });
+    harness.ship.deployments.upload.mockResolvedValue(ephemeral);
+
+    const payload = (await harness.client
+      .callTool({ name: 'deployments_upload', arguments: { path: ABS_PATH, ttl: 3600 } })
+      .then(jsonOf)) as Record<string, unknown>;
+
+    expect(payload.expires).toBe(timestamps.jan2022 + 3600);
+    expect(payload).not.toHaveProperty('claim');
   });
 });
 

@@ -2,7 +2,7 @@
 
 Claude Code instructions for the **ShipStatic MCP Server**.
 
-**@shipstatic/mcp** — MCP server that exposes the ShipStatic SDK to AI agents via stdio. Thin wrapper over `@shipstatic/ship`. Published to the MCP Registry as `com.shipstatic/mcp`. **Maturity:** v1.0.x — Deployments + Domains (15 tools).
+**@shipstatic/mcp** — MCP server that exposes the ShipStatic SDK to AI agents via stdio. Thin wrapper over `@shipstatic/ship`. Published to the MCP Registry as `com.shipstatic/mcp`. **Maturity:** v1.x — Deployments + Domains (15 tools).
 
 **The version says which platform it speaks to: the 1.x MCP is the one that speaks to the 2.x platform.** 1.0.0 is a true major for consumers — `SHIP_API_KEY` is no longer read (every existing server config breaks until its env var is renamed) and the delete tools were renamed (`deployments_remove` → `deployments_delete`, `domains_remove` → `domains_delete`), so a saved agent workflow naming the old tool stops resolving.
 
@@ -351,6 +351,7 @@ configured" assertions) and wraps `fetch` to throw on any non-loopback host
 | `test-naming.test.ts` | Layout drift: a filename describing the test instead of its subject, a mirror file with no `src/` counterpart, an aspect split not recorded below. |
 | `coverage.thresholds` | Coverage decay. 100/100/100/100 — MCP has no in-process-unreachable corner, so the bar is the ceiling and an untested new tool fails the run. |
 | `worker-safety.test.ts` | A `node:` builtin entering the graph `index.ts` exposes — which the Workers-hosted transport imports. It was proven only by that PRIVATE repo's build failing: late, elsewhere, and after a publish. Not hypothetical — the obvious next admission to the public surface was a `startStdio` composing the transport for consumers, and the MCP SDK's `server/stdio.js` imports `node:process`. It would have built green and published green. `bin.ts` is exempt by construction (unreachable from `index.ts`), and a second assertion proves the probe can SEE a builtin, so the first cannot pass vacuously. |
+| the `SHIP_*` sweep in `vocabulary.test.ts` | A SHARED string naming how ONE door authenticates. Both hosted strings once named this package's env var, stdio 0.7.0 renamed it, and nothing failed — the Worker simply began giving advice that silently lands a user's deploy in the wrong account. The hosted side fences its own error hints the same way; this is the half that lives with the vocabulary, so a `describe()` added here can never become the next copy. Derived from the export maps rather than a list, so a member nobody has written yet is already covered, and a second row proves the probe can SEE a variable name — otherwise an empty map would report a clean surface it never read. |
 | the `ACCOUNT_TOOL_NAMES` comparison in `server.test.ts` | The exported name list drifting from the registrations it names. Both directions, through a real `tools/list`: a registration added without its name, a name without its registration, a typo in either. It is what lets the hosted transport state its expected catalogue as `[UPLOAD_TOOL_NAME, ...ACCOUNT_TOOL_NAMES]` instead of counting to fifteen in a second repo. |
 
 **Recorded aspect splits** — one subject, more than one mirror file. The
@@ -472,6 +473,47 @@ not. The `describe()` teaches the law — key the ATTEMPT (a run id, a commit
 sha, a uuid minted before the first try), never the try. MCP never mints,
 derives or normalizes the key; a key the agent did not choose cannot identify
 the agent's attempt.
+
+**Ephemeral deploys (`ttl`) — taken 2026-08-13.** `deployments_upload` accepts
+`ttl` in seconds and passes it straight to the SDK. The product fit is exact:
+agents are the platform's most ephemeral deployers, and one iterating on
+previews wants deploys that clean themselves up rather than a delete it must
+remember to issue. Design source is `npm/ship/CLAUDE.md`, "Ephemeral
+deployments (`--ttl`)" — none of the semantics are this package's to re-derive.
+
+Three things are deliberately NOT done, and all three are the same rule:
+
+- **No preflight, and no second validator** (the handover law: the MCP relays
+  the platform's own refusals). The CLI's `--ttl` preflight exists to spare a
+  CLI user the upload cost and to name the flag; here `validateTtl` runs inside
+  `@shipstatic/ship` at the request boundary, before a byte is uploaded, and
+  the anonymous refusal mints nothing — so the fail-fast is already had, in the
+  constitution's own words.
+- **No range in the `describe()`,** and no `.int()` / `.min()` / `.max()` on
+  the zod schema. Every one of those restates a rule `validateTtl` owns, in a
+  place that can only disagree with it silently; the absence fails loudly
+  instead. `tests/vocabulary.test.ts` holds the prose to it (no digits at all),
+  and the catalogue pin holds the schema to a bare `number`.
+- **No credential named in the describe.** It is SHARED vocabulary — stdio owns
+  `SHIP_TOKEN`, the hosted door owns "connect an account" — so it says "only
+  for authenticated deploys" and neither door's word.
+
+**And it created a third deployment state, which every surface must stop
+conflating.** Until `ttl`, `expires` and `claim` arrived together and left
+together, so "expiring" and "claimable" were one fact under two names. An owned
+deployment can now carry `expires` with no `claim`: an agent reading the pair
+as one either sends the user to a claim URL that does not exist, or calls a
+site permanent because none came back. Pinned in `server-calls.test.ts` and
+asserted live in `smoke.mjs`.
+
+**No composed deploy-and-link tool — decided 2026-08-13, do not add.** The
+CLI's `--domain` answers constraints MCP does not have: one process, one exit
+code, one JSON document, a `bash -e` workflow without `pipefail`. An agent
+sequences `deployments_upload → domains_set` natively, and the INSTRUCTIONS'
+domain workflow already teaches the order. A sixteenth tool restating two
+others expands the catalogue every agent must read before acting — against the
+static-catalogue shape this server is built on. Revisit only with evidence that
+agents fail the sequence.
 
 **No `tokens_*` tools — recorded, do not add without a new product call.** The
 SDK has `tokens.get`/`tokens.list`/`tokens.create`; this server exposes none.
