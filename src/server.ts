@@ -1,6 +1,6 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type Ship from '@shipstatic/ship';
-import { DeploymentVia, type DeploymentViaType } from '@shipstatic/types';
+import { DeploymentVia, type DeploymentViaType, MY_API_KEY_URL } from '@shipstatic/types';
 import { z } from 'zod';
 import { call } from './call.js';
 import { registerAccountTools } from './tools.js';
@@ -33,7 +33,7 @@ To deploy: call ${UPLOAD_TOOL_NAME} with the build output directory path. ${B.li
 
 Without SHIP_TOKEN, deployments are public and expire in ${PUBLIC_EXPIRY}. ${B.claim}
 
-With SHIP_TOKEN configured, deployments go to the user's account and never expire — pass \`ttl\` (seconds) to ${UPLOAD_TOOL_NAME} for one that expires on its own. Listing, managing, and domain operations also require SHIP_TOKEN.
+With SHIP_TOKEN configured — its value is the user's API key, free at ${MY_API_KEY_URL} — deployments go to the user's account and never expire; pass \`ttl\` (seconds) to ${UPLOAD_TOOL_NAME} for one that expires on its own. Listing, managing, and domain operations also require SHIP_TOKEN.
 
 ${B.conceptsHeader}
 ${B.deploymentConcept}

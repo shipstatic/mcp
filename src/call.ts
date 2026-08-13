@@ -1,5 +1,6 @@
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { ErrorType, isShipError } from '@shipstatic/ship';
+import { MY_API_KEY_URL } from '@shipstatic/types';
 
 /**
  * The two CREDENTIAL arms that earn a per-transport hint. Everything else
@@ -252,9 +253,17 @@ function safeStringify(value: unknown): string {
   }
 }
 
-/** stdio's hints: this package owns `SHIP_TOKEN` and is the only side that may name it. */
+/**
+ * stdio's hints: this package owns `SHIP_TOKEN` and is the only side that may
+ * name it. The authentication hint carries the whole chain on purpose — the
+ * variable, what its value IS (the API key; the console and the config use two
+ * words for one credential, and this sentence is where an agent learns they
+ * are the same), and where it is minted. It fires at exactly the moment a
+ * user is missing one, so a hint that names the slot without naming the value
+ * strands them holding an "API key" a config asks for as a "token".
+ */
 const STDIO_HINTS: ErrorHints = {
-  authentication: 'Set a free SHIP_TOKEN environment variable in your MCP server configuration.',
+  authentication: `Set the SHIP_TOKEN environment variable in your MCP server configuration — its value is the user's API key, free at ${MY_API_KEY_URL}.`,
   forbidden:
     'This action is not permitted. Likely cause: plan limits reached or the account is terminated. Stop retrying — the user needs to upgrade or contact support at https://my.shipstatic.com.',
 };

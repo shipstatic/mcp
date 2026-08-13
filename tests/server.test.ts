@@ -4,6 +4,7 @@ import {
   LABEL_CONSTRAINTS,
   PASSWORD_CONSTRAINTS,
 } from '@shipstatic/ship';
+import { MY_API_KEY_URL } from '@shipstatic/types';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { ACCOUNT_TOOL_NAMES } from '../src/tools.js';
 import { UPLOAD_TOOL_NAME } from '../src/vocabulary.js';
@@ -442,6 +443,16 @@ describe('server instructions', () => {
 
   it('names the credential that upgrades the session', () => {
     expect(instructions).toContain('SHIP_TOKEN');
+  });
+
+  it('resolves the two names one credential wears — the config asks for a token, the console mints an API key', () => {
+    // An agent guiding a person through setup is the one who has to bridge the
+    // vocabulary: the user returns from the console holding an "API key" and
+    // the config slot is called SHIP_TOKEN. Unless the instructions say they
+    // are the same value, the agent cannot either — and the mint URL beside it
+    // is what turns "you need a token" into a step the user can actually take.
+    expect(instructions).toContain("its value is the user's API key");
+    expect(instructions).toContain(MY_API_KEY_URL);
   });
 
   it('offers the authenticated caller a deployment that expires on purpose, in seconds', () => {
