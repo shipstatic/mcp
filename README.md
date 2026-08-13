@@ -52,7 +52,9 @@ Want the site private? Ask for a password — visitors must enter it before they
 
 The hosted URL does one thing: publish. Install this package for the full toolset (custom domains, listing, account-tied ops) — see everything you've shipped, connect your own domain, and publish sites that stay up permanently.
 
-`ship-...` in the snippets below is your API key — free at [my.shipstatic.com/api-key](https://my.shipstatic.com/api-key). With it, sites publish to your account, never expire, and get bigger limits. It's optional: leave it out and the local server behaves exactly like the hosted one (public sites, claim links, live for 3 days).
+The config asks for one thing: `SHIP_TOKEN`. **Its value is your API key** — one credential, two names. The console mints it as an *API key* (it looks like `ship-...`), and the setting that carries it is called the *token*. Get yours free at [my.shipstatic.com/api-key](https://my.shipstatic.com/api-key), paste it where the snippets below show `ship-...`, and every site you publish lands in your account, never expires, and gets bigger limits.
+
+The key is optional: leave it out and the local server behaves exactly like the hosted one (public sites, claim links, live for 3 days).
 
 The server runs with `npx`, which ships with [Node.js](https://nodejs.org) (20.19 or newer).
 
@@ -154,7 +156,7 @@ Key the *attempt*, not the try — a run id, a commit sha, or a uuid generated b
 { "path": "/path/to/dist", "ttl": 3600 }
 ```
 
-It needs `SHIP_TOKEN`: a keyless deploy already expires on the platform's schedule, so a `ttl` on one is refused rather than ignored. A deployment carrying a `ttl` cannot be linked to a custom domain — deploy without one when the site needs a domain.
+It needs `SHIP_TOKEN` (your API key): a keyless deploy already expires on the platform's schedule, so a `ttl` on one is refused rather than ignored. A deployment carrying a `ttl` cannot be linked to a custom domain — deploy without one when the site needs a domain.
 
 ## Registry
 

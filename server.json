@@ -28,7 +28,7 @@
       "environmentVariables": [
         {
           "name": "SHIP_TOKEN",
-          "description": "Optional. Without it, deploys behave like the hosted endpoint (public, claim URL, 3-day expiry). With it, deployments are permanent, the full toolset (custom domains, listing, account-tied ops) unlocks, and you get bigger limits.",
+          "description": "Your API key — one credential, two names: the console mints it as an API key (ship-...), and this setting carries it as the token. Free at https://my.shipstatic.com/api-key. Optional: without it, deploys behave like the hosted endpoint (public, claim URL, 3-day expiry). With it, deployments are permanent, the full toolset (custom domains, listing, account-tied ops) unlocks, and you get bigger limits.",
           "isRequired": false,
           "isSecret": true
         }

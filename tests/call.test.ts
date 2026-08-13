@@ -1,4 +1,4 @@
-import { ErrorType, ShipError } from '@shipstatic/types';
+import { ErrorType, MY_API_KEY_URL, ShipError } from '@shipstatic/types';
 import { describe, expect, it } from 'vitest';
 import { type AuthFailure, call, createCall } from '../src/call.js';
 import { textOf } from './harness.js';
@@ -53,12 +53,20 @@ describe('successful results', () => {
 });
 
 describe('ShipError mapping', () => {
-  it('appends the credential hint to authentication failures', async () => {
+  it('appends the credential hint to authentication failures — the variable, the key, the mint', async () => {
+    // The hint fires at exactly the moment a user is missing a credential, so
+    // it must carry the whole chain: the slot (`SHIP_TOKEN`), what its value
+    // IS (the console mints an "API key", the config asks for a "token" — one
+    // credential, two words, and this sentence is where they meet), and where
+    // to get one. A hint naming the slot alone strands the user who is
+    // holding a key and being asked for a token.
     const result = await call(() => Promise.reject(ShipError.authentication('Invalid API key')));
 
     expect(result.isError).toBe(true);
     expect(textOf(result)).toContain('Invalid API key');
     expect(textOf(result)).toContain('SHIP_TOKEN');
+    expect(textOf(result)).toContain("its value is the user's API key");
+    expect(textOf(result)).toContain(MY_API_KEY_URL);
   });
 
   it('appends a stop-retrying hint to forbidden failures', async () => {
