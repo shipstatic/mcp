@@ -259,7 +259,7 @@ The **version** is an argument for the same reason: the executable knows its own
 
 `SHIP_TOKEN` is **optional**. Without it, deployments go to the public account and expire in 3 days; with it, they go to the user's account permanently. The token is forwarded explicitly to the `Ship` constructor — and that's all MCP needs to do.
 
-**One slot, any platform token.** Since ship 2.0 there is a single `token` option. The value's prefix says what it is — `ship-` API key, `deploy-` deploy token, anything else an opaque bearer — and the *server* classifies it. MCP never inspects or routes on the credential, which is why adding a new credential kind never requires a release here.
+**One slot, any platform token.** Since ship 2.0 there is a single `token` option. The value's prefix says what it is — `ship-` API key, `deploy-` deploy token, `oauth-` OAuth access token (since types 2.8.0), anything else an opaque bearer — and the *server* classifies it. MCP never inspects or routes on the credential, which is why adding a new credential kind never requires a release here.
 
 The SDK's strict-isolation contract (synchronous constructor, no filesystem reads, only documented `SHIP_*` env-var fallbacks) is what keeps embedded credentials predictable. See `npm/ship/CLAUDE.md` "Strict-isolation contract for embedded hosts" for the full rationale.
 
