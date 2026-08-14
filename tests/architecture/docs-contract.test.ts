@@ -20,6 +20,33 @@ import { PUBLIC_EXPIRY, UPLOAD_TOOL_NAME } from '../../src/vocabulary.js';
  */
 
 const README = readFileSync(fileURLToPath(new URL('../../README.md', import.meta.url)), 'utf8');
+const SERVER_JSON = JSON.parse(
+  readFileSync(fileURLToPath(new URL('../../server.json', import.meta.url)), 'utf8'),
+);
+
+describe('server.json', () => {
+  it('keeps its description inside the MCP Registry limit', () => {
+    // The registry refuses `description` over 100 characters with a 422, and
+    // it refuses it at PUBLISH — after npm has already accepted the version.
+    // That is the worst place to learn it: the release half-lands, the
+    // package ships, and the listing keeps serving the previous
+    // description, which on 2026-08-14 was the exact "Install for the full
+    // toolset" line the wave existed to retire. The npm `description` beside
+    // it has no such cap (201 chars today), so the two fields diverge
+    // legitimately and only this one is bounded.
+    //
+    // A literal 100 rather than a derived one: the number is the registry's,
+    // published in its API error, and there is nothing in this repo to derive
+    // it from. Restating it here is the cheapest place it can be wrong.
+    expect(SERVER_JSON.description.length).toBeLessThanOrEqual(100);
+  });
+
+  it('names the same package npm does', () => {
+    // `mcpName` in package.json must equal `name` in server.json, or the
+    // registry entry and the npm package stop being the same product.
+    expect(SERVER_JSON.name).toBe('com.shipstatic/mcp');
+  });
+});
 
 describe('README', () => {
   it('documents exactly the fifteen tools — nothing missing, nothing invented', () => {
