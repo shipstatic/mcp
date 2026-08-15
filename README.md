@@ -2,14 +2,16 @@
 
 **One URL. Your agent ships.**
 
+> ⚡ **You probably don't need to install this.** The same server is hosted at **`https://mcp.shipstatic.com`** — drop that URL into any MCP client and your agent can publish a website in its next message. No install, no Node.js, no signup, no API key.
+>
+> **This package is the local alternative.** Install it when your agent needs to deploy a folder on your own machine, when you'd rather configure a token once than sign in, or when your client doesn't speak OAuth yet — the same fifteen tools, reached the other way. [Local setup ↓](#local--the-same-tools-from-your-own-machine)
+
 Give your AI a publish button for the internet: ask it to put your site online, and get back a real, shareable link in seconds. Landing pages, prototypes, portfolios — any static site.
 
 [![smithery badge](https://smithery.ai/badge/shipstatic/ship)](https://smithery.ai/servers/shipstatic/ship)
 [![glama badge](https://img.shields.io/badge/glama-MCP%20server-1f7ade)](https://glama.ai/mcp/servers/shipstatic/mcp)
 
-One product, two doors in. Drop `https://mcp.shipstatic.com` into any MCP client — no install, no signup, no API key — and connect your account when your client asks: the full toolset, custom domains, sites that never expire. Install `@shipstatic/mcp` when your agent needs to deploy a folder on your own machine, when you'd rather configure a token once than sign in, or when your client doesn't speak OAuth yet — the same fifteen tools, reached the other way.
-
-## Hosted — nothing to install
+## Hosted — start here
 
 Drop `https://mcp.shipstatic.com` into any MCP client. No install, no signup, no API key — your agent can publish a website in its next message.
 
@@ -27,7 +29,7 @@ claude mcp add --transport http shipstatic https://mcp.shipstatic.com
 
 **Settings → Connectors → Add custom connector**, paste `https://mcp.shipstatic.com`, save.
 
-### Cursor, Antigravity, Windsurf, Zed — anywhere with `mcp.json`
+### Cursor, Antigravity, Windsurf, n8n, Zed — anywhere with `mcp.json`
 
 ```json
 {
@@ -38,6 +40,10 @@ claude mcp add --transport http shipstatic https://mcp.shipstatic.com
   }
 }
 ```
+
+### VS Code
+
+Install [ShipStatic for VS Code](https://marketplace.visualstudio.com/items?itemName=shipstatic.shipstatic) — the server is built in, with no config at all.
 
 ### Then just ask
 
@@ -60,7 +66,7 @@ Install this package when your agent needs to deploy **a folder on your own mach
 
 The config asks for one thing: `SHIP_TOKEN`. **Its value is your API key** — one credential, two names. The console mints it as an *API key* (it looks like `ship-...`), and the setting that carries it is called the *token*. Get yours free at [my.shipstatic.com/api-key](https://my.shipstatic.com/api-key), paste it where the snippets below show `ship-...`, and every site you publish lands in your account, never expires, and gets bigger limits.
 
-The key is optional: leave it out and the local server behaves like the hosted endpoint with no account connected (public sites, claim links, live for 3 days).
+The key is optional: leave it out and the local server behaves exactly like the hosted endpoint with no account connected — public sites, claim links, live for 3 days.
 
 The server runs with `npx`, which ships with [Node.js](https://nodejs.org) (20.19 or newer).
 
@@ -106,25 +112,26 @@ Add to `~/.gemini/antigravity/mcp_config.json`:
 
 Same config shape — `npx -y @shipstatic/mcp`, with `SHIP_TOKEN` in `env`. Works with any MCP-compatible client.
 
-### VS Code
-
-Prefer an editor extension? [ShipStatic for VS Code](https://marketplace.visualstudio.com/items?itemName=shipstatic.shipstatic) has this server built in — no config at all.
-
 ## Tools
 
-All fifteen tools are on both doors. `deployments_upload` is the one that needs no account; connect on the hosted endpoint or set `SHIP_TOKEN` locally and the other fourteen answer too.
+All fifteen tools are on both doors. What changes is not which tools exist, but which ones answer: `deployments_upload` is the one that needs no account, and the other fourteen answer once you have connected one (hosted) or set `SHIP_TOKEN` (local).
 
-### Deployments
+### Publishing — no account needed
 
 | Tool | Description |
 |------|-------------|
 | `deployments_upload` | Publish files and get a live URL instantly, optionally protected by a password |
+
+### Deployments — with an account
+
+| Tool | Description |
+|------|-------------|
 | `deployments_list` | List all deployments with their URLs, status, labels, and password protection state. Pages with `limit` and `cursor` |
 | `deployments_get` | Get deployment details including URL, status, file count, size, labels, and password protection state |
 | `deployments_set` | Update the labels on a deployment for organization and filtering |
 | `deployments_delete` | Permanently delete a deployment and all its files |
 
-### Domains
+### Domains — with an account
 
 | Tool | Description |
 |------|-------------|
@@ -138,7 +145,7 @@ All fifteen tools are on both doors. `deployments_upload` is the one that needs 
 | `domains_verify` | Check if DNS is configured correctly after you set up the records |
 | `domains_delete` | Permanently disconnect and delete a custom domain |
 
-### Account
+### Account — with an account
 
 | Tool | Description |
 |------|-------------|
@@ -162,7 +169,7 @@ Key the *attempt*, not the try — a run id, a commit sha, or a uuid generated b
 { "path": "/path/to/dist", "ttl": 3600 }
 ```
 
-It needs `SHIP_TOKEN` (your API key): a keyless deploy already expires on the platform's schedule, so a `ttl` on one is refused rather than ignored. A deployment carrying a `ttl` cannot be linked to a custom domain — deploy without one when the site needs a domain.
+It needs an account — `SHIP_TOKEN` here, a connected account on the hosted endpoint: a deploy with no account already expires on the platform's schedule, so a `ttl` on one is refused rather than ignored. A deployment carrying a `ttl` cannot be linked to a custom domain — deploy without one when the site needs a domain.
 
 ## Registry
 

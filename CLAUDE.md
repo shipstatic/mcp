@@ -10,7 +10,11 @@ A **hosted Streamable-HTTP variant** lives at `https://mcp.shipstatic.com`, regi
 
 ## README positioning (public docs)
 
-`README.md` ships to npm, Glama, and the MCP Registry. From the reader's perspective, **ShipStatic MCP is one product with two doors in**: the hosted endpoint (no install) and this package (a folder on your own machine). The README leads with hosted, presents the local install as the door for a different NEED rather than a bigger feature set, and never reveals that the hosted variant lives in a separate, private repo (`cloudflare/mcp/`).
+`README.md` ships to npm, Glama, and the MCP Registry. From the reader's perspective, **ShipStatic MCP is one product whose door is the hosted endpoint**, with this package as the local alternative for a different NEED — never a bigger feature set. The README never reveals that the hosted variant lives in a separate, private repo (`cloudflare/mcp/`).
+
+**The README opens by telling the reader they probably don't need it** (2026-08-15), in a `> ⚡` blockquote before anything else — the same shape `npm/shipstatic/README.md` uses to redirect someone who landed on the alias instead of `@shipstatic/ship`. The reasoning is identical in both places: a package page's most valuable service to a reader is telling them, immediately, whether they are in the right place. Here that means naming `https://mcp.shipstatic.com` above the fold and linking down to the local setup for the readers who genuinely want it.
+
+That is a positioning decision rather than a demotion — the fifteen tools are the same, and the anonymous-publish pillar reads identically on both doors. What changed on 2026-08-13 is which door a reader should reach for FIRST, and the prose followed on 2026-08-15.
 
 **The upgrade line died on 2026-08-13 and its replacement is the law's own worked example.** "Install this package for the full toolset" was true while the hosted door was anonymous-only, and stopped being true the day OAuth landed there — but a README has no compiler, so it sold the placeholder for months while the product underneath it had changed. Nothing failed; nothing could. The lesson the anchor list now carries: **an anchor phrase that states a CAPABILITY has a shelf life, and one that states a NEED does not.** The three surviving anchors describe what the reader does; the dead one described what the product was.
 
