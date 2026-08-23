@@ -274,7 +274,7 @@ export function makeAccount(overrides: Partial<AccountGetResponse> = {}): Accoun
     activated: null,
     hint: null,
     used: null,
-    overdue: false,
+    pastDue: false,
     // `apiKey` is what a `ship-` prefixed SHIP_TOKEN classifies as; the value's
     // prefix decides, and the server reports the classification back.
     authMethod: 'apiKey',
