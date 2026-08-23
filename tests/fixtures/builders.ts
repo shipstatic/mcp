@@ -267,12 +267,14 @@ export function makeAccount(overrides: Partial<AccountGetResponse> = {}): Accoun
     name: 'Test User',
     picture: 'https://example.com/avatar.jpg',
     plan: 'free',
-    usage: { customDomains: 0 },
+    suspended: false,
+    usage: { deployments: 0, customDomains: 0 },
+    caps: { deployments: 100, customDomains: 0 },
     created: timestamps.jan2022,
     activated: null,
     hint: null,
     used: null,
-    grace: null,
+    overdue: false,
     // `apiKey` is what a `ship-` prefixed SHIP_TOKEN classifies as; the value's
     // prefix decides, and the server reports the classification back.
     authMethod: 'apiKey',
