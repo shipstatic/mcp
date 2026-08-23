@@ -277,6 +277,10 @@ export function makeAccount(overrides: Partial<AccountGetResponse> = {}): Accoun
     pastDue: false,
     billed: false,
     upgrade: 'pro',
+    // Up is now, down is at period end: the live billing interval and the
+    // pending period-end change, both null while nothing bills the account.
+    interval: null,
+    scheduled: null,
     // `apiKey` is what a `ship-` prefixed SHIP_TOKEN classifies as; the value's
     // prefix decides, and the server reports the classification back.
     authMethod: 'apiKey',
