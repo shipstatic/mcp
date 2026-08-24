@@ -12,11 +12,11 @@ importers:
         specifier: ^1.30.0
         version: 1.30.0(zod@4.4.3)
       '@shipstatic/ship':
-        specifier: 2.6.0-beta.5
-        version: 2.6.0-beta.5
+        specifier: 2.6.0-beta.6
+        version: 2.6.0-beta.6
       '@shipstatic/types':
-        specifier: 2.17.0-beta.3
-        version: 2.17.0-beta.3
+        specifier: 2.17.0-beta.4
+        version: 2.17.0-beta.4
       zod:
         specifier: ^4.4.3
         version: 4.4.3
@@ -579,13 +579,13 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@shipstatic/ship@2.6.0-beta.5':
-    resolution: {integrity: sha512-oU6/3y1AQyctQrpdBVtq2o1hb9fEP/QHSukliFZbI3PchCLh85i8kScJ9UbODGWuFZZmzlbPORol7FJrO8MkUQ==}
+  '@shipstatic/ship@2.6.0-beta.6':
+    resolution: {integrity: sha512-xBznYRRa+0YateZUMKBYaT8T4qs519Y91/4ShtROZ61TcpvTcq8MiNkNMMiBwuzUvcNcOo7TSXFcv/O2nFpbkg==}
     engines: {node: '>=20.19.0'}
     hasBin: true
 
-  '@shipstatic/types@2.17.0-beta.3':
-    resolution: {integrity: sha512-ycBqIBi7LdgStfKT3PDeTEOzOwJEwU832eM72Js1olMEEilDJ5EggIhgc6Qfv6xvOlB5mrYA+zSV+K6hNzPnEg==}
+  '@shipstatic/types@2.17.0-beta.4':
+    resolution: {integrity: sha512-8wlDHR8DfiaMjmDyE8MR4GTWGNfDEhkyrnHU9sSLQ8qxOmsDDmszzkusPt9CRL5kT1v3VA464duisJ3j9cvh2Q==}
     engines: {node: '>=20.19.0'}
 
   '@standard-schema/spec@1.1.0':
@@ -1559,13 +1559,13 @@ snapshots:
   '@rollup/rollup-win32-x64-msvc@4.62.3':
     optional: true
 
-  '@shipstatic/ship@2.6.0-beta.5':
+  '@shipstatic/ship@2.6.0-beta.6':
     dependencies:
       junk: 4.0.1
       spark-md5: 3.0.2
       zod: 4.4.3
 
-  '@shipstatic/types@2.17.0-beta.3': {}
+  '@shipstatic/types@2.17.0-beta.4': {}
 
   '@standard-schema/spec@1.1.0': {}
 
