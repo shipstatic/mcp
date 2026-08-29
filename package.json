@@ -1,6 +1,6 @@
 {
   "name": "@shipstatic/mcp",
-  "version": "1.6.1",
+  "version": "1.6.2-beta.1",
   "mcpName": "com.shipstatic/mcp",
   "description": "Deploy static websites from AI agents. Start with the hosted endpoint at mcp.shipstatic.com — no install, no signup, no API key — or install this package to deploy folders from your own machine. The same fifteen tools either way.",
   "type": "module",
@@ -67,8 +67,8 @@
   "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
-    "@shipstatic/ship": "2.6.1",
-    "@shipstatic/types": "2.18.0",
+    "@shipstatic/ship": "2.6.2-beta.1",
+    "@shipstatic/types": "2.19.0-beta.1",
     "zod": "^4.4.3"
   },
   "devDependencies": {
