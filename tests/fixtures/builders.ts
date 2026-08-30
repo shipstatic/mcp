@@ -251,9 +251,11 @@ export function makeDomainDelete(domain = CUSTOM_DOMAIN): DomainDeleteResponse {
   return { domain };
 }
 
-/** `domains.share` resolves to the domain plus its share hash. */
-export function makeDomainShare(hash = 'a1b2c3d4e5f60718'): { domain: string; hash: string } {
-  return { domain: CUSTOM_DOMAIN, hash };
+/** `domains.share` resolves to the domain plus its finished setup link. */
+export function makeDomainShare(
+  url = `https://connect.shipstatic.com/${CUSTOM_DOMAIN}/a1b2c3d4e5f60718`,
+): { domain: string; url: string } {
+  return { domain: CUSTOM_DOMAIN, url };
 }
 
 /**

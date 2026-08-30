@@ -268,7 +268,7 @@ const CATALOGUE: Record<string, ToolSurface> = {
   domains_share: {
     title: 'Share DNS Setup',
     description:
-      'Get a shareable DNS setup hash for a domain. The hash can be shared with the user so they can view the required DNS records without needing an API key.',
+      'Get a shareable DNS setup link for a domain. Share the link with the user so they, or whoever manages their DNS, can view the required records without needing an API key.',
     annotations: READ,
     params: {
       domain: str(
