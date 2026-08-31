@@ -139,6 +139,28 @@ export const ANNOTATIONS = {
 } as const;
 
 /**
+ * One title, two wire slots: project a tool config's top-level `title` into
+ * `annotations.title` at registration.
+ *
+ * The MCP spec carries a tool title in two places. The 2025-06-18 revision
+ * put it top-level on the Tool object (where every registration here states
+ * it), and `ToolAnnotations.title` is the older 2025-03-26 slot that some
+ * readers still key on. The Claude connectors portal is one of them, measured
+ * on submission day 2026-08-31: its Tools step rendered every top-level title
+ * as the heading and simultaneously flagged all fifteen tools with "Missing
+ * annotations: title". So both slots must be populated, and they must agree.
+ *
+ * The top-level `title` stays the single owner. This projection is the only
+ * writer of the annotations copy, applied at every registration on both
+ * transports, and the catalogue fences hold the two slots equal off a real
+ * `tools/list` so a registration that bypasses it goes red rather than
+ * shipping a bare slot back to the portal.
+ */
+export function titled<C extends { title: string; annotations?: object }>(config: C): C {
+  return { ...config, annotations: { ...config.annotations, title: config.title } };
+}
+
+/**
  * INSTRUCTIONS sentences both transports say.
  *
  * `initialize`'s instructions are the other half of what an agent reads

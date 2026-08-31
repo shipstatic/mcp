@@ -41,7 +41,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type Ship from '@shipstatic/ship';
 import { z } from 'zod';
 import type { CallFn } from './call.js';
-import { ANNOTATIONS } from './vocabulary.js';
+import { ANNOTATIONS, titled } from './vocabulary.js';
 
 const { READ, WRITE, DESTRUCTIVE } = ANNOTATIONS;
 
@@ -119,18 +119,18 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
 
   server.registerTool(
     'deployments_list',
-    {
+    titled({
       title: 'List Deployments',
       description: `List all deployments with their URLs, status, labels, and password protection state.${PAGING_NOTE}`,
       annotations: READ,
       inputSchema: PAGINATION_INPUT,
-    },
+    }),
     ({ limit, cursor }) => call(() => ship.deployments.list({ limit, cursor })),
   );
 
   server.registerTool(
     'deployments_get',
-    {
+    titled({
       title: 'Get Deployment',
       description:
         'Get deployment details including URL, status, file count, size, labels, and password protection state.',
@@ -142,13 +142,13 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
             `Deployment hostname (e.g. "${DEPLOYMENT_EXAMPLE}"). Returned by deployments_upload or deployments_list.`,
           ),
       },
-    },
+    }),
     ({ deployment }) => call(() => ship.deployments.get(deployment)),
   );
 
   server.registerTool(
     'deployments_set',
-    {
+    titled({
       title: 'Update Deployment Labels',
       description: 'Update deployment labels. Replaces all existing labels.',
       annotations: WRITE,
@@ -162,13 +162,13 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
           .array(z.string())
           .describe('Labels to set. Replaces all existing labels. Pass empty array to clear.'),
       },
-    },
+    }),
     ({ deployment, labels }) => call(() => ship.deployments.set(deployment, { labels })),
   );
 
   server.registerTool(
     'deployments_delete',
-    {
+    titled({
       title: 'Delete Deployment',
       description:
         'Permanently delete a deployment and its files. You MUST confirm with the user before calling this tool, referencing the deployment.',
@@ -178,7 +178,7 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
           .string()
           .describe(`Deployment hostname to delete (e.g. "${DEPLOYMENT_EXAMPLE}")`),
       },
-    },
+    }),
     ({ deployment }) => call(() => ship.deployments.delete(deployment)),
   );
 
@@ -186,7 +186,7 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
 
   server.registerTool(
     'domains_set',
-    {
+    titled({
       title: 'Connect Custom Domain',
       description:
         'Create or update a custom domain. Can reserve a name (omit deployment), link it to a deployment, switch deployments, or update labels. After creating, call domains_records and show the DNS records to the user.',
@@ -204,25 +204,25 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
           .optional()
           .describe('Labels for organizing domains (e.g. ["production"]).'),
       },
-    },
+    }),
     ({ domain, deployment, labels }) =>
       call(() => ship.domains.set(domain, { deployment, labels })),
   );
 
   server.registerTool(
     'domains_list',
-    {
+    titled({
       title: 'List Domains',
       description: `List all domains with their URLs, linked deployment, and verification status.${PAGING_NOTE}`,
       annotations: READ,
       inputSchema: PAGINATION_INPUT,
-    },
+    }),
     ({ limit, cursor }) => call(() => ship.domains.list({ limit, cursor })),
   );
 
   server.registerTool(
     'domains_get',
-    {
+    titled({
       title: 'Get Domain',
       description:
         'Get domain details including URL, linked deployment, verification status, and labels.',
@@ -232,13 +232,13 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
           .string()
           .describe('Domain name (e.g. "www.example.com"). Use domains_list to find names.'),
       },
-    },
+    }),
     ({ domain }) => call(() => ship.domains.get(domain)),
   );
 
   server.registerTool(
     'domains_records',
-    {
+    titled({
       title: 'Get DNS Records',
       description:
         'Get the DNS records the user needs to configure at their DNS provider. Call after domains_set. You MUST show the returned records to the user.',
@@ -248,13 +248,13 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
           .string()
           .describe('Domain name. Must be a domain previously created with domains_set.'),
       },
-    },
+    }),
     ({ domain }) => call(() => ship.domains.records(domain)),
   );
 
   server.registerTool(
     'domains_dns',
-    {
+    titled({
       title: 'Look Up DNS Provider',
       description:
         'Look up the DNS provider for a domain (e.g. Cloudflare, Namecheap). Helps the user know where to configure their DNS records.',
@@ -264,13 +264,13 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
           .string()
           .describe('Domain name to look up DNS provider for (e.g. "www.example.com")'),
       },
-    },
+    }),
     ({ domain }) => call(() => ship.domains.dns(domain)),
   );
 
   server.registerTool(
     'domains_share',
-    {
+    titled({
       title: 'Share DNS Setup',
       description:
         'Get a shareable DNS setup link for a domain. Share the link with the user so they, or whoever manages their DNS, can view the required records without needing an API key.',
@@ -282,13 +282,13 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
             'Domain name to generate a share link for. Must be a domain previously created with domains_set.',
           ),
       },
-    },
+    }),
     ({ domain }) => call(() => ship.domains.share(domain)),
   );
 
   server.registerTool(
     'domains_validate',
-    {
+    titled({
       title: 'Check Domain Availability',
       description:
         'Check if a domain name is valid and available before creating it. Returns the normalized form and availability.',
@@ -300,13 +300,13 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
             'Domain name to check (e.g. "www.example.com"). Call before domains_set to check availability.',
           ),
       },
-    },
+    }),
     ({ domain }) => call(() => ship.domains.validate(domain)),
   );
 
   server.registerTool(
     'domains_verify',
-    {
+    titled({
       title: 'Verify Domain DNS',
       description:
         'Trigger DNS verification for a custom domain. Call after the user has configured DNS records from domains_records. Verification is asynchronous — the domain status updates once DNS propagates.',
@@ -318,13 +318,13 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
             'Domain name to verify DNS for. Must be a domain previously created with domains_set.',
           ),
       },
-    },
+    }),
     ({ domain }) => call(() => ship.domains.verify(domain)),
   );
 
   server.registerTool(
     'domains_delete',
-    {
+    titled({
       title: 'Delete Domain',
       description:
         'Permanently delete a domain. You MUST confirm with the user before calling this tool, referencing the domain name.',
@@ -332,7 +332,7 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
       inputSchema: {
         domain: z.string().describe('Domain name to delete (e.g. "www.example.com")'),
       },
-    },
+    }),
     ({ domain }) => call(() => ship.domains.delete(domain)),
   );
 
@@ -340,11 +340,11 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
 
   server.registerTool(
     'whoami',
-    {
+    titled({
       title: 'Show Account',
       description: 'Show authenticated account details including email, plan, and usage.',
       annotations: READ,
-    },
+    }),
     () => call(() => ship.whoami()),
   );
 }

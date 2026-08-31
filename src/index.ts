@@ -77,6 +77,7 @@ export {
   PARAM_DESCRIPTIONS,
   PUBLIC_EXPIRY,
   SERVER_NAME,
+  titled,
   UPLOAD_TOOL_NAME,
   UPLOAD_TOOL_TITLE,
 } from './vocabulary.js';
