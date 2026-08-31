@@ -273,10 +273,17 @@ The SDK's strict-isolation contract (synchronous constructor, no filesystem read
 tracking. It **defaults to `'mcp'` and is a `ServerOptions` field**, because
 `via` names the DISTRIBUTION SURFACE rather than the protocol: the GitHub
 Action reports `git` whatever invoked the workflow, and the web apps report
-`web`. `bin.ts` passes nothing, because this executable IS the `mcp` origin.
+`web`. `bin.ts` stays the `mcp` origin unless a wrapper relabels it: since
+1.9.0 it reads the subprocess-wrapper slot the CLI shares —
+`normalizeVia(process.env[SHIP_VIA_ENV])`, the constant owned by
+`@shipstatic/types` — so a first-party manifest that composes the `npx`
+invocation can name its own surface. The Gemini extension sends `gmn`. An
+unrecognized value is dropped, exactly as the CLI drops one, so a typo lands
+on the honest `mcp` default rather than being silently discarded server-side.
 
 The VS Code extension bundles `createServer` into its `.vsix` and passes
-`'vsc'`. Without the parameter every agent-mode deploy from the editor reported
+`'vsc'` programmatically — the in-process half of the same mechanism. Without
+the parameter every agent-mode deploy from the editor reported
 as generic `mcp`, indistinguishable from an npx install in some other client —
 nobody decided that; the composition simply had nowhere to say otherwise.
 
