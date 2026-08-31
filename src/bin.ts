@@ -15,7 +15,7 @@
 import { createRequire } from 'node:module';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import Ship from '@shipstatic/ship';
-import { SHIP_ENV } from '@shipstatic/types';
+import { normalizeVia, SHIP_ENV, SHIP_VIA_ENV } from '@shipstatic/types';
 import { createServer } from './server.js';
 
 // The executable knows its own manifest; the library it drives does not have
@@ -32,8 +32,13 @@ async function main() {
   // bearer) and the server classifies it. MCP never has to know which kind it
   // holds.
   const ship = new Ship({ token: process.env[SHIP_ENV.TOKEN] });
-  // No `via` — this executable IS the `mcp` origin, which is the default.
-  const server = createServer(ship, { version });
+  // Unset, this executable IS the `mcp` origin, which is the default. A
+  // first-party wrapper that composes this invocation relabels it through
+  // the subprocess slot the CLI shares (`SHIP_VIA_ENV` in types): the Gemini
+  // extension sends `gmn`. An unrecognized label is dropped rather than
+  // forwarded: the server silently ignores what the vocabulary does not
+  // name, so a typo records the honest default instead of nothing.
+  const server = createServer(ship, { version, via: normalizeVia(process.env[SHIP_VIA_ENV]) });
   const transport = new StdioServerTransport();
   await server.connect(transport);
   console.error('ShipStatic MCP Server running on stdio');

@@ -28,7 +28,9 @@ import { apiKey, deployToken } from './fixtures/builders';
  * `StdioServerTransport` (which would otherwise bind this process's stdin and
  * write JSON-RPC frames into the test runner's stdout). The stdio stand-in is
  * the SDK's own `InMemoryTransport`, not a hand-rolled fake, so the server
- * still performs a real connect.
+ * still performs a real connect. A third module is SPIED, not replaced:
+ * `createServer` is wrapped in a call-through `vi.fn` so the options the
+ * boundary hands it are observable while the real factory still runs.
  */
 
 const mocks = vi.hoisted(() => ({
@@ -62,6 +64,12 @@ vi.mock('@modelcontextprotocol/sdk/server/stdio.js', async () => {
       }
     },
   };
+});
+
+vi.mock('../src/server.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../src/server.js')>();
+  // Call-through spy: the real factory runs; only its arguments are observed.
+  return { ...actual, createServer: vi.fn(actual.createServer) };
 });
 
 /** Re-executes `src/bin.ts` from scratch and waits for `main()` to settle. */
@@ -173,6 +181,59 @@ describe('credential isolation', () => {
     // ambient pair — matching ship's `readEnvConfig` and the extension's
     // `mcp-entry.ts`, so the pattern pins the derived read, not a literal.
     expect(sourceOf('bin.ts')).toMatch(/process\.env\[SHIP_ENV\.TOKEN\]/);
+
+    // The origin relabel read is held to the same rule: through its owner
+    // (`SHIP_VIA_ENV` in types, shared with the CLI) and through
+    // `normalizeVia`, never a bare literal a rename would silently orphan.
+    expect(sourceOf('bin.ts')).toMatch(/normalizeVia\(process\.env\[SHIP_VIA_ENV\]\)/);
+  });
+});
+
+describe('origin relabeling', () => {
+  beforeEach(() => {
+    mocks.constructorError = null;
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    delete process.env.SHIP_TOKEN;
+    delete process.env.SHIP_VIA;
+  });
+
+  /** The `via` the boundary handed to the real `createServer` on the most recent boot. */
+  const viaHandedToServer = async () => {
+    const { createServer } = await import('../src/server.js');
+    return vi.mocked(createServer).mock.calls.at(-1)?.[1]?.via;
+  };
+
+  it('forwards a recognized SHIP_VIA to the server as its origin', async () => {
+    // The subprocess-wrapper slot the CLI shares: a first-party wrapper that
+    // composes this invocation is platform-authored code and may relabel the
+    // origin. The Gemini extension sends `gmn`; the option's protocol-level
+    // behaviour is pinned in server-calls.test.ts, so this file only has to
+    // prove the boundary line itself.
+    process.env.SHIP_VIA = 'gmn';
+
+    await boot();
+
+    expect(await viaHandedToServer()).toBe('gmn');
+  });
+
+  it('drops an unrecognized SHIP_VIA rather than forwarding it', async () => {
+    // The server silently ignores a label the vocabulary does not name, so
+    // forwarding a typo would record NOTHING; `undefined` lets `createServer`
+    // apply the honest family default (`mcp`) instead.
+    process.env.SHIP_VIA = 'gemini';
+
+    await boot();
+
+    expect(await viaHandedToServer()).toBeUndefined();
+  });
+
+  it('stays the `mcp` origin when no wrapper relabels it', async () => {
+    await boot();
+
+    expect(await viaHandedToServer()).toBeUndefined();
   });
 });
 
