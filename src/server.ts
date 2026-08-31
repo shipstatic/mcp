@@ -11,6 +11,7 @@ import {
   PARAM_DESCRIPTIONS,
   PUBLIC_EXPIRY,
   SERVER_NAME,
+  titled,
   UPLOAD_TOOL_NAME,
   UPLOAD_TOOL_TITLE,
 } from './vocabulary.js';
@@ -91,7 +92,7 @@ export function createServer(ship: Ship, options: ServerOptions): McpServer {
 
   server.registerTool(
     UPLOAD_TOOL_NAME,
-    {
+    titled({
       title: UPLOAD_TOOL_TITLE,
       description: `Deploy a static site instantly — ${D.free}. Returns the live URL, file count, and size. Without SHIP_TOKEN, the response includes a claim URL (site expires in ${PUBLIC_EXPIRY}) — always show both the deployment URL and claim URL to the user. ${D.password}`,
       annotations: CREATE,
@@ -112,7 +113,7 @@ export function createServer(ship: Ship, options: ServerOptions): McpServer {
         // disagree with the first, silently; its absence fails loudly instead.
         ttl: z.number().optional().describe(PARAM_DESCRIPTIONS.ttl),
       },
-    },
+    }),
     ({ path, labels, password, idempotencyKey, ttl }) =>
       call(() => ship.deployments.upload(path, { labels, password, idempotencyKey, ttl, via })),
   );

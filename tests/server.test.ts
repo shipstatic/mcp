@@ -42,7 +42,7 @@ interface ToolSurface {
    */
   title: string;
   description: string;
-  annotations: Record<string, boolean>;
+  annotations: Record<string, boolean | string>;
   params: Record<string, ParamSurface>;
 }
 
@@ -317,6 +317,17 @@ const CATALOGUE: Record<string, ToolSurface> = {
   },
 };
 
+// The observed annotations carry the tool's title too: `vocabulary.titled`
+// projects the top-level title into `annotations.title`, the 2025-03-26 slot
+// the Claude connectors portal reads (measured 2026-08-31: it flagged all
+// fifteen tools "Missing annotations: title" while rendering the top-level
+// titles as headings). The expectation derives that slot from each entry's
+// OWN pinned title, so it stays a planted value rather than the subject's,
+// and the deep-equal below is what holds the two slots identical per tool.
+for (const surface of Object.values(CATALOGUE)) {
+  surface.annotations = { ...surface.annotations, title: surface.title };
+}
+
 // =============================================================================
 
 describe('tool catalogue', () => {
@@ -348,14 +359,22 @@ describe('tool catalogue', () => {
     );
   });
 
-  it('every tool carries a title — the connectors directory refuses a submission without one', () => {
+  it('every tool carries a title in BOTH wire slots — the connectors directory reads each', () => {
     // The pinned surface below already holds each title byte-for-byte. This
     // says the thing the pin cannot: that the rule applies to tools nobody has
-    // written yet. A new tool added without a title fails HERE with the reason
-    // in the test name, rather than in a portal review weeks later.
+    // written yet. A new tool added without a title, or registered without the
+    // `titled` projection, fails HERE with the reason in the test name rather
+    // than in a portal review weeks later. Both slots are load-bearing: the
+    // top-level title is the 2025-06-18 field hosts render, and
+    // `annotations.title` is the older slot the portal's Tools checker keys
+    // on (it flagged all fifteen tools without it, 2026-08-31).
     const untitled = listed.filter((tool) => !tool.title?.trim()).map((tool) => tool.name);
+    const unprojected = listed
+      .filter((tool) => tool.annotations?.title !== tool.title)
+      .map((tool) => tool.name);
 
     expect(untitled).toEqual([]);
+    expect(unprojected).toEqual([]);
   });
 
   it('every tool matches its pinned surface — name, title, description, schema, annotations', () => {

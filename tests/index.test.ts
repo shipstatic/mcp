@@ -27,6 +27,11 @@ const PUBLIC_API = [
   // INSTRUCTIONS sentences and the tool-description fragments both transports
   // say, and the one duration all of them quote.
   'ANNOTATIONS',
+  // The title projection every registration runs: one top-level title, echoed
+  // into `annotations.title` (the slot the connectors portal reads). Exported
+  // because the hosted worker authors its own upload tool and must project
+  // identically; the catalogue fences hold both slots equal on the wire.
+  'titled',
   'PARAM_DESCRIPTIONS',
   'INSTRUCTION_BLOCKS',
   'DESCRIPTION_BLOCKS',
