@@ -46,6 +46,34 @@ describe('server.json', () => {
     // registry entry and the npm package stop being the same product.
     expect(SERVER_JSON.name).toBe('com.shipstatic/mcp');
   });
+
+  it('keeps its version fields the sentinel the derivation overwrites', () => {
+    // The tracked version is a PLACEHOLDER: CI patches both fields from
+    // package.json before `mcp-publisher` runs, so nothing real is ever read
+    // from here. The sentinel exists because a plausible-looking value in
+    // this slot reads as rot: the placeholder sat at `0.2.0` for twenty-one
+    // releases and was flagged as "the stalest self-description in the
+    // estate" by an audit, while the registry it feeds was fully current.
+    // `0.0.0` says "not a version" on sight, and this fence keeps a
+    // well-meaning hand from "fixing" it back to something that can look
+    // stale again (or, worse, that a hand-run publish would register).
+    expect(SERVER_JSON.version).toBe('0.0.0');
+    expect(SERVER_JSON.packages[0].version).toBe('0.0.0');
+  });
+
+  it('is only allowed a placeholder because the CI sync exists — so the sync is fenced too', () => {
+    // The sentinel above is an exemption justified by a compensating
+    // control, and this estate's law is that such a control is fenced by
+    // its EXISTENCE, never trusted by its intention. If the jq sync ever
+    // leaves ci.yml, the placeholder becomes the published version and the
+    // registry entry time-travels to 0.0.0 — this row makes deleting the
+    // sync red before it makes the registry wrong.
+    const CI = readFileSync(
+      fileURLToPath(new URL('../../.github/workflows/ci.yml', import.meta.url)),
+      'utf8',
+    );
+    expect(CI).toContain('.version = $v | .packages[0].version = $v');
+  });
 });
 
 describe('README', () => {

@@ -16,19 +16,19 @@
     }
   ],
   "websiteUrl": "https://shipstatic.com",
-  "version": "0.2.0",
+  "version": "0.0.0",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@shipstatic/mcp",
-      "version": "0.2.0",
+      "version": "0.0.0",
       "transport": {
         "type": "stdio"
       },
       "environmentVariables": [
         {
           "name": "SHIP_TOKEN",
-          "description": "Your API key — one credential, two names: the console mints it as an API key (ship-...), and this setting carries it as the token. Free at https://my.shipstatic.com/api-key. Optional: without it, deploys behave like the hosted endpoint (public, claim URL, 3-day expiry). With it, deployments are permanent, the full toolset (custom domains, listing, account-tied ops) unlocks, and you get bigger limits.",
+          "description": "Your API key — one credential, two names: the console mints it as an API key (ship-...), and this setting carries it as the token. Free at https://my.shipstatic.com/api-key. Optional: without it, deploys behave like the hosted endpoint (public, claim URL, 3-day expiry). With it, deployments are permanent, the full toolset (custom domains, listing, account-tied ops) unlocks, and rate limits are your own instead of the shared anonymous pools.",
           "isRequired": false,
           "isSecret": true
         }

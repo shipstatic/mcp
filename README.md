@@ -64,7 +64,7 @@ Everything above works with no account at all. Connect one when your client offe
 
 Install this package when your agent needs to deploy **a folder on your own machine** — the hosted endpoint takes files inline, so it has no path to read from — when you'd rather configure a token once than sign in, or when your MCP client doesn't speak OAuth yet.
 
-The config asks for one thing: `SHIP_TOKEN`. **Its value is your API key** — one credential, two names. The console mints it as an *API key* (it starts with `ship-`), and the setting that carries it is called the *token*. Get yours free at [my.shipstatic.com/api-key](https://my.shipstatic.com/api-key), paste it where the snippets below show `ship-your-api-key`, and every site you publish lands in your account, never expires, and gets bigger limits.
+The config asks for one thing: `SHIP_TOKEN`. **Its value is your API key** — one credential, two names. The console mints it as an *API key* (it starts with `ship-`), and the setting that carries it is called the *token*. Get yours free at [my.shipstatic.com/api-key](https://my.shipstatic.com/api-key), paste it where the snippets below show `ship-your-api-key`, and every site you publish lands in your account and never expires, with a rate limit of your own instead of the shared anonymous pools.
 
 The key is optional: leave it out and the local server behaves exactly like the hosted endpoint with no account connected — public sites, claim links, live for 3 days.
 
