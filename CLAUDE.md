@@ -18,7 +18,11 @@ That is a positioning decision rather than a demotion — the fifteen tools are 
 
 **The upgrade line died on 2026-08-13 and its replacement is the law's own worked example.** "Install this package for the full toolset" was true while the hosted door was anonymous-only, and stopped being true the day OAuth landed there — but a README has no compiler, so it sold the placeholder for months while the product underneath it had changed. Nothing failed; nothing could. The lesson the anchor list now carries: **an anchor phrase that states a CAPABILITY has a shelf life, and one that states a NEED does not.** The three surviving anchors describe what the reader does; the dead one described what the product was.
 
-Voice mirrors the marketing site — keep these phrases verbatim when editing:
+Voice is owned by the monorepo's `CANON.md` §4 as of 2026-09-01 — keep these
+phrases verbatim when editing, and change them THERE, never here. (They used
+to be owned by this file and by `cloudflare/mcp/CLAUDE.md`, each naming the
+other as the canonical source, which is a doctrine sentence promising two
+repos would stay aligned: the shape the estate refuses everywhere else.)
 
 - Slogan: **"One URL. Your agent ships."**
 - Action: **"Drop `https://mcp.shipstatic.com` into any MCP client."**
