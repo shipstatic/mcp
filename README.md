@@ -4,14 +4,14 @@
 
 > ⚡ **You probably don't need to install this.** The same server is hosted at **`https://mcp.shipstatic.com`** — drop that URL into any MCP client and your agent can publish a website in its next message. No install, no Node.js, no signup, no API key.
 >
-> **This package is the local alternative.** Install it when your agent needs to deploy a folder on your own machine, when you'd rather configure a token once than sign in, or when your client doesn't speak OAuth yet — the same fifteen tools, reached the other way. [Local setup ↓](#local--the-same-tools-from-your-own-machine)
+> **This package is the local alternative.** Install it when your agent needs to deploy a folder on your own machine, when you'd rather configure a token once than sign in, or when your client doesn't speak OAuth yet — the same fifteen tools, reached the other way. [Local setup ↓](#local-the-same-tools-from-your-own-machine)
 
-Give your AI a publish button for the internet: ask it to put your site online, and get back a real, shareable link in seconds. Landing pages, prototypes, portfolios — any static site.
+Deploy static websites, landing pages, and prototypes instantly from AI agents. Ask yours to put your site online and get back a real, shareable link in seconds.
 
 [![smithery badge](https://smithery.ai/badge/shipstatic/ship)](https://smithery.ai/servers/shipstatic/ship)
 [![glama badge](https://img.shields.io/badge/glama-MCP%20server-1f7ade)](https://glama.ai/mcp/servers/shipstatic/mcp)
 
-## Hosted — start here
+## Hosted: start here
 
 Drop `https://mcp.shipstatic.com` into any MCP client. No install, no signup, no API key — your agent can publish a website in its next message.
 
@@ -60,7 +60,7 @@ Want the site private? Ask for a password — visitors must enter it before they
 
 Everything above works with no account at all. Connect one when your client offers to sign you in, and the same URL answers with the rest: everything you've shipped, your own domains, and sites that stay up permanently. Nothing to install, no key to paste — your client starts the sign-in itself.
 
-## Local — the same tools, from your own machine
+## Local: the same tools, from your own machine
 
 Install this package when your agent needs to deploy **a folder on your own machine** — the hosted endpoint takes files inline, so it has no path to read from — when you'd rather configure a token once than sign in, or when your MCP client doesn't speak OAuth yet.
 
@@ -174,6 +174,17 @@ It needs an account — `SHIP_TOKEN` here, a connected account on the hosted end
 ## Registry
 
 Published to the [MCP Registry](https://registry.modelcontextprotocol.io/v0.1/servers?search=com.shipstatic/mcp) as `com.shipstatic/mcp`. Registry-aware clients see both the hosted endpoint and the local install and pick whichever fits their environment.
+
+## Also available
+
+| Surface | Reach it |
+|---------|----------|
+| **[CLI and SDK](https://github.com/shipstatic/ship)** | `npx @shipstatic/ship ./dist` |
+| **[VS Code](https://marketplace.visualstudio.com/items?itemName=shipstatic.shipstatic)** | Search "ShipStatic" in the Marketplace |
+| **[Gemini CLI](https://github.com/shipstatic/plugin)** | `gemini extensions install https://github.com/shipstatic/plugin` |
+| **[n8n](https://www.npmjs.com/package/n8n-nodes-shipstatic)** | Search "ShipStatic" in n8n's node panel |
+| **[GitHub Action](https://github.com/shipstatic/action)** | `shipstatic/action@v2` |
+| **[Agent Skill](https://www.shipstatic.com/SKILL.md)** | One file, for any skills-aware tool |
 
 ## License
 
