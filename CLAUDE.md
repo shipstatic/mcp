@@ -172,7 +172,15 @@ how a curated surface becomes a grab bag.
 ```bash
 pnpm build          # TypeScript → dist/
 pnpm test --run     # All tests
+pnpm check:package  # publint + attw over the built artifact
 ```
+
+**`check:package` ignores one attw rule, and it is a decided property.** This
+package is ESM-only, so a CJS consumer resolving it produces
+`CJSResolvesToESM` by construction; the platform's `engines.node >=20.19.0`
+floor is exactly where `require(esm)` was backported, measured at the floor.
+Added 2026-09-01 by the coherence program, which found this package and
+`@shipstatic/types` publishing without the gate four npm siblings ran.
 
 ## Core Patterns
 
