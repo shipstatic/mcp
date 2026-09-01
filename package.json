@@ -1,6 +1,6 @@
 {
   "name": "@shipstatic/mcp",
-  "version": "1.9.0",
+  "version": "1.9.1",
   "mcpName": "com.shipstatic/mcp",
   "description": "Deploy static websites, landing pages, and prototypes instantly from AI agents. Start with the hosted endpoint at mcp.shipstatic.com (no install, no signup, no API key), or install this package to deploy folders from your own machine. The same fifteen tools either way.",
   "type": "module",
