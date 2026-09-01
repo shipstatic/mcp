@@ -29,7 +29,8 @@
     "lint": "biome check .",
     "format": "biome format --write .",
     "smoke": "node smoke.mjs",
-    "coverage": "vitest --run --coverage"
+    "coverage": "vitest --run --coverage",
+    "check:package": "publint && attw --pack . --ignore-rules cjs-resolves-to-esm"
   },
   "files": [
     "dist",
@@ -72,10 +73,12 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.2",
     "@biomejs/biome": "2.5.5",
     "@types/node": "^25.9.5",
     "@vitest/coverage-v8": "4.1.10",
     "esbuild": "^0.25.12",
+    "publint": "^0.3.24",
     "typescript": "^6.0.3",
     "vitest": "4.1.10"
   },
