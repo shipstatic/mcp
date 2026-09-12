@@ -205,15 +205,20 @@ export function titled<C extends { title: string; annotations?: object }>(config
  */
 export const INSTRUCTION_BLOCKS = {
   opening: 'ShipStatic deploys static websites instantly. Free, no account required.',
+  live: 'The site is live immediately.',
   /**
-   * The password read-back rule lives HERE and not in the upload
-   * description: a password the user never sees locks them out, and
-   * `instructions` is the one place a server may say what an agent should
-   * do. A tool description describes the tool; both listing reviews reject
-   * one that instructs the model, and the catalogue tests grep for it.
+   * Two sentences in one block, and a block of its own rather than a clause
+   * of `live`: a door that collects no visitor password (the hosted `/gpt`
+   * door, by OpenAI's data rule) composes `live` without this.
+   *
+   * The read-back rule lives HERE and not in the upload description: a
+   * password the user never sees locks them out, and `instructions` is the
+   * one place a server may say what an agent should do. A tool description
+   * describes the tool; both listing reviews reject one that instructs the
+   * model, and the catalogue tests grep for it.
    */
-  liveAndPassword:
-    'The site is live immediately. To make the site private, pass `password`; visitors must unlock before viewing, including on any custom domains pointing at it. Tell the user any password you set, since one they never see locks them out.',
+  password:
+    'To make the site private, pass `password`; visitors must unlock before viewing, including on any custom domains pointing at it. Tell the user any password you set, since one they never see locks them out.',
   claim:
     'The response includes a claim URL — always show the deployment URL and the claim URL to the user so they can keep the site permanently.',
   conceptsHeader: 'Concepts:',
@@ -244,7 +249,7 @@ export const DESCRIPTION_BLOCKS = {
   /**
    * The option, stated as a capability. The read-back rule that used to
    * follow it ("always show the password to the user") is behavioural
-   * guidance, which belongs to `INSTRUCTION_BLOCKS.liveAndPassword`.
+   * guidance, which belongs to `INSTRUCTION_BLOCKS.password`.
    */
   password: 'Pass `password` to make the site private.',
 } as const;
