@@ -26,8 +26,10 @@
  * was the same duration written out eight times, `DESCRIPTION_BLOCKS` the
  * fragments two tool descriptions genuinely share, `ACCOUNT_TOOL_NAMES` is
  * what lets the hosted catalogue fence name the fourteen without counting them
- * again, and `createServer` deleted three regexes in another repo's build (see
- * below).
+ * again, `TOOLS` and `annotate` replaced four annotation classes plus a
+ * hand-annotated upload on each transport plus a separate list for the auth
+ * need (three owners for one tool's facts, 1.11.0), and `createServer`
+ * deleted three regexes in another repo's build (see below).
  *
  * **`createServer` is exported; the configured `call` is not.** The extension
  * previously reached stdio's composition by REGEX-PATCHING this package's
@@ -69,14 +71,21 @@ export {
   type ErrorHints,
 } from './call.js';
 export { createServer } from './server.js';
-export { ACCOUNT_TOOL_NAMES, registerAccountTools } from './tools.js';
 export {
-  ANNOTATIONS,
+  ACCOUNT_TOOL_NAMES,
+  type AccountToolName,
+  registerAccountTools,
+  TOOLS,
+  type ToolName,
+} from './tools.js';
+export {
+  annotate,
   DESCRIPTION_BLOCKS,
   INSTRUCTION_BLOCKS,
   PARAM_DESCRIPTIONS,
   PUBLIC_EXPIRY,
   SERVER_NAME,
+  type ToolContract,
   titled,
   UPLOAD_TOOL_NAME,
   UPLOAD_TOOL_TITLE,

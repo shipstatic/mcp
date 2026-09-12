@@ -23,10 +23,16 @@ import * as library from '../src/index.js';
  * values only; types erase.
  */
 const PUBLIC_API = [
-  // What an agent reads: annotations, the deploy-param descriptions, the
-  // INSTRUCTIONS sentences and the tool-description fragments both transports
-  // say, and the one duration all of them quote.
-  'ANNOTATIONS',
+  // The registry and the one function that turns a row into MCP annotations.
+  // Exported because the hosted worker authors its own upload registration
+  // and reads `securitySchemes` off the same rows; before 1.11.0 it imported
+  // four annotation classes and a separate name list, which was one tool's
+  // facts under three owners.
+  'TOOLS',
+  'annotate',
+  // What an agent reads: the deploy-param descriptions, the INSTRUCTIONS
+  // sentences and the tool-description fragments both transports say, and
+  // the one duration all of them quote.
   // The title projection every registration runs: one top-level title, echoed
   // into `annotations.title` (the slot the connectors portal reads). Exported
   // because the hosted worker authors its own upload tool and must project

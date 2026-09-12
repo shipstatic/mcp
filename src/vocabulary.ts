@@ -115,28 +115,58 @@ export const UPLOAD_TOOL_TITLE = 'Deploy Static Site';
  */
 export const PUBLIC_EXPIRY = `${PUBLIC_DEPLOYMENT_TTL_SECONDS / 86_400} days`;
 
-const OPEN_WORLD = { openWorldHint: true } as const;
+/**
+ * What is true of one tool, on the three axes a host reads.
+ *
+ * One row per tool lives in the registry (`tools.ts`, `TOOLS`), and every
+ * other statement about the tool is derived from it: the MCP annotations
+ * (`annotate`), the account-tool set (and so the hosted door's
+ * `securitySchemes` and challenge scope), the listing justifications in
+ * `integrations/gpt`, and the catalogue tests. Until 1.11.0 these facts had
+ * three owners: four annotation classes here, a hand-written name list for
+ * the auth need, and the upload tool annotated by hand on both transports.
+ * Three owners for facts about one tool is how the classes came to spread
+ * `openWorldHint: true` over ten reads that touch nothing public.
+ */
+export interface ToolContract {
+  /** `optional`: works without an account, does more with one. */
+  auth: 'optional' | 'required';
+  /**
+   * What a call does to the platform's state. `add` creates something new
+   * on every call; `replace` overwrites what is there; `remove` deletes it.
+   */
+  mutation: 'none' | 'add' | 'replace' | 'remove';
+  /** Whether the call changes public internet state, or only the account's. */
+  reach: 'account' | 'public';
+}
 
 /**
- * MCP tool annotations by kind of operation. An agent reads these to decide
- * whether it may call speculatively (`readOnlyHint`), whether a retry is free
- * (`idempotentHint`), and whether it must confirm with the user first
- * (`destructiveHint`).
+ * The MCP annotations a tool's contract implies. An agent reads them to
+ * decide whether it may call speculatively (`readOnlyHint`), whether it must
+ * confirm with the user first (`destructiveHint`), whether a retry is free
+ * (`idempotentHint`), and whether the call reaches beyond the account
+ * (`openWorldHint`). Both hosts read the same four: Anthropic's review asks
+ * for an accurate `readOnlyHint` and `destructiveHint`, OpenAI additionally
+ * reads `openWorldHint` as "can change public state".
  *
- * **`CREATE` carries no `idempotentHint`, deliberately.** A deploy creates a
- * new deployment on every call. `idempotencyKey` makes a retry replay the
- * original instead — but that property is conditional on an argument the
- * caller may not pass, while the annotation is static per tool. Advertising it
- * would promise every agent that any retry is free, which is exactly false for
- * the keyless caller, and an annotation an agent trusts wrongly is worse than
- * one it never reads.
+ * **`idempotentHint` is promised only for a remove**, the one mutation where
+ * a repeat is MEASURED to have no further effect (both deletes are fenced in
+ * the API: a repeat neither flips state nor writes an audit row). A replace
+ * writes an activity row per call, and `domains_set` notifies and may enqueue
+ * DNS work besides, so it is not claimed. An add creates on every call, and
+ * `idempotencyKey` cannot rescue the claim: that property is conditional on
+ * an argument the caller may not pass, while the annotation is static per
+ * tool. Reads carry none because the spec defines the hint only for tools
+ * that mutate.
  */
-export const ANNOTATIONS = {
-  READ: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, ...OPEN_WORLD },
-  CREATE: { readOnlyHint: false, destructiveHint: false, ...OPEN_WORLD },
-  WRITE: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, ...OPEN_WORLD },
-  DESTRUCTIVE: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, ...OPEN_WORLD },
-} as const;
+export function annotate({ mutation, reach }: ToolContract) {
+  return {
+    readOnlyHint: mutation === 'none',
+    destructiveHint: mutation === 'replace' || mutation === 'remove',
+    ...(mutation === 'remove' ? { idempotentHint: true } : {}),
+    openWorldHint: reach === 'public',
+  } as const;
+}
 
 /**
  * One title, two wire slots: project a tool config's top-level `title` into
@@ -175,8 +205,15 @@ export function titled<C extends { title: string; annotations?: object }>(config
  */
 export const INSTRUCTION_BLOCKS = {
   opening: 'ShipStatic deploys static websites instantly. Free, no account required.',
+  /**
+   * The password read-back rule lives HERE and not in the upload
+   * description: a password the user never sees locks them out, and
+   * `instructions` is the one place a server may say what an agent should
+   * do. A tool description describes the tool; both listing reviews reject
+   * one that instructs the model, and the catalogue tests grep for it.
+   */
   liveAndPassword:
-    'The site is live immediately. To make the site private, pass `password` — visitors must unlock before viewing, including on any custom domains pointing at it.',
+    'The site is live immediately. To make the site private, pass `password`; visitors must unlock before viewing, including on any custom domains pointing at it. Tell the user any password you set, since one they never see locks them out.',
   claim:
     'The response includes a claim URL — always show the deployment URL and the claim URL to the user so they can keep the site permanently.',
   conceptsHeader: 'Concepts:',
@@ -204,9 +241,12 @@ export const INSTRUCTION_BLOCKS = {
 export const DESCRIPTION_BLOCKS = {
   /** The no-account promise, mid-sentence in both openings. */
   free: 'free, no account or API key required',
-  /** The password read-back rule — a password the user never sees locks them out. */
-  password:
-    'To make the site private, pass `password`; always show the password to the user if you set one.',
+  /**
+   * The option, stated as a capability. The read-back rule that used to
+   * follow it ("always show the password to the user") is behavioural
+   * guidance, which belongs to `INSTRUCTION_BLOCKS.liveAndPassword`.
+   */
+  password: 'Pass `password` to make the site private.',
 } as const;
 
 /**

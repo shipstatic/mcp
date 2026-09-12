@@ -39,47 +39,85 @@
 
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type Ship from '@shipstatic/ship';
+import type { Account } from '@shipstatic/types';
 import { z } from 'zod';
 import type { CallFn } from './call.js';
-import { ANNOTATIONS, titled } from './vocabulary.js';
-
-const { READ, WRITE, DESTRUCTIVE } = ANNOTATIONS;
+import { annotate, type ToolContract, titled, UPLOAD_TOOL_NAME } from './vocabulary.js';
 
 /**
- * The fourteen, by name, in registration order.
+ * THE REGISTRY: one row per tool, every fact about it that a host reads.
+ *
+ * Fifteen rows, in registration order, `deployments_upload` included even
+ * though each transport authors that registration itself: its INPUT differs
+ * per transport, its contract does not. Everything else is derived from
+ * here. `annotate(row)` is every registration's `annotations`;
+ * `ACCOUNT_TOOL_NAMES` is the rows whose `auth` is `required`, and the
+ * hosted door reads the same column for `securitySchemes`; the listing
+ * repo's justifications are held to the hints these rows produce.
+ *
+ * The rows are DATA the registrations read, not a table they are generated
+ * from, and that is deliberate: a `Record<name, factory>` would cost the
+ * zod→handler inference every one-liner below relies on (`({ deployment })
+ * => …` is typed from the `inputSchema` literal in the same call). A row
+ * without a registration, a registration without a row, and a typo in
+ * either all turn `tests/server.test.ts` red, through a real `tools/list`.
+ *
+ * Two rows are worth a second look, because their names suggest otherwise:
+ * `domains_dns` READS the provider the platform recorded when the domain
+ * was created (nothing is looked up on call), and `domains_validate` and
+ * `domains_share` persist nothing.
+ */
+export const TOOLS = {
+  [UPLOAD_TOOL_NAME]: { auth: 'optional', mutation: 'add', reach: 'public' },
+  deployments_list: { auth: 'required', mutation: 'none', reach: 'account' },
+  deployments_get: { auth: 'required', mutation: 'none', reach: 'account' },
+  deployments_set: { auth: 'required', mutation: 'replace', reach: 'account' },
+  deployments_delete: { auth: 'required', mutation: 'remove', reach: 'public' },
+  domains_set: { auth: 'required', mutation: 'replace', reach: 'public' },
+  domains_list: { auth: 'required', mutation: 'none', reach: 'account' },
+  domains_get: { auth: 'required', mutation: 'none', reach: 'account' },
+  domains_records: { auth: 'required', mutation: 'none', reach: 'account' },
+  domains_dns: { auth: 'required', mutation: 'none', reach: 'account' },
+  domains_share: { auth: 'required', mutation: 'none', reach: 'account' },
+  domains_validate: { auth: 'required', mutation: 'none', reach: 'account' },
+  domains_verify: { auth: 'required', mutation: 'add', reach: 'public' },
+  domains_delete: { auth: 'required', mutation: 'remove', reach: 'public' },
+  whoami: { auth: 'required', mutation: 'none', reach: 'account' },
+} as const satisfies Record<string, ToolContract>;
+
+export type ToolName = keyof typeof TOOLS;
+
+/** The names whose row says an account is required. */
+export type AccountToolName = {
+  [N in ToolName]: (typeof TOOLS)[N]['auth'] extends 'required' ? N : never;
+}[ToolName];
+
+/**
+ * The fourteen, derived from the registry rather than listed beside it.
  *
  * Exported so a second transport can state its expected catalogue as
- * `[UPLOAD_TOOL_NAME, ...ACCOUNT_TOOL_NAMES]` instead of listing fifteen
- * strings it would then have to keep in agreement with this file — the hosted
- * parity fence is the consumer, and "fifteen" is otherwise a number two repos
- * count separately.
- *
- * **Deliberately a list beside the registrations rather than a table they are
- * generated from.** A `Record<name, factory>` would make the pairing
- * structural, and it would cost the zod→handler inference every one of the
- * fourteen one-liners below relies on: `({ deployment }) => …` is typed today
- * from the `inputSchema` literal in the same call, and a loop over a
- * heterogeneous table cannot correlate the two. The same guarantee costs
- * nothing as a set comparison, and `tests/server.test.ts` makes it — through a
- * real `tools/list`, so a registration without a name, a name without a
- * registration, and a typo in either all turn it red.
+ * `[UPLOAD_TOOL_NAME, ...ACCOUNT_TOOL_NAMES]` instead of counting to fifteen
+ * in a second repo. It was a hand-written list until 1.11.0, which made the
+ * auth need a second owner beside the annotations; a row is now the only
+ * place a tool's account requirement is stated.
  */
-export const ACCOUNT_TOOL_NAMES = [
-  'deployments_list',
-  'deployments_get',
-  'deployments_set',
-  'deployments_delete',
-  'domains_set',
-  'domains_list',
-  'domains_get',
-  'domains_records',
-  'domains_dns',
-  'domains_share',
-  'domains_validate',
-  'domains_verify',
-  'domains_delete',
-  'whoami',
-] as const;
+export const ACCOUNT_TOOL_NAMES = (Object.keys(TOOLS) as ToolName[]).filter(
+  (name): name is AccountToolName => TOOLS[name].auth === 'required',
+);
+
+/**
+ * What `whoami` answers: exactly the keys its description names.
+ *
+ * `Account` also carries billing state, the API-key hint, the picture and
+ * timestamps, none of which the description mentions and none of which an
+ * agent acts on. A tool's result is the shape its description states; this
+ * is the one tool where the wire's own entity said more than the sentence.
+ * `suspended` is deliberately out: it means every write is refused, and the
+ * refusal says so itself at the moment it matters.
+ */
+function accountSummary({ email, name, plan, usage, caps }: Account) {
+  return { email, name, plan, usage, caps };
+}
 
 /**
  * The pagination surface, shared by every list tool because it is one
@@ -122,7 +160,7 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
     titled({
       title: 'List Deployments',
       description: `List all deployments with their URLs, status, labels, and password protection state.${PAGING_NOTE}`,
-      annotations: READ,
+      annotations: annotate(TOOLS.deployments_list),
       inputSchema: PAGINATION_INPUT,
     }),
     ({ limit, cursor }) => call(() => ship.deployments.list({ limit, cursor })),
@@ -134,7 +172,7 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
       title: 'Get Deployment',
       description:
         'Get deployment details including URL, status, file count, size, labels, and password protection state.',
-      annotations: READ,
+      annotations: annotate(TOOLS.deployments_get),
       inputSchema: {
         deployment: z
           .string()
@@ -151,7 +189,7 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
     titled({
       title: 'Update Deployment Labels',
       description: 'Update deployment labels. Replaces all existing labels.',
-      annotations: WRITE,
+      annotations: annotate(TOOLS.deployments_set),
       inputSchema: {
         deployment: z
           .string()
@@ -170,9 +208,8 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
     'deployments_delete',
     titled({
       title: 'Delete Deployment',
-      description:
-        'Permanently delete a deployment and its files. You MUST confirm with the user before calling this tool, referencing the deployment.',
-      annotations: DESTRUCTIVE,
+      description: 'Permanently deletes a deployment and its files.',
+      annotations: annotate(TOOLS.deployments_delete),
       inputSchema: {
         deployment: z
           .string()
@@ -189,8 +226,8 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
     titled({
       title: 'Connect Custom Domain',
       description:
-        'Create or update a custom domain. Can reserve a name (omit deployment), link it to a deployment, switch deployments, or update labels. After creating, call domains_records and show the DNS records to the user.',
-      annotations: WRITE,
+        'Create or update a custom domain. Can reserve a name (omit deployment), link it to a deployment, switch deployments, or update labels. domains_records then returns the DNS records to configure.',
+      annotations: annotate(TOOLS.domains_set),
       inputSchema: {
         domain: z.string().describe('Domain name (e.g. "www.example.com" or "blog.example.com")'),
         deployment: z
@@ -214,7 +251,7 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
     titled({
       title: 'List Domains',
       description: `List all domains with their URLs, linked deployment, and verification status.${PAGING_NOTE}`,
-      annotations: READ,
+      annotations: annotate(TOOLS.domains_list),
       inputSchema: PAGINATION_INPUT,
     }),
     ({ limit, cursor }) => call(() => ship.domains.list({ limit, cursor })),
@@ -226,7 +263,7 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
       title: 'Get Domain',
       description:
         'Get domain details including URL, linked deployment, verification status, and labels.',
-      annotations: READ,
+      annotations: annotate(TOOLS.domains_get),
       inputSchema: {
         domain: z
           .string()
@@ -241,8 +278,8 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
     titled({
       title: 'Get DNS Records',
       description:
-        'Get the DNS records the user needs to configure at their DNS provider. Call after domains_set. You MUST show the returned records to the user.',
-      annotations: READ,
+        "Returns the DNS records to configure at the domain's DNS provider. Call after domains_set.",
+      annotations: annotate(TOOLS.domains_records),
       inputSchema: {
         domain: z
           .string()
@@ -255,14 +292,16 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
   server.registerTool(
     'domains_dns',
     titled({
-      title: 'Look Up DNS Provider',
+      title: 'Get DNS Provider',
       description:
-        'Look up the DNS provider for a domain (e.g. Cloudflare, Namecheap). Helps the user know where to configure their DNS records.',
-      annotations: READ,
+        'Returns the DNS provider recorded for the domain, if known (e.g. Cloudflare, Namecheap): where its DNS records are configured.',
+      annotations: annotate(TOOLS.domains_dns),
       inputSchema: {
         domain: z
           .string()
-          .describe('Domain name to look up DNS provider for (e.g. "www.example.com")'),
+          .describe(
+            'Domain name (e.g. "www.example.com"). Must be a domain previously created with domains_set.',
+          ),
       },
     }),
     ({ domain }) => call(() => ship.domains.dns(domain)),
@@ -273,8 +312,8 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
     titled({
       title: 'Share DNS Setup',
       description:
-        'Get a shareable DNS setup link for a domain. Share the link with the user so they, or whoever manages their DNS, can view the required records without needing an API key.',
-      annotations: READ,
+        "Returns a shareable DNS setup URL that needs no API key, for whoever manages the domain's DNS.",
+      annotations: annotate(TOOLS.domains_share),
       inputSchema: {
         domain: z
           .string()
@@ -292,7 +331,7 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
       title: 'Check Domain Availability',
       description:
         'Check if a domain name is valid and available before creating it. Returns the normalized form and availability.',
-      annotations: READ,
+      annotations: annotate(TOOLS.domains_validate),
       inputSchema: {
         domain: z
           .string()
@@ -310,7 +349,7 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
       title: 'Verify Domain DNS',
       description:
         'Trigger DNS verification for a custom domain. Call after the user has configured DNS records from domains_records. Verification is asynchronous — the domain status updates once DNS propagates.',
-      annotations: WRITE,
+      annotations: annotate(TOOLS.domains_verify),
       inputSchema: {
         domain: z
           .string()
@@ -326,9 +365,8 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
     'domains_delete',
     titled({
       title: 'Delete Domain',
-      description:
-        'Permanently delete a domain. You MUST confirm with the user before calling this tool, referencing the domain name.',
-      annotations: DESTRUCTIVE,
+      description: 'Permanently deletes a domain.',
+      annotations: annotate(TOOLS.domains_delete),
       inputSchema: {
         domain: z.string().describe('Domain name to delete (e.g. "www.example.com")'),
       },
@@ -342,9 +380,9 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
     'whoami',
     titled({
       title: 'Show Account',
-      description: 'Show authenticated account details including email, plan, and usage.',
-      annotations: READ,
+      description: "Returns the account's email, name, plan, current usage and plan caps.",
+      annotations: annotate(TOOLS.whoami),
     }),
-    () => call(() => ship.whoami()),
+    () => call(() => ship.whoami().then(accountSummary)),
   );
 }
