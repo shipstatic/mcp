@@ -207,9 +207,8 @@ export const INSTRUCTION_BLOCKS = {
   opening: 'ShipStatic deploys static websites instantly. Free, no account required.',
   live: 'The site is live immediately.',
   /**
-   * Two sentences in one block, and a block of its own rather than a clause
-   * of `live`: a door that collects no visitor password (the hosted `/gpt`
-   * door, by OpenAI's data rule) composes `live` without this.
+   * A block of its own rather than a clause of `live`: two sentences, two
+   * facts, and a door may compose them independently.
    *
    * The read-back rule lives HERE and not in the upload description: a
    * password the user never sees locks them out, and `instructions` is the
