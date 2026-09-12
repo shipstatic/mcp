@@ -260,7 +260,7 @@ confirm with the user", "always show both to the user", "Share the link with
 the user"). Confirmation is `destructiveHint`'s job; what an agent should DO
 with a claim URL or a password is the server's `instructions`, the one
 sanctioned place for guidance (`INSTRUCTION_BLOCKS.claim`,
-`INSTRUCTION_BLOCKS.liveAndPassword`). Invocation guidance about the tool's
+`INSTRUCTION_BLOCKS.password`). Invocation guidance about the tool's
 FUNCTION ("Call after domains_set") is permitted and stays.
 `tests/server.test.ts` greps every description off a real `tools/list` for
 "you must", "always show", "share the link", "to the user" and "with the
