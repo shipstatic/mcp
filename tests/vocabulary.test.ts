@@ -6,7 +6,7 @@ import {
 import { PUBLIC_DEPLOYMENT_TTL_SECONDS } from '@shipstatic/types';
 import { describe, expect, it } from 'vitest';
 import {
-  ANNOTATIONS,
+  annotate,
   DESCRIPTION_BLOCKS,
   INSTRUCTION_BLOCKS,
   PARAM_DESCRIPTIONS,
@@ -20,7 +20,7 @@ import {
  * transport takes them rather than re-authoring the strings an agent reads.
  * `server.test.ts` pins how they APPEAR in the catalogue; this file pins the
  * two properties that make sharing safe — that the numbers stay derived, and
- * that `CREATE` withholds the one hint it must never make.
+ * that `annotate` turns a contract into exactly the hints a host may trust.
  */
 
 describe('parameter descriptions', () => {
@@ -129,30 +129,45 @@ describe('the public-deploy expiry', () => {
   });
 });
 
-describe('annotations', () => {
-  it('withholds idempotentHint from CREATE — a deploy is not retry-safe by default', () => {
-    // The property is per-CALL (true only when the caller passes an
-    // idempotencyKey) while the annotation is a static per-TOOL claim. Setting
-    // it would tell every agent that any retry is free, which is false for the
-    // keyless caller — the common one. This is the assertion that makes the
-    // absence a decision instead of an oversight.
-    expect(ANNOTATIONS.CREATE).not.toHaveProperty('idempotentHint');
-    expect(ANNOTATIONS.CREATE.readOnlyHint).toBe(false);
-    expect(ANNOTATIONS.CREATE.destructiveHint).toBe(false);
-  });
-
+describe('annotate', () => {
+  // Planted rows, literal hints. The expected side is written out rather
+  // than computed, so a rule that inverts in `annotate` (a replace read as
+  // additive, a read promised idempotent) fails against a value the subject
+  // never evaluated. `server.test.ts` pins what each REAL tool's row yields
+  // on the wire; this pins the mapping itself, one arm per cell.
   it.each([
-    ['READ', ANNOTATIONS.READ, true],
-    ['WRITE', ANNOTATIONS.WRITE, false],
-    ['DESTRUCTIVE', ANNOTATIONS.DESTRUCTIVE, false],
-  ])('%s is idempotent and declares its read/write nature', (_kind, annotation, readOnly) => {
-    expect(annotation.idempotentHint).toBe(true);
-    expect(annotation.readOnlyHint).toBe(readOnly);
+    [
+      'a read, account-scoped',
+      { auth: 'required', mutation: 'none', reach: 'account' },
+      { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+    ],
+    [
+      'an add that reaches the public internet',
+      { auth: 'optional', mutation: 'add', reach: 'public' },
+      { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
+    ],
+    [
+      'a replace, account-scoped',
+      { auth: 'required', mutation: 'replace', reach: 'account' },
+      { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
+    ],
+    [
+      'a remove that reaches the public internet',
+      { auth: 'required', mutation: 'remove', reach: 'public' },
+      { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: true },
+    ],
+  ] as const)('%s', (_kind, contract, hints) => {
+    // `toEqual`, not `toMatchObject`: the ABSENCE of `idempotentHint` on
+    // every row but the remove is the assertion. A retry is promised free
+    // only where the platform measured a repeat to have no further effect;
+    // an add creates on every call, a replace writes an activity row per
+    // call, and the spec defines the hint only for tools that mutate.
+    expect(annotate(contract)).toEqual(hints);
   });
 
-  it('marks every tool open-world — this server reaches a remote platform', () => {
-    for (const annotation of Object.values(ANNOTATIONS)) {
-      expect(annotation.openWorldHint).toBe(true);
-    }
+  it('reads nothing from the auth axis, which is the securitySchemes column, not a hint', () => {
+    const required = annotate({ auth: 'required', mutation: 'none', reach: 'account' });
+    const optional = annotate({ auth: 'optional', mutation: 'none', reach: 'account' });
+    expect(required).toEqual(optional);
   });
 });

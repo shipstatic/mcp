@@ -45,9 +45,9 @@ src/
 ├── bin.ts        # THE EXECUTABLE (dist/bin.js) — env read, Ship construction, stdio transport
 ├── index.ts      # The LIBRARY entry — curated exports, no side effects
 ├── server.ts     # createServer(ship, {version, via}) — stdio's own upload tool + INSTRUCTIONS
-├── tools.ts      # registerAccountTools() — the 14 tools identical on EVERY transport
+├── tools.ts      # TOOLS (the registry: one row per tool) + registerAccountTools(), the 14 identical on EVERY transport
 ├── call.ts       # createCall() — the result envelope + error mapping, parameterised by hints
-└── vocabulary.ts # What BOTH transports say: annotations + shared param descriptions
+└── vocabulary.ts # What BOTH transports say: annotate() + shared param descriptions
 ```
 
 ## One product, two transports — the shape that survives OAuth
@@ -153,8 +153,8 @@ module boundary says the same thing to every caller.
 
 **What is shared, and what is deliberately not**, lives in `vocabulary.ts`'s
 header and in `cloudflare/mcp/CLAUDE.md`'s divergence table. The short form:
-the two identifiers (`SERVER_NAME`, `UPLOAD_TOOL_NAME`), the annotations, the
-deploy-param descriptions, the INSTRUCTIONS sentences, the upload-description
+the two identifiers (`SERVER_NAME`, `UPLOAD_TOOL_NAME`), the registry and
+`annotate`, the deploy-param descriptions, the INSTRUCTIONS sentences, the upload-description
 fragments and the public-deploy expiry are imported by both; the file-input
 schema, the description bodies, and everything Apps-SDK are forced apart by the
 transport and stay separate.
@@ -216,6 +216,69 @@ spell it `account_get` — but the CLI and SDK both surface this as `whoami`, an
 a tool named for the word a user already knows beats one named for the rule.
 The exception is the parity, not an oversight; every other tool obeys.
 
+### The registry: one row per tool, everything else derived
+
+`TOOLS` in `tools.ts` is the one owner of what is true of a tool on the
+three axes a host reads: `auth` (`optional` works without an account),
+`mutation` (`none` | `add` | `replace` | `remove`) and `reach` (`account` |
+`public`). Fifteen rows, upload included even though each transport authors
+that registration itself: its INPUT differs per transport, its contract does
+not. Everything else is derived. `annotate(row)` is every registration's
+`annotations`; `ACCOUNT_TOOL_NAMES` is the rows whose `auth` is `required`,
+and the hosted door reads the same column for `securitySchemes` and its
+challenge scope; the ChatGPT listing's justifications are held to the hints
+the rows produce.
+
+It replaced three owners (1.11.0, 2026-09-13): four annotation classes here
+that all spread `openWorldHint: true`, a hand-written name list for the auth
+need, and the upload tool annotated by hand on both transports. The classes
+are how ten account reads came to claim they touch the open world, and how
+every read and replace came to promise a free retry.
+
+**What `annotate` promises, and what it withholds.** `readOnlyHint` is
+`mutation === 'none'`; `destructiveHint` is a replace or a remove (the spec's
+"not additive"); `openWorldHint` is `reach === 'public'`, which both hosts
+read as "changes public internet state" (a deploy, a domain link, a
+verification, both deletes) rather than "reaches a remote API" (everything).
+`idempotentHint` is promised ONLY for a remove, the one mutation where a
+repeat is MEASURED to do nothing further (both deletes are fenced in the API:
+a repeat neither flips state nor writes an audit row). A replace writes an
+activity row per call and `domains_set` notifies and may enqueue DNS work, so
+it is not claimed; an add creates on every call, and `idempotencyKey` cannot
+rescue the claim because that property is per-CALL while the hint is static
+per tool; reads carry none because the spec defines the hint only for
+mutating tools.
+
+`domains_set` stays one tool with the conservative destructive hint: the API
+is one upsert by decision ("single paths with flags"), and three facade tools
+would add surface without adding truth. The UX cost, a prompt before
+reserving a name, is recorded here rather than solved.
+
+**A description describes the tool; it instructs nobody.** Both listing
+reviews reject a description that tells the model how to behave ("You MUST
+confirm with the user", "always show both to the user", "Share the link with
+the user"). Confirmation is `destructiveHint`'s job; what an agent should DO
+with a claim URL or a password is the server's `instructions`, the one
+sanctioned place for guidance (`INSTRUCTION_BLOCKS.claim`,
+`INSTRUCTION_BLOCKS.liveAndPassword`). Invocation guidance about the tool's
+FUNCTION ("Call after domains_set") is permitted and stays.
+`tests/server.test.ts` greps every description off a real `tools/list` for
+"you must", "always show", "share the link", "to the user" and "with the
+user"; the last two are what a tail like "…and show the DNS records to the
+user" slipped past a three-phrase inventory.
+
+**A tool's result is the shape its description states.** `whoami` was the
+one tool whose wire entity said more than its sentence: `Account` carries
+billing state, the API-key hint, the picture and timestamps, and the
+description promised "email, plan, and usage". It is projected to
+`{ email, name, plan, usage, caps }` in the shared handler and the description
+names exactly those. `suspended` is deliberately out: it means every write is
+refused, and the refusal says so itself, authored for the user, at the moment
+it matters; a `whoami` field would teach an agent to pre-check a state the
+platform reports on contact. Revisit only if a real user asks why `whoami`
+did not warn them. The other tools return the product's own user-facing
+entities and stay as they are.
+
 ### `call()` — The Single Abstraction
 
 Every tool handler is a one-liner that delegates to the SDK through `call()`:
@@ -223,7 +286,7 @@ Every tool handler is a one-liner that delegates to the SDK through `call()`:
 ```typescript
 server.registerTool('deployments_get', {
   description: 'Get deployment details including URL, status, file count, size, labels, and password protection state.',
-  annotations: READ,
+  annotations: annotate(TOOLS.deployments_get),
   inputSchema: {
     deployment: z.string().describe('Deployment hostname (e.g. "happy-cat-abc1234.shipstatic.com"). Returned by deployments_upload or deployments_list.'),
   },
@@ -449,9 +512,11 @@ The CI workflow (`.github/workflows/ci.yml`) runs on pushes to `main` and `devel
 An account-tied tool is a tool **both transports get**, so it goes in the
 shared file, not this server's:
 
-1. Add `server.registerTool()` in **`tools.ts`**, and its name to
-   `ACCOUNT_TOOL_NAMES` — the comparison in `server.test.ts` fails until both
-   exist, in either order.
+1. Add its row to **`TOOLS`** in **`tools.ts`** (`auth`, `mutation`,
+   `reach`; the registry section above says what each value promises) and
+   its `server.registerTool()` beneath, with `annotations: annotate(TOOLS.<name>)`.
+   The comparison in `server.test.ts` fails until both exist, in either
+   order, and `ACCOUNT_TOOL_NAMES` derives itself from the row.
 2. Handler is a one-liner: `(args) => call(() => ship.resource.action(args))`
 3. Give it a **`title`** — a short Title Case verb phrase naming what the user
    gets ("List Deployments", "Connect Custom Domain"). Not optional and not

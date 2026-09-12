@@ -47,32 +47,35 @@ interface ToolSurface {
 }
 
 // =============================================================================
-// ANNOTATION CLASSES
+// THE HINTS EACH ROW YIELDS
 // =============================================================================
 //
-// Restated here rather than imported from `src/server.ts`: importing the
-// constants would make the assertion "the tool is annotated the way
-// src/server.ts annotates it", which is true by construction. These are the
-// four contracts a client relies on — an agent decides whether it may retry
-// (idempotent), whether it may call speculatively (readOnly), and whether it
-// must confirm first (destructive).
+// Literals, restated rather than computed through `annotate(TOOLS[name])`:
+// that would make the assertion "the tool is annotated the way the registry
+// annotates it", true by construction. These are the values a host acts on,
+// planted per kind of row so the pinned catalogue below states each tool's
+// hints outright. A read may run without a per-call prompt, a destructive
+// tool always prompts, a remove may be retried, and only what touches public
+// state is open-world.
 
-const OPEN_WORLD = { openWorldHint: true };
-const READ = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, ...OPEN_WORLD };
+/** `mutation: 'none'` on an account read: nothing public, nothing to retry. */
+const READ = { readOnlyHint: true, destructiveHint: false, openWorldHint: false };
 /**
- * Deploys carry NO `idempotentHint` — and the reason changed with this wave.
- * It used to be "every call creates a new deployment", which `idempotencyKey`
- * made conditionally false. The hint stays absent because the property is
- * per-CALL, not per-tool: true only when a key is supplied, false for the
- * keyless caller. A static hint cannot say "sometimes".
+ * `mutation: 'add'` reaching the public internet. No `idempotentHint`: a
+ * deploy creates on every call, and `idempotencyKey` cannot rescue the claim
+ * because the property is per-CALL (true only when a key is supplied) while
+ * the hint is static per tool. A static hint cannot say "sometimes".
  */
-const CREATE = { readOnlyHint: false, destructiveHint: false, ...OPEN_WORLD };
-const WRITE = { readOnlyHint: false, destructiveHint: false, idempotentHint: true, ...OPEN_WORLD };
-const DESTRUCTIVE = {
+const ADD_PUBLIC = { readOnlyHint: false, destructiveHint: false, openWorldHint: true };
+/** `mutation: 'replace'`: not additive, so destructive; a repeat writes an activity row, so not idempotent. */
+const REPLACE = { readOnlyHint: false, destructiveHint: true, openWorldHint: false };
+const REPLACE_PUBLIC = { readOnlyHint: false, destructiveHint: true, openWorldHint: true };
+/** `mutation: 'remove'`: the one kind whose repeat is measured to do nothing further. */
+const REMOVE = {
   readOnlyHint: false,
   destructiveHint: true,
   idempotentHint: true,
-  ...OPEN_WORLD,
+  openWorldHint: true,
 };
 
 // =============================================================================
@@ -149,8 +152,8 @@ const CATALOGUE: Record<string, ToolSurface> = {
   deployments_upload: {
     title: 'Deploy Static Site',
     description:
-      'Deploy a static site instantly — free, no account or API key required. Returns the live URL, file count, and size. Without SHIP_TOKEN, the response includes a claim URL (site expires in 3 days) — always show both the deployment URL and claim URL to the user. To make the site private, pass `password`; always show the password to the user if you set one.',
-    annotations: CREATE,
+      'Deploy a static site instantly: free, no account or API key required. Returns the live URL, file count, and size. Without SHIP_TOKEN, the response also includes a one-time claim URL, and the site expires in 3 days unless claimed. Pass `password` to make the site private.',
+    annotations: ADD_PUBLIC,
     params: {
       path: str(
         'Absolute path to the build output directory to deploy (e.g. "/Users/me/project/dist")',
@@ -199,7 +202,7 @@ const CATALOGUE: Record<string, ToolSurface> = {
   deployments_set: {
     title: 'Update Deployment Labels',
     description: 'Update deployment labels. Replaces all existing labels.',
-    annotations: WRITE,
+    annotations: REPLACE,
     params: {
       deployment: str(
         `Deployment hostname (e.g. "${DEPLOYMENT_EXAMPLE}"). Use deployments_list to find deployments.`,
@@ -209,9 +212,8 @@ const CATALOGUE: Record<string, ToolSurface> = {
   },
   deployments_delete: {
     title: 'Delete Deployment',
-    description:
-      'Permanently delete a deployment and its files. You MUST confirm with the user before calling this tool, referencing the deployment.',
-    annotations: DESTRUCTIVE,
+    description: 'Permanently deletes a deployment and its files.',
+    annotations: REMOVE,
     params: {
       deployment: str(`Deployment hostname to delete (e.g. "${DEPLOYMENT_EXAMPLE}")`),
     },
@@ -221,8 +223,8 @@ const CATALOGUE: Record<string, ToolSurface> = {
   domains_set: {
     title: 'Connect Custom Domain',
     description:
-      'Create or update a custom domain. Can reserve a name (omit deployment), link it to a deployment, switch deployments, or update labels. After creating, call domains_records and show the DNS records to the user.',
-    annotations: WRITE,
+      'Create or update a custom domain. Can reserve a name (omit deployment), link it to a deployment, switch deployments, or update labels. domains_records then returns the DNS records to configure.',
+    annotations: REPLACE_PUBLIC,
     params: {
       domain: str('Domain name (e.g. "www.example.com" or "blog.example.com")'),
       deployment: str(
@@ -250,25 +252,27 @@ const CATALOGUE: Record<string, ToolSurface> = {
   domains_records: {
     title: 'Get DNS Records',
     description:
-      'Get the DNS records the user needs to configure at their DNS provider. Call after domains_set. You MUST show the returned records to the user.',
+      "Returns the DNS records to configure at the domain's DNS provider. Call after domains_set.",
     annotations: READ,
     params: {
       domain: str('Domain name. Must be a domain previously created with domains_set.'),
     },
   },
   domains_dns: {
-    title: 'Look Up DNS Provider',
+    title: 'Get DNS Provider',
     description:
-      'Look up the DNS provider for a domain (e.g. Cloudflare, Namecheap). Helps the user know where to configure their DNS records.',
+      'Returns the DNS provider recorded for the domain, if known (e.g. Cloudflare, Namecheap): where its DNS records are configured.',
     annotations: READ,
     params: {
-      domain: str('Domain name to look up DNS provider for (e.g. "www.example.com")'),
+      domain: str(
+        'Domain name (e.g. "www.example.com"). Must be a domain previously created with domains_set.',
+      ),
     },
   },
   domains_share: {
     title: 'Share DNS Setup',
     description:
-      'Get a shareable DNS setup link for a domain. Share the link with the user so they, or whoever manages their DNS, can view the required records without needing an API key.',
+      "Returns a shareable DNS setup URL that needs no API key, for whoever manages the domain's DNS.",
     annotations: READ,
     params: {
       domain: str(
@@ -291,7 +295,7 @@ const CATALOGUE: Record<string, ToolSurface> = {
     title: 'Verify Domain DNS',
     description:
       'Trigger DNS verification for a custom domain. Call after the user has configured DNS records from domains_records. Verification is asynchronous — the domain status updates once DNS propagates.',
-    annotations: WRITE,
+    annotations: ADD_PUBLIC,
     params: {
       domain: str(
         'Domain name to verify DNS for. Must be a domain previously created with domains_set.',
@@ -300,9 +304,8 @@ const CATALOGUE: Record<string, ToolSurface> = {
   },
   domains_delete: {
     title: 'Delete Domain',
-    description:
-      'Permanently delete a domain. You MUST confirm with the user before calling this tool, referencing the domain name.',
-    annotations: DESTRUCTIVE,
+    description: 'Permanently deletes a domain.',
+    annotations: REMOVE,
     params: {
       domain: str('Domain name to delete (e.g. "www.example.com")'),
     },
@@ -311,7 +314,7 @@ const CATALOGUE: Record<string, ToolSurface> = {
   // ------------------------------------------------------------------ debugging
   whoami: {
     title: 'Show Account',
-    description: 'Show authenticated account details including email, plan, and usage.',
+    description: "Returns the account's email, name, plan, current usage and plan caps.",
     annotations: READ,
     params: {},
   },
@@ -494,30 +497,73 @@ describe('server instructions', () => {
 });
 
 describe('tool doctrine', () => {
-  // The phrases in tool descriptions that carry a rule rather than a
-  // description. `CATALOGUE` already pins them byte-for-byte; these exist so
-  // that WHY each phrase is load-bearing is recorded next to it, and so a
-  // rewrite that keeps the sentence but drops the rule is still caught.
+  // The rules the catalogue carries beyond its bytes. `CATALOGUE` already
+  // pins every description; these record WHY a property is load-bearing, so
+  // a rewrite that keeps the pin green but drops the rule is still caught.
 
-  it('both destructive tools demand user confirmation, naming the resource', () => {
-    for (const name of ['deployments_delete', 'domains_delete'] as const) {
-      expect(CATALOGUE[name].description, name).toContain('You MUST confirm with the user');
+  /**
+   * The phrases that turn a description into an instruction. Both listing
+   * reviews reject a description that tells the model how to behave;
+   * confirmation is `destructiveHint`'s job and "show the user" belongs to
+   * `instructions`. The last two phrases are what a tail like "…and show the
+   * DNS records to the user" slipped past when only the first three were
+   * looked for.
+   */
+  const INSTRUCTS = /you must|always show|share the link|to the user|with the user/i;
+
+  it('no description instructs the model: a description describes the tool', async () => {
+    const harness = await connect();
+    try {
+      const { tools } = await harness.client.listTools();
+      const instructing = tools
+        .filter((tool) => INSTRUCTS.test(tool.description ?? ''))
+        .map((tool) => tool.name);
+      expect(tools.length).toBeGreaterThan(0);
+      expect(instructing).toEqual([]);
+    } finally {
+      await harness.close();
+    }
+  });
+
+  it('would catch an instructing sentence, so the sweep above cannot pass vacuously', () => {
+    expect('Call after domains_set and show the records to the user.').toMatch(INSTRUCTS);
+    expect('You MUST confirm before calling this tool.').toMatch(INSTRUCTS);
+    // Invocation guidance about the tool's FUNCTION is permitted and stays.
+    expect('Call after domains_set.').not.toMatch(INSTRUCTS);
+  });
+
+  it('both removes are destructive AND idempotent; nothing else promises a free retry', () => {
+    // The two deletes are fenced in the API as repeat-safe (a repeat neither
+    // flips state nor writes an audit row). A replace writes an activity row
+    // per call, an add creates per call, and a read has nothing to promise.
+    const idempotent = Object.entries(CATALOGUE)
+      .filter(([, tool]) => tool.annotations.idempotentHint === true)
+      .map(([name]) => name);
+    expect(idempotent).toEqual(['deployments_delete', 'domains_delete']);
+    for (const name of idempotent) {
       expect(CATALOGUE[name].annotations.destructiveHint, name).toBe(true);
     }
   });
 
-  it('domains_records tells the agent it MUST surface the records', () => {
-    // A silently-swallowed record set is a domain that never verifies.
-    expect(CATALOGUE.domains_records.description).toContain(
-      'You MUST show the returned records to the user',
+  it('only what touches public internet state is open-world', () => {
+    // Anthropic reads the hint as the spec defines it (a closed domain of
+    // interaction), OpenAI as "can change public state". An account read
+    // reaches this platform and nothing beyond it; a deploy, a domain link,
+    // a verification and both deletes change what the public internet
+    // serves.
+    const open = Object.entries(CATALOGUE)
+      .filter(([, tool]) => tool.annotations.openWorldHint === true)
+      .map(([name]) => name)
+      .sort();
+    expect(open).toEqual(
+      [
+        'deployments_upload',
+        'deployments_delete',
+        'domains_set',
+        'domains_verify',
+        'domains_delete',
+      ].sort(),
     );
-  });
-
-  it('deployments_upload promises the claim URL and the password read-back', () => {
-    const { description } = CATALOGUE.deployments_upload;
-    expect(description).toContain('no account or API key required');
-    expect(description).toContain('always show both the deployment URL and claim URL to the user');
-    expect(description).toContain('always show the password to the user if you set one');
   });
 
   it('deployments_set warns that labels are replaced, not merged', () => {
@@ -527,20 +573,11 @@ describe('tool doctrine', () => {
     });
   });
 
-  it('deploys are the only non-idempotent tool — every other call is safe to retry', () => {
-    const nonIdempotent = Object.entries(CATALOGUE)
-      .filter(([, tool]) => tool.annotations.idempotentHint !== true)
-      .map(([name]) => name);
-
-    expect(nonIdempotent).toEqual(['deployments_upload']);
-  });
-
-  it('every tool is open-world — all of them reach a remote API', () => {
-    const closed = Object.entries(CATALOGUE)
-      .filter(([, tool]) => tool.annotations.openWorldHint !== true)
-      .map(([name]) => name);
-
-    expect(closed).toEqual([]);
+  it('deployments_upload states the no-account promise and the claim URL, and instructs nobody', () => {
+    const { description } = CATALOGUE.deployments_upload;
+    expect(description).toContain('no account or API key required');
+    expect(description).toContain('claim URL');
+    expect(description).not.toMatch(INSTRUCTS);
   });
 });
 

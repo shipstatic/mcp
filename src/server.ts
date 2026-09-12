@@ -3,9 +3,9 @@ import type Ship from '@shipstatic/ship';
 import { DeploymentVia, type DeploymentViaType, MY_API_KEY_URL } from '@shipstatic/types';
 import { z } from 'zod';
 import { call } from './call.js';
-import { registerAccountTools } from './tools.js';
+import { registerAccountTools, TOOLS } from './tools.js';
 import {
-  ANNOTATIONS,
+  annotate,
   DESCRIPTION_BLOCKS,
   INSTRUCTION_BLOCKS,
   PARAM_DESCRIPTIONS,
@@ -15,11 +15,6 @@ import {
   UPLOAD_TOOL_NAME,
   UPLOAD_TOOL_TITLE,
 } from './vocabulary.js';
-
-// Destructured so the fifteen registrations below read as they always have.
-// The definitions live in `vocabulary.ts` because the hosted transport speaks
-// the same ones — that file records what is shared, what is not, and why.
-const { CREATE } = ANNOTATIONS;
 
 const B = INSTRUCTION_BLOCKS;
 const D = DESCRIPTION_BLOCKS;
@@ -94,8 +89,12 @@ export function createServer(ship: Ship, options: ServerOptions): McpServer {
     UPLOAD_TOOL_NAME,
     titled({
       title: UPLOAD_TOOL_TITLE,
-      description: `Deploy a static site instantly — ${D.free}. Returns the live URL, file count, and size. Without SHIP_TOKEN, the response includes a claim URL (site expires in ${PUBLIC_EXPIRY}) — always show both the deployment URL and claim URL to the user. ${D.password}`,
-      annotations: CREATE,
+      // Describes the tool and instructs nobody: what an agent should DO with
+      // the claim URL and a password is the INSTRUCTIONS' job, stated once
+      // above. The annotations come from the registry row this transport
+      // shares with the hosted one; only the input schema is this door's own.
+      description: `Deploy a static site instantly: ${D.free}. Returns the live URL, file count, and size. Without SHIP_TOKEN, the response also includes a one-time claim URL, and the site expires in ${PUBLIC_EXPIRY} unless claimed. ${D.password}`,
+      annotations: annotate(TOOLS[UPLOAD_TOOL_NAME]),
       inputSchema: {
         path: z
           .string()

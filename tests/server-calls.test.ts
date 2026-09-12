@@ -391,11 +391,30 @@ describe('response payloads', () => {
     ['domains_validate', { domain: CUSTOM_DOMAIN }, makeDomainValidate()],
     ['domains_verify', { domain: CUSTOM_DOMAIN }, makeDomainVerify()],
     ['domains_share', { domain: CUSTOM_DOMAIN }, makeDomainShare()],
-    ['whoami', {}, makeAccount()],
   ] as const)('%s relays its wire shape verbatim', async (tool, args, wire) => {
     expect(await harness.client.callTool({ name: tool, arguments: args }).then(jsonOf)).toEqual(
       wire,
     );
+  });
+
+  it('whoami answers exactly the keys its description names, and nothing the wire adds', async () => {
+    // The one tool whose wire entity says more than its sentence. `Account`
+    // carries billing state, the API-key hint, the picture and timestamps;
+    // the description promises email, name, plan, usage and caps, and a
+    // result is the shape its description states. Planted values, exact
+    // equality: a key leaking through (or `suspended`, decided out) fails
+    // here rather than in a listing review's "undisclosed fields" line.
+    harness.ship.whoami.mockResolvedValue(
+      makeAccount({ email: 'who@example.com', name: 'Who', plan: 'pro', hint: 'ab12' }),
+    );
+
+    expect(await harness.client.callTool({ name: 'whoami', arguments: {} }).then(jsonOf)).toEqual({
+      email: 'who@example.com',
+      name: 'Who',
+      plan: 'pro',
+      usage: { deployments: 0, platformDomains: 0, customDomains: 0 },
+      caps: { deployments: 100, platformDomains: 10, customDomains: 0 },
+    });
   });
 
   it('serializes payloads as indented JSON — an agent reads this text, not a data structure', async () => {
