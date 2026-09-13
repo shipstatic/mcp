@@ -109,27 +109,22 @@ describe('public surface', () => {
     const result = await custom(async () => ({ ok: true }));
 
     expect(result.content).toEqual([{ type: 'text', text: JSON.stringify({ ok: true }, null, 2) }]);
-    // No structuredContent unless the consumer asks for it — stdio does not.
-    expect(result).not.toHaveProperty('structuredContent');
+    // And the same object as structuredContent, on every transport: every
+    // tool declares an outputSchema, and the SDK refuses a result without it.
+    expect(result.structuredContent).toEqual({ ok: true });
   });
 
-  describe('structuredContent, the configuration only the hosted transport uses', () => {
-    // Exercised HERE rather than left to the consumer's own suite: it is this
-    // package's published behaviour, in another repo's build. A branch whose
-    // only proof lives downstream is a branch that breaks downstream.
-    const hosted = library.createCall({
-      hints: { authentication: 'a', forbidden: 'f' },
-      structuredContent: true,
-    });
+  describe('structuredContent, on every transport', () => {
+    const call = library.createCall({ hints: { authentication: 'a', forbidden: 'f' } });
 
-    it('attaches a plain object beside the text, for a host that renders it', async () => {
+    it('attaches a plain object beside the text, unchanged', async () => {
       const wire = { deployment: 'happy-cat-abc1234.shipstatic.com', files: 1 };
 
-      const result = await hosted(async () => wire);
+      const result = await call(async () => wire);
 
       expect(result.structuredContent).toEqual(wire);
       // The text block is unchanged — a client that ignores structuredContent
-      // sees exactly what stdio's clients see.
+      // sees exactly what it always saw.
       expect(result.content).toEqual([{ type: 'text', text: JSON.stringify(wire, null, 2) }]);
     });
 
@@ -137,14 +132,14 @@ describe('public surface', () => {
       // `structuredContent` is spec'd as an object. An array or a scalar would
       // be a shape no `outputSchema` can validate, so it rides the text channel
       // alone rather than being coerced into one.
-      const result = await hosted(async () => [1, 2, 3]);
+      const result = await call(async () => [1, 2, 3]);
 
       expect(result).not.toHaveProperty('structuredContent');
       expect(result.content).toEqual([{ type: 'text', text: JSON.stringify([1, 2, 3], null, 2) }]);
     });
 
     it('still answers the void sentinel, with nothing structured to carry', async () => {
-      const result = await hosted(async () => undefined);
+      const result = await call(async () => undefined);
 
       expect(result.content).toEqual([{ type: 'text', text: 'Done.' }]);
       expect(result).not.toHaveProperty('structuredContent');

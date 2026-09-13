@@ -392,9 +392,12 @@ describe('response payloads', () => {
     ['domains_verify', { domain: CUSTOM_DOMAIN }, makeDomainVerify()],
     ['domains_share', { domain: CUSTOM_DOMAIN }, makeDomainShare()],
   ] as const)('%s relays its wire shape verbatim', async (tool, args, wire) => {
-    expect(await harness.client.callTool({ name: tool, arguments: args }).then(jsonOf)).toEqual(
-      wire,
-    );
+    const result = await harness.client.callTool({ name: tool, arguments: args });
+    expect(jsonOf(result)).toEqual(wire);
+    // And as structuredContent, the same object: the SDK validated it against
+    // the tool's outputSchema (imported from the constitution) on the way out,
+    // so reaching here proves the wire shape satisfies the published schema.
+    expect(result.structuredContent).toEqual(wire);
   });
 
   it('whoami answers exactly the keys its description names, and nothing the wire adds', async () => {
@@ -408,13 +411,16 @@ describe('response payloads', () => {
       makeAccount({ email: 'who@example.com', name: 'Who', plan: 'pro', hint: 'ab12' }),
     );
 
-    expect(await harness.client.callTool({ name: 'whoami', arguments: {} }).then(jsonOf)).toEqual({
+    const result = await harness.client.callTool({ name: 'whoami', arguments: {} });
+    const summary = {
       email: 'who@example.com',
       name: 'Who',
       plan: 'pro',
       usage: { deployments: 0, platformDomains: 0, customDomains: 0 },
       caps: { deployments: 100, platformDomains: 10, customDomains: 0 },
-    });
+    };
+    expect(jsonOf(result)).toEqual(summary);
+    expect(result.structuredContent).toEqual(summary);
   });
 
   it('serializes payloads as indented JSON — an agent reads this text, not a data structure', async () => {

@@ -69,7 +69,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
     "@shipstatic/ship": "2.9.2",
-    "@shipstatic/types": "2.24.0",
+    "@shipstatic/types": "2.25.0-beta.1",
     "zod": "^4.4.3"
   },
   "devDependencies": {

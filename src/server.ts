@@ -1,6 +1,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type Ship from '@shipstatic/ship';
 import { DeploymentVia, type DeploymentViaType, MY_API_KEY_URL } from '@shipstatic/types';
+import { DeploymentCreateResponseSchema } from '@shipstatic/types/schemas';
 import { z } from 'zod';
 import { call } from './call.js';
 import { registerAccountTools, TOOLS } from './tools.js';
@@ -95,6 +96,7 @@ export function createServer(ship: Ship, options: ServerOptions): McpServer {
       // shares with the hosted one; only the input schema is this door's own.
       description: `Deploy a static site instantly: ${D.free}. Returns the live URL, file count, and size. Without SHIP_TOKEN, the response also includes a one-time claim URL, and the site expires in ${PUBLIC_EXPIRY} unless claimed. ${D.password}`,
       annotations: annotate(TOOLS[UPLOAD_TOOL_NAME]),
+      outputSchema: DeploymentCreateResponseSchema,
       inputSchema: {
         path: z
           .string()

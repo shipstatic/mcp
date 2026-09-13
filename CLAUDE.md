@@ -317,13 +317,25 @@ make that safe rather than a surface expansion:
   be: the API authors its messages for the end user at the throw site
   (`cloudflare/api/CLAUDE.md`, "Message authoring law"), so a client that reads
   only prose still works. Structure rides BESIDE it, never instead.
-- **The MCP SDK validates `structuredContent` only against a declared
-  `outputSchema`, and returns early again when `isError` is set.** No tool here
-  declares one, so this is additive for every client and invisible to any that
-  does not look. Checked in the pinned SDK, not assumed.
-- **It is deliberately NOT behind `CallOptions.structuredContent`.** That flag
-  governs SUCCESS shapes, where the objection is fifteen hand-maintained zod
-  twins. A failure has exactly one published shape on every transport.
+- **The MCP SDK validates `structuredContent` against a declared
+  `outputSchema` only when `isError` is not set**, so the error envelope never
+  meets a success schema. Checked in the pinned SDK, not assumed.
+
+**Every success carries `structuredContent` too, on both transports, since
+1.12.0.** Every tool publishes an `outputSchema` imported from the
+constitution (`@shipstatic/types/schemas`, where each schema is fenced to its
+interface at compile time), and the SDK validates each result against it and
+refuses a result that carries none. So `call` attaches every plain-object
+result as `structuredContent` beside the text; there is no flag, because
+there is no transport that would turn it off. Until 1.12.0 the flag existed
+for the hosted door alone and the fourteen account tools had no schema, on
+the reasoning that a schema written beside a tool is a hand-maintained twin
+of a published type. That reasoning still holds; what changed is where the
+schema lives. **Do not write an output schema in this package**: name the
+constitution's, or add one there, fenced, first. `whoami` shows the shape at
+its sharpest: its result is `AccountSchema.pick(...)`, and parsing the wire
+through that pick IS the projection, so one declaration owns the published
+schema and the five keys the tool answers with.
 
 A non-ShipError still answers text-only: there is no wire shape to report, and
 inventing one would tell an agent the failure came from the platform.
@@ -517,7 +529,10 @@ shared file, not this server's:
    its `server.registerTool()` beneath, with `annotations: annotate(TOOLS.<name>)`.
    The comparison in `server.test.ts` fails until both exist, in either
    order, and `ACCOUNT_TOOL_NAMES` derives itself from the row.
-2. Handler is a one-liner: `(args) => call(() => ship.resource.action(args))`
+2. Handler is a one-liner: `(args) => call(() => ship.resource.action(args))`,
+   and the registration names its `outputSchema` from
+   `@shipstatic/types/schemas`. Never write one here; if the constitution
+   lacks the shape, add it there (fenced to its interface) first.
 3. Give it a **`title`** — a short Title Case verb phrase naming what the user
    gets ("List Deployments", "Connect Custom Domain"). Not optional and not
    cosmetic: the Claude connectors directory refuses submission for a tool
