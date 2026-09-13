@@ -5,7 +5,9 @@ import {
   PASSWORD_CONSTRAINTS,
 } from '@shipstatic/ship';
 import { MY_API_KEY_URL } from '@shipstatic/types';
+import * as S from '@shipstatic/types/schemas';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { z } from 'zod';
 import { ACCOUNT_TOOL_NAMES } from '../src/tools.js';
 import { UPLOAD_TOOL_NAME } from '../src/vocabulary.js';
 import { connect, type Harness, textOf } from './harness.js';
@@ -413,6 +415,47 @@ describe('tool catalogue', () => {
     );
 
     expect(actual).toEqual(CATALOGUE);
+  });
+
+  it("every tool publishes an outputSchema, and it is the constitution's", () => {
+    // Planted: which schema each tool answers with. Compared through the
+    // JSON Schema both sides publish, on the properties an agent reads, so a
+    // tool that stopped importing and started restating fails here.
+    const published = (schema: z.ZodType) =>
+      z.toJSONSchema(schema) as { properties: Record<string, unknown>; required?: string[] };
+    const expected: Record<string, z.ZodType> = {
+      deployments_upload: S.DeploymentCreateResponseSchema,
+      deployments_list: S.DeploymentListResponseSchema,
+      deployments_get: S.DeploymentSchema,
+      deployments_set: S.DeploymentSchema,
+      deployments_delete: S.DeploymentDeleteResponseSchema,
+      domains_set: S.DomainSetResultSchema,
+      domains_list: S.DomainListResponseSchema,
+      domains_get: S.DomainSchema,
+      domains_records: S.DomainRecordsResponseSchema,
+      domains_dns: S.DomainDnsResponseSchema,
+      domains_share: S.DomainShareResponseSchema,
+      domains_validate: S.DomainValidateResponseSchema,
+      domains_verify: S.DomainVerifyResponseSchema,
+      domains_delete: S.DomainDeleteResponseSchema,
+      whoami: S.AccountSchema.pick({
+        email: true,
+        name: true,
+        plan: true,
+        usage: true,
+        caps: true,
+      }),
+    };
+    expect(Object.keys(expected).sort()).toEqual(listed.map((t) => t.name).sort());
+    for (const tool of listed) {
+      const observed = tool.outputSchema as {
+        properties?: Record<string, unknown>;
+        required?: string[];
+      };
+      const want = published(expected[tool.name]!);
+      expect(observed?.properties, tool.name).toEqual(want.properties);
+      expect(observed?.required ?? [], tool.name).toEqual(want.required ?? []);
+    }
   });
 
   it('every parameter carries a description — an undescribed parameter is unusable to an agent', () => {

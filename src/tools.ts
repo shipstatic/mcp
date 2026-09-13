@@ -35,11 +35,33 @@
  * the agent, the title reads as English for the human, and the description
  * carries every precision neither can. Both catalogue pins assert a title on
  * every tool, so the next one cannot be added without one.
+ *
+ * **Every tool publishes an `outputSchema`, imported from the constitution**
+ * (`@shipstatic/types/schemas`), never written here: a schema written beside
+ * a tool is a twin of a published type, and the SDK enforces it on every
+ * success, so a twin that drifts fails a call that succeeded. The constitution
+ * fences its schemas to its interfaces at compile time; this file only names
+ * which one each tool answers with, and `call` attaches the result as
+ * `structuredContent` so the schema has something to validate.
  */
 
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type Ship from '@shipstatic/ship';
-import type { Account } from '@shipstatic/types';
+import {
+  AccountSchema,
+  DeploymentDeleteResponseSchema,
+  DeploymentListResponseSchema,
+  DeploymentSchema,
+  DomainDeleteResponseSchema,
+  DomainDnsResponseSchema,
+  DomainListResponseSchema,
+  DomainRecordsResponseSchema,
+  DomainSchema,
+  DomainSetResultSchema,
+  DomainShareResponseSchema,
+  DomainValidateResponseSchema,
+  DomainVerifyResponseSchema,
+} from '@shipstatic/types/schemas';
 import { z } from 'zod';
 import type { CallFn } from './call.js';
 import { annotate, type ToolContract, titled, UPLOAD_TOOL_NAME } from './vocabulary.js';
@@ -106,18 +128,25 @@ export const ACCOUNT_TOOL_NAMES = (Object.keys(TOOLS) as ToolName[]).filter(
 );
 
 /**
- * What `whoami` answers: exactly the keys its description names.
+ * What `whoami` answers: exactly the keys its description names, and the
+ * schema IS the projection.
  *
  * `Account` also carries billing state, the API-key hint, the picture and
  * timestamps, none of which the description mentions and none of which an
- * agent acts on. A tool's result is the shape its description states; this
- * is the one tool where the wire's own entity said more than the sentence.
- * `suspended` is deliberately out: it means every write is refused, and the
- * refusal says so itself at the moment it matters.
+ * agent acts on. A tool's result is the shape its description states, so the
+ * result is the constitution's `AccountSchema` narrowed to five keys, and
+ * parsing the wire through it is what drops the rest: one declaration owns
+ * both the published `outputSchema` and the projection. `suspended` is
+ * deliberately out: it means every write is refused, and the refusal says so
+ * itself at the moment it matters.
  */
-function accountSummary({ email, name, plan, usage, caps }: Account) {
-  return { email, name, plan, usage, caps };
-}
+export const ACCOUNT_SUMMARY = AccountSchema.pick({
+  email: true,
+  name: true,
+  plan: true,
+  usage: true,
+  caps: true,
+});
 
 /**
  * The pagination surface, shared by every list tool because it is one
@@ -161,6 +190,7 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
       title: 'List Deployments',
       description: `List all deployments with their URLs, status, labels, and password protection state.${PAGING_NOTE}`,
       annotations: annotate(TOOLS.deployments_list),
+      outputSchema: DeploymentListResponseSchema,
       inputSchema: PAGINATION_INPUT,
     }),
     ({ limit, cursor }) => call(() => ship.deployments.list({ limit, cursor })),
@@ -173,6 +203,7 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
       description:
         'Get deployment details including URL, status, file count, size, labels, and password protection state.',
       annotations: annotate(TOOLS.deployments_get),
+      outputSchema: DeploymentSchema,
       inputSchema: {
         deployment: z
           .string()
@@ -190,6 +221,7 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
       title: 'Update Deployment Labels',
       description: 'Update deployment labels. Replaces all existing labels.',
       annotations: annotate(TOOLS.deployments_set),
+      outputSchema: DeploymentSchema,
       inputSchema: {
         deployment: z
           .string()
@@ -210,6 +242,7 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
       title: 'Delete Deployment',
       description: 'Permanently deletes a deployment and its files.',
       annotations: annotate(TOOLS.deployments_delete),
+      outputSchema: DeploymentDeleteResponseSchema,
       inputSchema: {
         deployment: z
           .string()
@@ -228,6 +261,7 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
       description:
         'Create or update a custom domain. Can reserve a name (omit deployment), link it to a deployment, switch deployments, or update labels. domains_records then returns the DNS records to configure.',
       annotations: annotate(TOOLS.domains_set),
+      outputSchema: DomainSetResultSchema,
       inputSchema: {
         domain: z.string().describe('Domain name (e.g. "www.example.com" or "blog.example.com")'),
         deployment: z
@@ -252,6 +286,7 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
       title: 'List Domains',
       description: `List all domains with their URLs, linked deployment, and verification status.${PAGING_NOTE}`,
       annotations: annotate(TOOLS.domains_list),
+      outputSchema: DomainListResponseSchema,
       inputSchema: PAGINATION_INPUT,
     }),
     ({ limit, cursor }) => call(() => ship.domains.list({ limit, cursor })),
@@ -264,6 +299,7 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
       description:
         'Get domain details including URL, linked deployment, verification status, and labels.',
       annotations: annotate(TOOLS.domains_get),
+      outputSchema: DomainSchema,
       inputSchema: {
         domain: z
           .string()
@@ -280,6 +316,7 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
       description:
         "Returns the DNS records to configure at the domain's DNS provider. Call after domains_set.",
       annotations: annotate(TOOLS.domains_records),
+      outputSchema: DomainRecordsResponseSchema,
       inputSchema: {
         domain: z
           .string()
@@ -296,6 +333,7 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
       description:
         'Returns the DNS provider recorded for the domain, if known (e.g. Cloudflare, Namecheap): where its DNS records are configured.',
       annotations: annotate(TOOLS.domains_dns),
+      outputSchema: DomainDnsResponseSchema,
       inputSchema: {
         domain: z
           .string()
@@ -314,6 +352,7 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
       description:
         "Returns a shareable DNS setup URL that needs no API key, for whoever manages the domain's DNS.",
       annotations: annotate(TOOLS.domains_share),
+      outputSchema: DomainShareResponseSchema,
       inputSchema: {
         domain: z
           .string()
@@ -332,6 +371,7 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
       description:
         'Check if a domain name is valid and available before creating it. Returns the normalized form and availability.',
       annotations: annotate(TOOLS.domains_validate),
+      outputSchema: DomainValidateResponseSchema,
       inputSchema: {
         domain: z
           .string()
@@ -350,6 +390,7 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
       description:
         'Trigger DNS verification for a custom domain. Call after the user has configured DNS records from domains_records. Verification is asynchronous — the domain status updates once DNS propagates.',
       annotations: annotate(TOOLS.domains_verify),
+      outputSchema: DomainVerifyResponseSchema,
       inputSchema: {
         domain: z
           .string()
@@ -367,6 +408,7 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
       title: 'Delete Domain',
       description: 'Permanently deletes a domain.',
       annotations: annotate(TOOLS.domains_delete),
+      outputSchema: DomainDeleteResponseSchema,
       inputSchema: {
         domain: z.string().describe('Domain name to delete (e.g. "www.example.com")'),
       },
@@ -382,7 +424,8 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
       title: 'Show Account',
       description: "Returns the account's email, name, plan, current usage and plan caps.",
       annotations: annotate(TOOLS.whoami),
+      outputSchema: ACCOUNT_SUMMARY,
     }),
-    () => call(() => ship.whoami().then(accountSummary)),
+    () => call(() => ship.whoami().then((account) => ACCOUNT_SUMMARY.parse(account))),
   );
 }

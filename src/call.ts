@@ -50,20 +50,6 @@ export type CallFn = <T>(fn: () => Promise<T>) => Promise<CallToolResult>;
 export interface CallOptions {
   hints: ErrorHints;
   /**
-   * Attach a plain-object SUCCESS result as `structuredContent` beside the
-   * text. Hosted-only: it is what feeds the Apps-SDK widget, and the MCP spec
-   * pairs it with an `outputSchema`, which is a hand-maintained zod twin of a
-   * published type. One such twin is worth it for a widget; fifteen would be a
-   * drift surface with no consumer asking for it. See
-   * `cloudflare/mcp/CLAUDE.md`, "What deliberately differs".
-   *
-   * It does NOT gate the ERROR envelope, which every transport carries — see
-   * `toErrorResult`. The objection above is about fifteen success shapes; a
-   * failure has exactly one published shape, and no schema to keep in step.
-   */
-  structuredContent?: boolean;
-
-  /**
    * Called when the API refuses on CREDENTIAL grounds — and only then.
    *
    * An HTTP transport has an obligation stdio does not: a client learns it
@@ -126,7 +112,7 @@ export interface AuthFailure {
  * kept equal by review.
  */
 export function createCall(options: CallOptions): CallFn {
-  const { hints, structuredContent = false, onAuthFailure } = options;
+  const { hints, onAuthFailure } = options;
 
   return async function call<T>(fn: () => Promise<T>): Promise<CallToolResult> {
     try {
@@ -136,14 +122,15 @@ export function createCall(options: CallOptions): CallFn {
       if (result === undefined) {
         return { content: [{ type: 'text', text: 'Done.' }] };
       }
+      // The wire shape rides twice: as the text every client reads, and as
+      // `structuredContent` for the tool's `outputSchema` (every tool declares
+      // one, imported from the constitution; the SDK validates the result
+      // against it and refuses a result that carries none). A non-object has
+      // no schema to satisfy and rides the text channel alone.
       const text = JSON.stringify(result, null, 2);
-      const structured =
-        structuredContent && isPlainObject(result)
-          ? (result as Record<string, unknown>)
-          : undefined;
       return {
         content: [{ type: 'text', text }],
-        ...(structured ? { structuredContent: structured } : {}),
+        ...(isPlainObject(result) ? { structuredContent: result } : {}),
       };
     } catch (error) {
       return toErrorResult(error, hints, onAuthFailure);
@@ -188,13 +175,9 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
  * need of a precise backoff to parse "try again in 9 minutes" out of English.
  *
  * Safe on every arm, and checked rather than assumed: the MCP SDK validates
- * `structuredContent` only when a tool declares an `outputSchema`, and returns
- * early again when `isError` is set. No tool here declares one. So this is
- * additive for every client and invisible to any that does not look.
- *
- * It is deliberately NOT behind `CallOptions.structuredContent` — that flag
- * governs success shapes, where the schema-twin objection lives. A failure has
- * one published shape on every transport.
+ * `structuredContent` against a declared `outputSchema` only when `isError`
+ * is not set, so an error envelope never meets a success schema. Every tool
+ * declares one (imported from the constitution), and this arm is unaffected.
  */
 function toErrorResult(
   error: unknown,
