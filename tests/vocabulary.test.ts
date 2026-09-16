@@ -3,8 +3,7 @@ import {
   LABEL_CONSTRAINTS,
   PASSWORD_CONSTRAINTS,
 } from '@shipstatic/ship';
-import { PUBLIC_DEPLOYMENT_TTL_SECONDS } from '@shipstatic/types';
-import { formatDuration } from '@shipstatic/types/time';
+import { formatDuration, PUBLIC_DEPLOYMENT_TTL_SECONDS } from '@shipstatic/types';
 import { describe, expect, it } from 'vitest';
 import {
   annotate,

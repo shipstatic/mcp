@@ -33,8 +33,7 @@ import {
   LABEL_CONSTRAINTS,
   PASSWORD_CONSTRAINTS,
 } from '@shipstatic/ship';
-import { PUBLIC_DEPLOYMENT_TTL_SECONDS } from '@shipstatic/types';
-import { formatDuration } from '@shipstatic/types/time';
+import { formatDuration, PUBLIC_DEPLOYMENT_TTL_SECONDS } from '@shipstatic/types';
 
 /**
  * Two packages, and the split is a rule rather than an accident: **read a
