@@ -34,6 +34,7 @@ import {
   PASSWORD_CONSTRAINTS,
 } from '@shipstatic/ship';
 import { PUBLIC_DEPLOYMENT_TTL_SECONDS } from '@shipstatic/types';
+import { formatDuration } from '@shipstatic/types/time';
 
 /**
  * Two packages, and the split is a rule rather than an accident: **read a
@@ -107,13 +108,15 @@ export const UPLOAD_TOOL_TITLE = 'Deploy Static Site';
  * to carry its own unit, and dividing by 86400 at eight sites would restate the
  * unit eight times instead of the number.
  *
- * The unit stays literal, and that is the one assumption here: this reads
- * correctly while the TTL is a whole number of days, which it has always been.
- * A TTL of hours would need the prose reviewed anyway — the widget's own
- * `formatExpires` speaks in days and hours too — so the honest failure is a
- * sentence someone must rewrite, not a number that silently rounds.
+ * Spelled by `formatDuration` since 2026-09-17, the platform's one way of
+ * saying a span of time, so the lifetime an agent is promised and the time a
+ * fresh deployment's card and CLI note say it has left are one spelling. It
+ * was `${TTL / 86_400} days` until then, correct only while the TTL was a
+ * whole number of days: a one-day lifetime would have read "1 days". The
+ * spelling still rounds a lifetime that is not a whole number of its unit
+ * (84 hours reads "4 days"), which no lifetime the platform has had needs.
  */
-export const PUBLIC_EXPIRY = `${PUBLIC_DEPLOYMENT_TTL_SECONDS / 86_400} days`;
+export const PUBLIC_EXPIRY = formatDuration(PUBLIC_DEPLOYMENT_TTL_SECONDS);
 
 /**
  * What is true of one tool, on the three axes a host reads.

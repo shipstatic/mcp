@@ -4,6 +4,7 @@ import {
   PASSWORD_CONSTRAINTS,
 } from '@shipstatic/ship';
 import { PUBLIC_DEPLOYMENT_TTL_SECONDS } from '@shipstatic/types';
+import { formatDuration } from '@shipstatic/types/time';
 import { describe, expect, it } from 'vitest';
 import {
   annotate,
@@ -115,17 +116,17 @@ describe('the public-deploy expiry', () => {
   it('is derived from the platform constant, not written out', () => {
     // The whole point of the export it reads. Every agent-facing "3 days" on
     // both transports resolves through this one value, so a TTL change reaches
-    // the prose without anyone editing prose — and the assertion computes the
-    // expectation the same way rather than pinning the string, which would put
-    // the literal back in a second place.
-    expect(PUBLIC_EXPIRY).toBe(`${PUBLIC_DEPLOYMENT_TTL_SECONDS / 86_400} days`);
+    // the prose without anyone editing prose. What is asserted is the
+    // DERIVATION (the constant, through the platform's one duration speller),
+    // so pinning the string would put the literal back in a second place.
+    expect(PUBLIC_EXPIRY).toBe(formatDuration(PUBLIC_DEPLOYMENT_TTL_SECONDS));
   });
 
   it('reads as a duration a sentence can contain', () => {
     // It is interpolated mid-sentence on both doors ("expire in …", "the site
     // expires in … unless claimed"), so it must carry its unit and nothing
     // else — no leading article, no trailing period.
-    expect(PUBLIC_EXPIRY).toMatch(/^\d+ (day|days|hour|hours)$/);
+    expect(PUBLIC_EXPIRY).toMatch(/^\d+ (days|hours|minutes?)$/);
   });
 });
 
