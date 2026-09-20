@@ -388,7 +388,7 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
     titled({
       title: 'Verify Domain DNS',
       description:
-        'Trigger DNS verification for a custom domain. Call after the user has configured DNS records from domains_records. Verification is asynchronous — the domain status updates once DNS propagates.',
+        'Trigger DNS verification for a custom domain. Call after the user has configured DNS records from domains_records. Verification is asynchronous — the domain status updates once DNS propagates. A verified domain serves nothing until a deployment is linked with domains_set.',
       annotations: annotate(TOOLS.domains_verify),
       outputSchema: DomainVerifyResponseSchema,
       inputSchema: {

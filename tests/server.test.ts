@@ -296,7 +296,7 @@ const CATALOGUE: Record<string, ToolSurface> = {
   domains_verify: {
     title: 'Verify Domain DNS',
     description:
-      'Trigger DNS verification for a custom domain. Call after the user has configured DNS records from domains_records. Verification is asynchronous — the domain status updates once DNS propagates.',
+      'Trigger DNS verification for a custom domain. Call after the user has configured DNS records from domains_records. Verification is asynchronous — the domain status updates once DNS propagates. A verified domain serves nothing until a deployment is linked with domains_set.',
     annotations: ADD_PUBLIC,
     params: {
       domain: str(
@@ -532,10 +532,17 @@ describe('server instructions', () => {
     expect(instructions).toMatch(/Subdomains only — not apex domains/);
   });
 
-  it('spells out the custom-domain workflow in execution order', () => {
+  it('spells out the custom-domain workflow in execution order, to its last step', () => {
     expect(instructions).toContain(
-      'domains_validate → domains_set → domains_records (show DNS records to user) → user configures DNS → domains_verify',
+      'domains_validate → domains_set → domains_records (show DNS records to user) → user configures DNS → domains_verify → domains_set with the deployment to serve',
     );
+  });
+
+  it('states that a domain serves nothing until a deployment is linked, so the flow cannot end one step short', () => {
+    // The backlog's worked case: an agent that followed the old sentence
+    // literally reserved and verified a domain, reported success, and left
+    // the user's site dark behind the reserved page.
+    expect(instructions).toContain('A domain serves nothing until a deployment is linked');
   });
 });
 
