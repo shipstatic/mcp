@@ -164,13 +164,19 @@ export function makeDomain(domain = CUSTOM_DOMAIN, overrides: Partial<Domain> = 
   return {
     domain,
     url: `https://${domain}`,
+    // Linked, and still `unverified`: a custom domain waits on DNS, and the
+    // standing puts DNS ahead of the link, so a deployment does not make the
+    // name live until its records do.
+    status: 'unverified',
     deployment: deploymentId(),
-    // Custom domains wait on DNS verification.
-    status: 'pending',
-    labels: [],
-    created: timestamps.jan2022,
     linked: timestamps.jan2022,
     links: 1,
+    verification: 'pending',
+    verified: null,
+    verifications: 0,
+    paused: null,
+    labels: [],
+    created: timestamps.jan2022,
     ...overrides,
   } satisfies Domain;
 }

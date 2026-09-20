@@ -238,14 +238,14 @@ const CATALOGUE: Record<string, ToolSurface> = {
   },
   domains_list: {
     title: 'List Domains',
-    description: `List all domains with their URLs, linked deployment, and verification status.${PAGING_NOTE}`,
+    description: `List all domains with their URLs, linked deployment, and \`status\`.${PAGING_NOTE}`,
     annotations: READ,
     params: PAGING_PARAMS,
   },
   domains_get: {
     title: 'Get Domain',
     description:
-      'Get domain details including URL, linked deployment, verification status, and labels.',
+      'Get domain details including URL, linked deployment, labels, and `status`: the one word saying what the domain needs from its owner (`unverified`, `unlinked`, `live`, `paused`).',
     annotations: READ,
     params: {
       domain: str('Domain name (e.g. "www.example.com"). Use domains_list to find names.'),
@@ -296,7 +296,7 @@ const CATALOGUE: Record<string, ToolSurface> = {
   domains_verify: {
     title: 'Verify Domain DNS',
     description:
-      'Trigger DNS verification for a custom domain. Call after the user has configured DNS records from domains_records. Verification is asynchronous — the domain status updates once DNS propagates. A verified domain serves nothing until a deployment is linked with domains_set.',
+      'Trigger DNS verification for a custom domain. Call after the user has configured DNS records from domains_records. Verification is asynchronous — read the domain again with domains_get to learn the verdict, since its `status` has not moved yet when this returns. A verified domain serves nothing until a deployment is linked with domains_set.',
     annotations: ADD_PUBLIC,
     params: {
       domain: str(

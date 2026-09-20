@@ -2,9 +2,12 @@
 
 Claude Code instructions for the **ShipStatic MCP Server**.
 
-**@shipstatic/mcp** — MCP server that exposes the ShipStatic SDK to AI agents via stdio. Thin wrapper over `@shipstatic/ship`. Published to the MCP Registry as `com.shipstatic/mcp`. **Maturity:** v1.x — Deployments + Domains (15 tools).
+**@shipstatic/mcp** — MCP server that exposes the ShipStatic SDK to AI agents via stdio. Thin wrapper over `@shipstatic/ship`. Published to the MCP Registry as `com.shipstatic/mcp`. **Maturity:** v2.x — Deployments + Domains (15 tools).
 
-**The version says which platform it speaks to: the 1.x MCP is the one that speaks to the 2.x platform.** 1.0.0 is a true major for consumers — `SHIP_API_KEY` is no longer read (every existing server config breaks until its env var is renamed) and the delete tools were renamed (`deployments_remove` → `deployments_delete`, `domains_remove` → `domains_delete`), so a saved agent workflow naming the old tool stops resolving.
+**The version says which platform it speaks to: the 2.x MCP is the one that speaks to the 3.x platform.** Each major has been a true major for consumers, and each is recorded here with what it breaks.
+
+- **2.0.0 (2026-09-20) — `Domain.status` means something else.** It was the DNS enum (`pending`, `partial`, `success`) plus `paused`; it is now the domain's STANDING, the one derived word saying what the domain needs from its owner (`live`, `unlinked`, `unverified`, `paused`), and the DNS fact moved to a `verification` field beside it. `domains_get` and `domains_list` answer with the new shape, and the flow sentence and both tool descriptions name `status` outright. An agent workflow branching on `"success"` stops matching — silently, because `DomainStatusSchema` is a described `z.string()` rather than a closed enum, so nothing refuses the new word at the schema boundary. That is exactly why this is a major rather than a minor.
+- **1.0.0** — `SHIP_API_KEY` is no longer read (every existing server config breaks until its env var is renamed) and the delete tools were renamed (`deployments_remove` → `deployments_delete`, `domains_remove` → `domains_delete`), so a saved agent workflow naming the old tool stops resolving.
 
 A **hosted Streamable-HTTP variant** lives at `https://mcp.shipstatic.com`, registered alongside this package under the same `com.shipstatic/mcp` registry entry (see `server.json` `remotes`). Source: `cloudflare/mcp/` in the monorepo. It serves the same fifteen tools: `deployments_upload` to anyone, the other fourteen to an OAuth-connected caller (since 2026-08-13 in production). The user-facing strings — tool description, INSTRUCTIONS — must stay coordinated where they overlap; the hosted side documents the divergence boundaries.
 

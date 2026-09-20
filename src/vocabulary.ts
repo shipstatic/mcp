@@ -226,7 +226,7 @@ export const INSTRUCTION_BLOCKS = {
   domainConcept:
     '- Domain: a custom domain (e.g. www.example.com) pointing to a deployment. Optional. Subdomains only — not apex domains.',
   domainWorkflow:
-    'To add a custom domain: domains_validate → domains_set → domains_records (show DNS records to user) → user configures DNS → domains_verify → domains_set with the deployment to serve. A domain serves nothing until a deployment is linked, so ask the user which one and link it; domains_get shows whether one is.',
+    'To add a custom domain: domains_validate → domains_set → domains_records (show DNS records to user) → user configures DNS → domains_verify → domains_set with the deployment to serve. A domain serves nothing until a deployment is linked, so ask the user which one and link it. Read `status` to know where a domain stands: `unverified` means its DNS records are not configured yet, `unlinked` means DNS is right and nothing is published there, `live` means it serves, `paused` means the plan has no room for it.',
 } as const;
 
 /**

@@ -284,7 +284,7 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
     'domains_list',
     titled({
       title: 'List Domains',
-      description: `List all domains with their URLs, linked deployment, and verification status.${PAGING_NOTE}`,
+      description: `List all domains with their URLs, linked deployment, and \`status\`.${PAGING_NOTE}`,
       annotations: annotate(TOOLS.domains_list),
       outputSchema: DomainListResponseSchema,
       inputSchema: PAGINATION_INPUT,
@@ -297,7 +297,7 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
     titled({
       title: 'Get Domain',
       description:
-        'Get domain details including URL, linked deployment, verification status, and labels.',
+        'Get domain details including URL, linked deployment, labels, and `status`: the one word saying what the domain needs from its owner (`unverified`, `unlinked`, `live`, `paused`).',
       annotations: annotate(TOOLS.domains_get),
       outputSchema: DomainSchema,
       inputSchema: {
@@ -388,7 +388,7 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
     titled({
       title: 'Verify Domain DNS',
       description:
-        'Trigger DNS verification for a custom domain. Call after the user has configured DNS records from domains_records. Verification is asynchronous — the domain status updates once DNS propagates. A verified domain serves nothing until a deployment is linked with domains_set.',
+        'Trigger DNS verification for a custom domain. Call after the user has configured DNS records from domains_records. Verification is asynchronous — read the domain again with domains_get to learn the verdict, since its `status` has not moved yet when this returns. A verified domain serves nothing until a deployment is linked with domains_set.',
       annotations: annotate(TOOLS.domains_verify),
       outputSchema: DomainVerifyResponseSchema,
       inputSchema: {
