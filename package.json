@@ -68,7 +68,7 @@
   "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
-    "@shipstatic/ship": "2.9.5",
+    "@shipstatic/ship": "2.9.6",
     "@shipstatic/types": "2.27.0",
     "zod": "^4.4.3"
   },
