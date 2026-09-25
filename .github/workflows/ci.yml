@@ -234,16 +234,20 @@ jobs:
         run: ./mcp-publisher publish
 
   # Every publish, and every red run on a push, reaches the operator's alerts
-  # channel; a pull request's red already has a reader, its author. The
-  # webhook lives in this job alone, which runs nothing but curl, and an unset
-  # secret fails the job rather than skipping it. Root CLAUDE.md, "CI
-  # notifications".
+  # channel for its environment (production on main, development elsewhere);
+  # a pull request's red already has a reader, its author. The webhook is a
+  # secret of that environment, so only this job can read it. It runs nothing
+  # but curl, and an unset secret fails it rather than skipping it. Root
+  # CLAUDE.md, "CI notifications".
   notify:
     needs: [test, version, publish, release, registry]
     if: always() && github.event_name != 'pull_request' && (contains(needs.*.result, 'failure') || needs.version.outputs.publish == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 2
     permissions: {}
+    environment:
+      name: ${{ github.ref_name == 'main' && 'production' || 'development' }}
+      deployment: false
     steps:
       - name: Post to the alerts channel
         env:
@@ -270,5 +274,5 @@ jobs:
           else
             MESSAGE="✅ $PACKAGE $VERSION published ($TAG)"
           fi
-          [ -n "$ALERTS_WEBHOOK" ] || { echo "::error::ALERTS_WEBHOOK is not set on this repository, so this outcome reached nobody"; exit 1; }
+          [ -n "$ALERTS_WEBHOOK" ] || { echo "::error::ALERTS_WEBHOOK is not set in the environment this run selected, so this outcome reached nobody"; exit 1; }
           curl --fail-with-body -sS --form-string "content=$MESSAGE <$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID>" "$ALERTS_WEBHOOK"
