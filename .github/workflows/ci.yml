@@ -233,54 +233,42 @@ jobs:
       - name: Publish to MCP Registry
         run: ./mcp-publisher publish
 
-  # Notification is third-party code (the Slack action), so it runs where no
-  # credential exists: an empty permissions map, after both outcomes are known.
+  # Every publish, and every red run on a push, reaches the operator's alerts
+  # channel; a pull request's red already has a reader, its author. The
+  # webhook lives in this job alone, which runs nothing but curl, and an unset
+  # secret fails the job rather than skipping it. Root CLAUDE.md, "CI
+  # notifications".
   notify:
-    needs: [version, publish, release, registry]
-    if: always() && needs.version.outputs.publish == 'true'
+    needs: [test, version, publish, release, registry]
+    if: always() && github.event_name != 'pull_request' && (contains(needs.*.result, 'failure') || needs.version.outputs.publish == 'true')
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 2
     permissions: {}
     steps:
-      # A skipped `registry` is green: betas never touch the MCP Registry by
-      # design, so "did not run" is the correct outcome for every prerelease.
-      - if: needs.publish.result == 'success' && needs.release.result == 'success' && (needs.registry.result == 'success' || needs.registry.result == 'skipped')
-        uses: slackapi/slack-github-action@v4
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
-          payload: |
-            text: "✅ @shipstatic/mcp ${{ needs.version.outputs.version }} published (${{ needs.version.outputs.tag }})"
-
-      - if: needs.publish.result != 'success'
-        uses: slackapi/slack-github-action@v4
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
-          payload: |
-            text: "🔴 @shipstatic/mcp publish failed"
-
-      # The honest middle state: the version IS on the registry but carries no
-      # tag. Before the job split this reported as "publish failed", which was
-      # false during exactly the window where the truth matters. It wins over
-      # the registry state below when both failed — the missing tag is the
-      # louder problem, and one re-run repairs both.
-      - if: needs.publish.result == 'success' && needs.release.result != 'success'
-        uses: slackapi/slack-github-action@v4
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
-          payload: |
-            text: "🟡 @shipstatic/mcp ${{ needs.version.outputs.version }} published but UNTAGGED — the release job failed. Repair: Re-run failed jobs on this run."
-
-      # mcp's own fourth state, by the same reasoning: npm has the version and
-      # the tag exists, but the registry agents discover from does not know it.
-      # A registry failure fired the red "publish failed" before this wave —
-      # false, the npm publish had succeeded.
-      - if: needs.publish.result == 'success' && needs.release.result == 'success' && needs.registry.result != 'success' && needs.registry.result != 'skipped'
-        uses: slackapi/slack-github-action@v4
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
-          payload: |
-            text: "🟠 @shipstatic/mcp ${{ needs.version.outputs.version }} published to npm but NOT to the MCP Registry — the registry job failed. Repair: Re-run failed jobs on this run."
+      - name: Post to the alerts channel
+        env:
+          ALERTS_WEBHOOK: ${{ secrets.ALERTS_WEBHOOK }}
+          PACKAGE: '@shipstatic/mcp'
+          VERSION: ${{ needs.version.outputs.version }}
+          TAG: ${{ needs.version.outputs.tag }}
+          PUBLISH: ${{ needs.publish.result }}
+          RELEASE: ${{ needs.release.result }}
+          REGISTRY: ${{ needs.registry.result }}
+        run: |
+          # UNTAGGED is the honest middle state: the version is on the registry
+          # and carries no tag, which "publish failed" would misreport.
+          if [ "$PUBLISH" = skipped ]; then
+            MESSAGE="🔴 $PACKAGE CI failed on $GITHUB_REF_NAME"
+          elif [ "$PUBLISH" != success ]; then
+            MESSAGE="🔴 $PACKAGE $VERSION publish failed"
+          elif [ "$RELEASE" != success ]; then
+            MESSAGE="🟡 $PACKAGE $VERSION published but UNTAGGED: the release job failed. Repair: Re-run failed jobs on this run."
+          # A skipped registry job is green: prereleases never reach the MCP
+          # Registry, by design.
+          elif [ "$REGISTRY" != success ] && [ "$REGISTRY" != skipped ]; then
+            MESSAGE="🟠 $PACKAGE $VERSION published to npm but NOT to the MCP Registry: the registry job failed. Repair: Re-run failed jobs on this run."
+          else
+            MESSAGE="✅ $PACKAGE $VERSION published ($TAG)"
+          fi
+          [ -n "$ALERTS_WEBHOOK" ] || { echo "::error::ALERTS_WEBHOOK is not set on this repository, so this outcome reached nobody"; exit 1; }
+          curl --fail-with-body -sS --form-string "content=$MESSAGE <$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID>" "$ALERTS_WEBHOOK"
