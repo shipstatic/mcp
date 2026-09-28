@@ -416,8 +416,8 @@ describe('response payloads', () => {
       email: 'who@example.com',
       name: 'Who',
       plan: 'pro',
-      usage: { deployments: 0, platformDomains: 0, customDomains: 0 },
-      caps: { deployments: 100, platformDomains: 10, customDomains: 0 },
+      usage: { deployments: 0, platformDomains: 0, customDomains: 0, members: 1 },
+      caps: { deployments: 100, platformDomains: 10, customDomains: 0, members: 1 },
     };
     expect(jsonOf(result)).toEqual(summary);
     expect(result.structuredContent).toEqual(summary);
