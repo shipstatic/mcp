@@ -422,7 +422,7 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
     'whoami',
     titled({
       title: 'Show Account',
-      description: 'Returns your email and name, the plan, current usage and plan caps.',
+      description: "Returns your email and name, and the account's plan, usage and caps.",
       annotations: annotate(TOOLS.whoami),
       outputSchema: ACCOUNT_SUMMARY,
     }),

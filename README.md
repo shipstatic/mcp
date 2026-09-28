@@ -149,7 +149,7 @@ All fifteen tools are on both doors. What changes is not which tools exist, but 
 
 | Tool | Description |
 |------|-------------|
-| `whoami` | Your account's email, name, plan, current usage and plan caps |
+| `whoami` | Your email and name, and the account's plan, usage and caps |
 
 ### Paging long lists
 
