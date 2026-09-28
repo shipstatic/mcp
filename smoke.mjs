@@ -91,7 +91,7 @@ const fail = (label, detail) => {
 const skip = (what, why) => console.log(`  – ${what} SKIPPED (${why})`);
 /** What a skipped block leaves unproven — never let that go unsaid. */
 const unverified = (what) => console.log(`    ${what} NOT verified by this run`);
-const note = (text) => console.log(`  · ${text}`);
+const note = (text) => console.log(`  • ${text}`);
 const section = (title) => console.log(`\n${title}`);
 
 /** `expected === actual`, reported with both when it is not. */
