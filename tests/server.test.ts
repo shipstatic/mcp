@@ -316,7 +316,7 @@ const CATALOGUE: Record<string, ToolSurface> = {
   // ------------------------------------------------------------------ debugging
   whoami: {
     title: 'Show Account',
-    description: "Returns the account's email, name, plan, current usage and plan caps.",
+    description: 'Returns your email and name, the plan, current usage and plan caps.',
     annotations: READ,
     params: {},
   },
