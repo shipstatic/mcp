@@ -314,7 +314,7 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
     titled({
       title: 'Get DNS Records',
       description:
-        "Returns the DNS records to configure at the domain's DNS provider. Call after domains_set.",
+        "Returns the DNS records to configure at the domain's DNS provider. Call after domains_set. Custom domains only: a platform subdomain has no records to configure.",
       annotations: annotate(TOOLS.domains_records),
       outputSchema: DomainRecordsResponseSchema,
       inputSchema: {
@@ -331,7 +331,7 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
     titled({
       title: 'Get DNS Provider',
       description:
-        'Returns the DNS provider recorded for the domain, if known (e.g. Cloudflare, Namecheap): where its DNS records are configured.',
+        'Returns the DNS provider recorded for the domain, if known (e.g. Cloudflare, Namecheap): where its DNS records are configured. Custom domains only, and only while the domain is unverified; once its DNS is right there is nothing left to locate.',
       annotations: annotate(TOOLS.domains_dns),
       outputSchema: DomainDnsResponseSchema,
       inputSchema: {
@@ -350,7 +350,7 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
     titled({
       title: 'Share DNS Setup',
       description:
-        "Returns a shareable DNS setup URL that needs no API key, for whoever manages the domain's DNS.",
+        "Returns a shareable DNS setup URL that needs no API key, for whoever manages the domain's DNS. Custom domains only, and only while the domain is unverified; a verified domain has no setup left to share.",
       annotations: annotate(TOOLS.domains_share),
       outputSchema: DomainShareResponseSchema,
       inputSchema: {
@@ -388,7 +388,7 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
     titled({
       title: 'Verify Domain DNS',
       description:
-        'Trigger DNS verification for a custom domain. Call after the user has configured DNS records from domains_records. Verification is asynchronous — read the domain again with domains_get to learn the verdict, since its `status` has not moved yet when this returns. A verified domain serves nothing until a deployment is linked with domains_set.',
+        'Trigger DNS verification for a custom domain. Call after the user has configured DNS records from domains_records. Custom domains only, and refused once the domain is verified: read domains_get instead. Verification is asynchronous: read the domain again with domains_get to learn the verdict, since its `status` has not moved yet when this returns. A verified domain serves nothing until a deployment is linked with domains_set.',
       annotations: annotate(TOOLS.domains_verify),
       outputSchema: DomainVerifyResponseSchema,
       inputSchema: {
