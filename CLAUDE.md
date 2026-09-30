@@ -1,5 +1,7 @@
 # CLAUDE.md
 
+**PRODUCTION HOLD (operator, 2026-09-30): do not merge `development` into `main` while it carries the account-in-the-path wave.** That merge publishes to `latest`, and the wave is held until the operator signs it off after a full manual sitting of root `TESTPLAN-TEAM-SITTING.md` on dev. Beta publishes from `development` stay allowed. Full text and expiry: root `plan-account-in-the-path.md`, the production hold.
+
 Claude Code instructions for the **ShipStatic MCP Server**.
 
 **@shipstatic/mcp** — MCP server that exposes the ShipStatic SDK to AI agents via stdio. Thin wrapper over `@shipstatic/ship`. Published to the MCP Registry as `com.shipstatic/mcp`. **Maturity:** v2.x — Deployments + Domains (15 tools).
