@@ -26,7 +26,7 @@
  */
 
 import type {
-  AccountGetResponse,
+  Account,
   Deployment,
   DeploymentCreateResponse,
   DeploymentDeleteResponse,
@@ -264,13 +264,10 @@ export function makeDomainShare(
   return { domain: CUSTOM_DOMAIN, url };
 }
 
-/**
- * What `whoami` resolves: `Account` plus the authorization facts only
- * `GET /account` reports. `authMethod` is required — the API always says how
- * the caller was authorized. wire: `AccountGetResponse`.
- */
-export function makeAccount(overrides: Partial<AccountGetResponse> = {}): AccountGetResponse {
+/** What `whoami` resolves: the `Account` `GET /account` reports. wire: `Account`. */
+export function makeAccount(overrides: Partial<Account> = {}): Account {
   return {
+    account: 'k3v9x2m7q1w8e5r4',
     email: 'test@example.com',
     name: 'Test User',
     picture: 'https://example.com/avatar.jpg',
@@ -290,9 +287,6 @@ export function makeAccount(overrides: Partial<AccountGetResponse> = {}): Accoun
     interval: null,
     scheduled: null,
     cancelAt: null,
-    // `apiKey` is what a `ship-` prefixed SHIP_TOKEN classifies as; the value's
-    // prefix decides, and the server reports the classification back.
-    authMethod: 'apiKey',
     ...overrides,
-  } satisfies AccountGetResponse;
+  } satisfies Account;
 }
