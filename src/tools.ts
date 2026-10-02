@@ -314,7 +314,7 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
     titled({
       title: 'Get DNS Records',
       description:
-        "Returns the DNS records to configure at the domain's DNS provider. Call after domains_set. Custom domains only: a platform subdomain has no records to configure.",
+        "Returns the DNS records to configure at the domain's DNS provider. Call after domains_set. Custom domains only: a platform domain has no records to configure.",
       annotations: annotate(TOOLS.domains_records),
       outputSchema: DomainRecordsResponseSchema,
       inputSchema: {

@@ -254,7 +254,7 @@ const CATALOGUE: Record<string, ToolSurface> = {
   domains_records: {
     title: 'Get DNS Records',
     description:
-      "Returns the DNS records to configure at the domain's DNS provider. Call after domains_set. Custom domains only: a platform subdomain has no records to configure.",
+      "Returns the DNS records to configure at the domain's DNS provider. Call after domains_set. Custom domains only: a platform domain has no records to configure.",
     annotations: READ,
     params: {
       domain: str('Domain name. Must be a domain previously created with domains_set.'),

@@ -276,7 +276,7 @@ const scratch = await mkdtemp(join(tmpdir(), 'ship-mcp-smoke-'));
 const marker = `smoke-${Math.random().toString(36).slice(2)}`;
 await writeFile(join(scratch, 'index.html'), `<!doctype html><title>${marker}</title>${marker}`);
 
-// A domain that is genuinely external and unique per run. Platform subdomains
+// A domain that is genuinely external and unique per run. Platform domains
 // have no DNS surface (`domains_records` refuses them) and apex domains are
 // not hosted at all, so `example.com` subdomains are the only correct choice.
 const testDomain = `${marker}.example.com`;
