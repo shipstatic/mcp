@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-**PRODUCTION HOLD (operator, 2026-09-30): do not merge `development` into `main` while it carries the account-in-the-path wave.** That merge publishes to `latest`, and the wave is held until the operator signs it off after a full manual sitting of root `TESTPLAN-TEAM-SITTING.md` on dev. Beta publishes from `development` stay allowed. Full text and expiry: root `plan-account-in-the-path.md`, the production hold.
+**PRODUCTION HOLD (operator, 2026-09-30): do not merge `development` into `main` while it carries the account-in-the-path wave.** That merge publishes to `latest`, and the wave is held until the operator signs it off after a manual sitting of root `TESTPLAN-SOLO-SITTING.md` on dev (the Team sitting gates lifting `TEAM_CLOSED` alone). Beta publishes from `development` stay allowed. Full text and expiry: root `plan-account-in-the-path.md`, the production hold.
 
 Claude Code instructions for the **ShipStatic MCP Server**.
 
