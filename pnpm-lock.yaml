@@ -12,8 +12,8 @@ importers:
         specifier: ^1.30.0
         version: 1.30.0(zod@4.4.3)
       '@shipstatic/ship':
-        specifier: 3.4.0-beta.15
-        version: 3.4.0-beta.15
+        specifier: 3.4.0-beta.16
+        version: 3.4.0-beta.16
       '@shipstatic/types':
         specifier: 3.8.0-beta.12
         version: 3.8.0-beta.12
@@ -611,8 +611,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@shipstatic/ship@3.4.0-beta.15':
-    resolution: {integrity: sha512-YaSPIHvhAsxBUUm2yRvqOF5tPnVB74jorpL+3GPvD0dnhYBQMuKWi/3AnaTUtfhe1Hwrqub+wLRVDFVHajAuNg==}
+  '@shipstatic/ship@3.4.0-beta.16':
+    resolution: {integrity: sha512-3G2zWaA8LePTpvqCAPEJfhzxbS16j47Ab1hQ2om/urId72fedqrZGZpnpFaDycd1un/OqT4TzsMdtjg6YKIZ3w==}
     engines: {node: '>=20.19.0'}
     hasBin: true
 
@@ -1823,7 +1823,7 @@ snapshots:
   '@rollup/rollup-win32-x64-msvc@4.62.3':
     optional: true
 
-  '@shipstatic/ship@3.4.0-beta.15':
+  '@shipstatic/ship@3.4.0-beta.16':
     dependencies:
       junk: 4.0.1
       spark-md5: 3.0.2
