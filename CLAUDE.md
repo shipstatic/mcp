@@ -661,8 +661,8 @@ second number to keep true. The SDK already fetches dynamic limits for its own
 client-side pre-validation, so the agent gets that protection without a tool.
 
 **Deliberately not agent knobs.** `signal` (a process-level cancellation
-concern), `pathDetect` / `spaDetect` (local-detection defaults). These are not
-absences to close.
+concern), `pathDetect` (a local-detection default). These are not absences
+to close.
 
 ---
 
