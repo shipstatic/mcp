@@ -54,7 +54,7 @@ Your agent publishes the files and answers with two links:
 - **The live site** — a real URL you can share right away.
 - **A claim link** — the site stays live for 3 days; open the claim link to keep it forever. A free account is all it takes.
 
-Want the site private? Say "publish this with ShipStatic and use ShipStatic's password protection". Visitors must enter the password before they can see anything, and naming ShipStatic keeps your agent from writing a password page of its own.
+Want the site private? Say "publish this with ShipStatic's built-in password protection". Visitors must enter the password before they can see anything, and saying "built-in" keeps your agent from writing a password page of its own.
 
 ### Then connect, if you want more
 

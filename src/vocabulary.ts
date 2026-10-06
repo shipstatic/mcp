@@ -215,9 +215,14 @@ export const INSTRUCTION_BLOCKS = {
    * one place a server may say what an agent should do. A tool description
    * describes the tool; both listing reviews reject one that instructs the
    * model, and the catalogue tests grep for it.
+   *
+   * It also names the feature ("built-in password protection", the one name
+   * every page and mail uses) and tells the agent not to write a password
+   * page of its own: an agent asked only to "add a password" tends to build
+   * one into the site, which protects nothing.
    */
   password:
-    'To make the site private, pass `password`; visitors must unlock before viewing, including on any custom domains pointing at it. Tell the user any password you set, since one they never see locks them out.',
+    "To make the site private, pass `password`: that is ShipStatic's built-in password protection, checked before any file is served. When the user asks for a password or a private site, use it, and do not build a password page or script into the site itself. Visitors must unlock before viewing, including on any custom domains pointing at it. Tell the user any password you set, since one they never see locks them out.",
   claim:
     'The response includes a claim URL — always show the deployment URL and the claim URL to the user so they can keep the site permanently.',
   conceptsHeader: 'Concepts:',
