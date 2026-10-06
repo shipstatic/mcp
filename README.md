@@ -183,7 +183,7 @@ Published to the [MCP Registry](https://registry.modelcontextprotocol.io/v0.1/se
 | **[VS Code](https://marketplace.visualstudio.com/items?itemName=shipstatic.shipstatic)** | Search "ShipStatic" in the Marketplace |
 | **[Gemini CLI](https://github.com/shipstatic/plugin)** | `gemini extensions install https://github.com/shipstatic/plugin` |
 | **[n8n](https://www.npmjs.com/package/n8n-nodes-shipstatic)** | Search "ShipStatic" in n8n's node panel |
-| **[GitHub Action](https://github.com/shipstatic/action)** | `shipstatic/action@v2` |
+| **[GitHub Action](https://github.com/shipstatic/action)** | `shipstatic/action@v3` |
 | **[Agent Skill](https://www.shipstatic.com/SKILL.md)** | One file, for any skills-aware tool |
 
 ## License
