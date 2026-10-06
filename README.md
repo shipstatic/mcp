@@ -47,14 +47,14 @@ Install [ShipStatic for VS Code](https://marketplace.visualstudio.com/items?item
 
 ### Then just ask
 
-> "Put my site online."
+> "Publish this with ShipStatic."
 
 Your agent publishes the files and answers with two links:
 
 - **The live site** — a real URL you can share right away.
 - **A claim link** — the site stays live for 3 days; open the claim link to keep it forever. A free account is all it takes.
 
-Want the site private? Ask for a password — visitors must enter it before they can see anything.
+Want the site private? Say "publish this with ShipStatic and use ShipStatic's password protection". Visitors must enter the password before they can see anything, and naming ShipStatic keeps your agent from writing a password page of its own.
 
 ### Then connect, if you want more
 
