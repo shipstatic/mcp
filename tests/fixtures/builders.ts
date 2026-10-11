@@ -273,7 +273,7 @@ export function makeAccount(overrides: Partial<Account> = {}): Account {
     picture: 'https://example.com/avatar.jpg',
     plan: 'free',
     suspended: false,
-    usage: { deployments: 0, platformDomains: 0, customDomains: 0, members: 1 },
+    usage: { deployments: 0, platformDomains: 0, customDomains: 0, members: 1, invitations: 0 },
     caps: { deployments: 100, platformDomains: 10, customDomains: 0, members: 1 },
     created: timestamps.jan2022,
     activated: null,
