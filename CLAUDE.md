@@ -537,7 +537,7 @@ shared file, not this server's:
    `@shipstatic/types/schemas`. Never write one here; if the constitution
    lacks the shape, add it there (fenced to its interface) first.
 3. Give it a **`title`** — a short Title Case verb phrase naming what the user
-   gets ("List Deployments", "Connect Custom Domain"). Not optional and not
+   gets ("List Deployments", "Set Domain"). Not optional and not
    cosmetic: the Claude connectors directory refuses submission for a tool
    without one, so a titleless tool makes the whole product unlistable. Both
    catalogue pins fail on an untitled tool by name.

@@ -31,7 +31,7 @@
  * Claude connectors directory refuses submission for a tool that lacks one, so
  * a titleless tool is not a shabby tool — it is an unlistable product. The
  * style is short Title Case verb phrases naming what the USER gets ("List
- * Deployments", "Connect Custom Domain"); the name obeys `resource_action` for
+ * Deployments", "Set Domain"); the name obeys `resource_action` for
  * the agent, the title reads as English for the human, and the description
  * carries every precision neither can. Both catalogue pins assert a title on
  * every tool, so the next one cannot be added without one.
@@ -257,13 +257,17 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
   server.registerTool(
     'domains_set',
     titled({
-      title: 'Connect Custom Domain',
+      title: 'Set Domain',
       description:
-        'Create or update a custom domain. Can reserve a name (omit deployment), link it to a deployment, switch deployments, or update labels. domains_records then returns the DNS records to configure.',
+        'Create or update a domain: a ShipStatic domain (e.g. "yourname.shipstatic.com"), live as soon as a deployment is linked, or a custom domain (e.g. "www.example.com"), which needs DNS records first. Can reserve a name (omit deployment), link it to a deployment, switch deployments, or update labels. For a custom domain, domains_records then returns the DNS records to configure.',
       annotations: annotate(TOOLS.domains_set),
       outputSchema: DomainSetResultSchema,
       inputSchema: {
-        domain: z.string().describe('Domain name (e.g. "www.example.com" or "blog.example.com")'),
+        domain: z
+          .string()
+          .describe(
+            'Domain name: a ShipStatic domain (e.g. "yourname.shipstatic.com") or a custom domain (e.g. "www.example.com")',
+          ),
         deployment: z
           .string()
           .optional()
@@ -376,7 +380,7 @@ export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn
         domain: z
           .string()
           .describe(
-            'Domain name to check (e.g. "www.example.com"). Call before domains_set to check availability.',
+            'Domain name to check (e.g. "yourname.shipstatic.com" or "www.example.com"). Call before domains_set to check availability.',
           ),
       },
     }),

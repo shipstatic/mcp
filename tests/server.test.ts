@@ -223,12 +223,14 @@ const CATALOGUE: Record<string, ToolSurface> = {
 
   // -------------------------------------------------------------------- domains
   domains_set: {
-    title: 'Connect Custom Domain',
+    title: 'Set Domain',
     description:
-      'Create or update a custom domain. Can reserve a name (omit deployment), link it to a deployment, switch deployments, or update labels. domains_records then returns the DNS records to configure.',
+      'Create or update a domain: a ShipStatic domain (e.g. "yourname.shipstatic.com"), live as soon as a deployment is linked, or a custom domain (e.g. "www.example.com"), which needs DNS records first. Can reserve a name (omit deployment), link it to a deployment, switch deployments, or update labels. For a custom domain, domains_records then returns the DNS records to configure.',
     annotations: REPLACE_PUBLIC,
     params: {
-      domain: str('Domain name (e.g. "www.example.com" or "blog.example.com")'),
+      domain: str(
+        'Domain name: a ShipStatic domain (e.g. "yourname.shipstatic.com") or a custom domain (e.g. "www.example.com")',
+      ),
       deployment: str(
         `Deployment to serve on this domain (e.g. "${DEPLOYMENT_EXAMPLE}"). Omit to reserve the domain without linking.`,
         false,
@@ -289,7 +291,7 @@ const CATALOGUE: Record<string, ToolSurface> = {
     annotations: READ,
     params: {
       domain: str(
-        'Domain name to check (e.g. "www.example.com"). Call before domains_set to check availability.',
+        'Domain name to check (e.g. "yourname.shipstatic.com" or "www.example.com"). Call before domains_set to check availability.',
       ),
     },
   },
@@ -540,12 +542,20 @@ describe('server instructions', () => {
   });
 
   it('states the apex-domain exclusion — the platform hosts subdomains only', () => {
-    expect(instructions).toMatch(/Subdomains only — not apex domains/);
+    expect(instructions).toContain('Subdomains only, not apex domains.');
   });
 
   it('spells out the custom-domain workflow in execution order, to its last step', () => {
     expect(instructions).toContain(
-      'domains_validate → domains_set → domains_records (show DNS records to user) → user configures DNS → domains_verify → domains_set with the deployment to serve',
+      'domains_validate → domains_set → domains_records (show DNS records to user) → user configures DNS → domains_verify, only while its `status` is `unverified` → domains_set with the deployment to serve',
+    );
+  });
+
+  it('names the ShipStatic domain and its one-step path, with no DNS', () => {
+    // "Give my site the name yourproject" is a sentence the product pages
+    // teach; without this the agent only knows the custom-domain flow.
+    expect(instructions).toContain(
+      'To give a deployment a ShipStatic domain: domains_validate → domains_set with the domain and the deployment. It is live at once, with no DNS.',
     );
   });
 
