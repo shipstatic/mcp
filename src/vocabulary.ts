@@ -121,8 +121,8 @@ export const PUBLIC_EXPIRY = formatDuration(PUBLIC_DEPLOYMENT_TTL_SECONDS);
  * One row per tool lives in the registry (`tools.ts`, `TOOLS`), and every
  * other statement about the tool is derived from it: the MCP annotations
  * (`annotate`), the account-tool set (and so the hosted door's
- * `securitySchemes` and challenge scope), the listing justifications in
- * `integrations/gpt`, and the catalogue tests. Until 1.11.0 these facts had
+ * `securitySchemes` and challenge scope), the hint table
+ * `integrations/gpt`'s preflight checks, and the catalogue tests. Until 1.11.0 these facts had
  * three owners: four annotation classes here, a hand-written name list for
  * the auth need, and the upload tool annotated by hand on both transports.
  * Three owners for facts about one tool is how the classes came to spread
