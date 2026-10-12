@@ -63,7 +63,7 @@ describe('parameter descriptions', () => {
     // as errors; the one that learns them sequences correctly the first time.
     // `server.test.ts` pins the sentence, this pins the two rules inside it.
     expect(PARAM_DESCRIPTIONS.ttl).toContain('Only for authenticated deploys');
-    expect(PARAM_DESCRIPTIONS.ttl).toContain('cannot be linked to a custom domain');
+    expect(PARAM_DESCRIPTIONS.ttl).toContain('cannot be linked to any domain');
   });
 
   it('ttl states no number at all — the range has an owner, and this is not it', () => {

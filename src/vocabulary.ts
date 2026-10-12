@@ -297,5 +297,5 @@ export const PARAM_DESCRIPTIONS = {
    * string that named either would put one door's fact in the other's mouth.
    * `tests/vocabulary.test.ts` fences the second half for every member.
    */
-  ttl: "Seconds until this deployment expires and the platform reclaims it; omit for one that never does. Only for authenticated deploys — an anonymous deployment already expires on the platform's schedule, and a requested ttl on one is refused. A deployment carrying a ttl cannot be linked to a custom domain: deploy without one if the site needs a domain.",
+  ttl: "Seconds until this deployment expires and the platform reclaims it; omit for one that never does. Only for authenticated deploys — an anonymous deployment already expires on the platform's schedule, and a requested ttl on one is refused. A deployment carrying a ttl cannot be linked to any domain: deploy without one if the site needs a domain.",
 } as const;

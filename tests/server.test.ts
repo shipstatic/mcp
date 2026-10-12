@@ -179,7 +179,7 @@ const CATALOGUE: Record<string, ToolSurface> = {
       // teaches the two REFUSALS (anonymous, domain-linked) and leaves the
       // bounds to the validator that owns them.
       ttl: num(
-        "Seconds until this deployment expires and the platform reclaims it; omit for one that never does. Only for authenticated deploys — an anonymous deployment already expires on the platform's schedule, and a requested ttl on one is refused. A deployment carrying a ttl cannot be linked to a custom domain: deploy without one if the site needs a domain.",
+        "Seconds until this deployment expires and the platform reclaims it; omit for one that never does. Only for authenticated deploys — an anonymous deployment already expires on the platform's schedule, and a requested ttl on one is refused. A deployment carrying a ttl cannot be linked to any domain: deploy without one if the site needs a domain.",
         false,
       ),
     },

@@ -169,7 +169,7 @@ Key the *attempt*, not the try — a run id, a commit sha, or a uuid generated b
 { "path": "/path/to/dist", "ttl": 3600 }
 ```
 
-It needs an account — `SHIP_TOKEN` here, a connected account on the hosted endpoint: a deploy with no account already expires on the platform's schedule, so a `ttl` on one is refused rather than ignored. A deployment carrying a `ttl` cannot be linked to a custom domain — deploy without one when the site needs a domain.
+It needs an account — `SHIP_TOKEN` here, a connected account on the hosted endpoint: a deploy with no account already expires on the platform's schedule, so a `ttl` on one is refused rather than ignored. A deployment carrying a `ttl` cannot be linked to any domain: deploy without one when the site needs a domain.
 
 ## Registry
 
