@@ -24,7 +24,7 @@ const D = DESCRIPTION_BLOCKS;
 // stdio's: how files arrive (a filesystem path) and how a caller
 // authenticates (`SHIP_TOKEN`). The hosted transport composes the same blocks
 // around its own two.
-const INSTRUCTIONS = `${B.opening}
+const INSTRUCTIONS = `${B.opening} ${B.accountLater}
 
 To deploy: call ${UPLOAD_TOOL_NAME} with the build output directory path. ${B.live} ${B.password}
 
