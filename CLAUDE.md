@@ -229,8 +229,8 @@ that registration itself: its INPUT differs per transport, its contract does
 not. Everything else is derived. `annotate(row)` is every registration's
 `annotations`; `ACCOUNT_TOOL_NAMES` is the rows whose `auth` is `required`,
 and the hosted door reads the same column for `securitySchemes` and its
-challenge scope; the ChatGPT listing's justifications are held to the hints
-the rows produce.
+challenge scope; `integrations/gpt`'s preflight holds the live door to the
+hints the rows produce.
 
 It replaced three owners (1.11.0, 2026-09-13): four annotation classes here
 that all spread `openWorldHint: true`, a hand-written name list for the auth
