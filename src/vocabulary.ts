@@ -206,11 +206,10 @@ export function titled<C extends { title: string; annotations?: object }>(config
 export const INSTRUCTION_BLOCKS = {
   opening: 'ShipStatic deploys static websites instantly. Free, no account required.',
   /**
-   * Publishing first, on every door. A host that can connect an account may
-   * reach for an account tool before the deploy the user asked for, and a
-   * sign-in between a person and their first link is the friction the
-   * no-account promise exists to remove. The account comes up when the user
-   * asks for something only an account holds.
+   * Publishing first, on every door. The no-account promise holds only if
+   * nothing stands between a person and their first link, so the agent
+   * publishes what it was asked to and raises an account when the user asks
+   * for something only an account holds.
    */
   accountLater:
     'Deploy straight away, and bring up an account only when the user asks to see or manage their sites, or to use their own domain.',
@@ -219,31 +218,17 @@ export const INSTRUCTION_BLOCKS = {
    * A block of its own rather than a clause of `live`: two sentences, two
    * facts, and a door may compose them independently.
    *
-   * The read-back rule lives HERE and not in the upload description: a
-   * password the user never sees locks them out, and `instructions` is the
-   * one place a server may say what an agent should do. A tool description
-   * describes the tool; both listing reviews reject one that instructs the
-   * model, and the catalogue tests grep for it.
-   *
-   * HELD UNTIL THE DIRECTORY APPROVALS LAND (operator, 2026-10-06). The text
-   * below is the one both listings reviewed, kept word for word while the
-   * Claude directory review is open. The version to switch to names the
-   * feature the way every page and mail does ("built-in password
-   * protection") and tells the agent not to write a password page of its
-   * own, which is what an agent asked only to "add a password" tends to do.
-   * To switch: replace the string below with this one, release the package,
-   * and walk the convoy (root `backlog.md` has the steps).
-   *
-   *   "To make the site private, pass `password`: that is ShipStatic's
-   *   built-in password protection, checked before any file is served. When
-   *   the user asks for a password or a private site, use it, and do not
-   *   build a password page or script into the site itself. Visitors must
-   *   unlock before viewing, including on any custom domains pointing at it.
-   *   Tell the user any password you set, since one they never see locks
-   *   them out."
+   * It names the feature the way every page and mail does ("built-in password
+   * protection") and keeps the agent from writing a password page or script
+   * of its own, which anyone can read past in the page's source. The read-back
+   * rule lives here and not in the upload description: a password the user
+   * never sees locks them out, and `instructions` is the one place a server
+   * may say what an agent should do. A tool description describes the tool;
+   * both listing reviews reject one that instructs the model, and the
+   * catalogue tests grep for it.
    */
   password:
-    'To make the site private, pass `password`; visitors must unlock before viewing, including on any custom domains pointing at it. Tell the user any password you set, since one they never see locks them out.',
+    "To make the site private, pass `password`: that is ShipStatic's built-in password protection, checked before any file is served. When the user asks for a password or a private site, use it, and do not build a password page or script into the site itself. Visitors must unlock before viewing, including on any custom domains pointing at it. Tell the user any password you set, since one they never see locks them out.",
   claim:
     'The response includes a claim URL — always show the deployment URL and the claim URL to the user so they can keep the site permanently.',
   conceptsHeader: 'Concepts:',

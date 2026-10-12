@@ -505,6 +505,14 @@ describe('server instructions', () => {
     expect(instructions).toMatch(/always show the deployment URL and the claim URL to the user/);
   });
 
+  it('names built-in password protection and keeps the agent from building its own', () => {
+    // A password page written into the site is read past in its source; the
+    // platform's protection is checked before any file is served.
+    expect(instructions).toContain("that is ShipStatic's built-in password protection");
+    expect(instructions).toContain('do not build a password page or script into the site itself');
+    expect(instructions).toContain('Tell the user any password you set');
+  });
+
   it('states the 3-day expiry for keyless deployments', () => {
     expect(instructions).toMatch(/expire in 3 days/);
   });
