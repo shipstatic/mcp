@@ -496,7 +496,7 @@ describe('server instructions', () => {
   it('leads with the no-account promise', () => {
     expect(instructions).toContain('Free, no account required.');
     expect(instructions).toContain(
-      'Publishing needs no account, so deploy straight away; bring up an account only when the user asks to see or manage their sites, or to use their own domain.',
+      'Deploy straight away, and bring up an account only when the user asks to see or manage their sites, or to use their own domain.',
     );
   });
 

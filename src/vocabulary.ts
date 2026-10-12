@@ -213,7 +213,7 @@ export const INSTRUCTION_BLOCKS = {
    * asks for something only an account holds.
    */
   accountLater:
-    'Publishing needs no account, so deploy straight away; bring up an account only when the user asks to see or manage their sites, or to use their own domain.',
+    'Deploy straight away, and bring up an account only when the user asks to see or manage their sites, or to use their own domain.',
   live: 'The site is live immediately.',
   /**
    * A block of its own rather than a clause of `live`: two sentences, two
