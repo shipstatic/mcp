@@ -273,7 +273,7 @@ export const DESCRIPTION_BLOCKS = {
  * them instead of restating them.
  */
 export const PARAM_DESCRIPTIONS = {
-  labels: `Labels for organizing deployments (e.g. ["production", "v1.2"]). Lowercase, ${LABEL_CONSTRAINTS.MIN_LENGTH}-${LABEL_CONSTRAINTS.MAX_LENGTH} chars, allows . _ - separators. Up to ${LABEL_CONSTRAINTS.MAX_COUNT}.`,
+  labels: `Labels for organizing deployments (e.g. ["env:production", "v1.2"]). Each is a word, or a key and a value split by one ":". Lowercase, ${LABEL_CONSTRAINTS.MIN_LENGTH}-${LABEL_CONSTRAINTS.MAX_LENGTH} chars, allows . _ - inside a word. Up to ${LABEL_CONSTRAINTS.MAX_COUNT}.`,
   password: `Optional password to gate the deployment behind an unlock prompt (${PASSWORD_CONSTRAINTS.MIN_LENGTH}–${PASSWORD_CONSTRAINTS.MAX_LENGTH} characters; whitespace significant). Visitors must enter this password before viewing the site, including on any custom domains pointing at it.`,
   /**
    * Shared even though only stdio offers the option today: the hosted door

@@ -161,7 +161,7 @@ const CATALOGUE: Record<string, ToolSurface> = {
         'Absolute path to the build output directory to deploy (e.g. "/Users/me/project/dist")',
       ),
       labels: strArray(
-        `Labels for organizing deployments (e.g. ["production", "v1.2"]). Lowercase, ${LABEL_CONSTRAINTS.MIN_LENGTH}-${LABEL_CONSTRAINTS.MAX_LENGTH} chars, allows . _ - separators. Up to ${LABEL_CONSTRAINTS.MAX_COUNT}.`,
+        `Labels for organizing deployments (e.g. ["env:production", "v1.2"]). Each is a word, or a key and a value split by one ":". Lowercase, ${LABEL_CONSTRAINTS.MIN_LENGTH}-${LABEL_CONSTRAINTS.MAX_LENGTH} chars, allows . _ - inside a word. Up to ${LABEL_CONSTRAINTS.MAX_COUNT}.`,
         false,
       ),
       password: str(
