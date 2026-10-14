@@ -473,8 +473,20 @@ describe('tool catalogue', () => {
     expect(undescribed).toEqual([]);
   });
 
-  it('advertises the package version, so a client reports the server it is actually running', () => {
-    expect(harness.client.getServerVersion()).toEqual({ name: 'shipstatic', version });
+  it('advertises who it is and the package version, so a client shows the server it is actually running', () => {
+    // Literal on purpose: what a client shows a person at connect, stated
+    // here rather than read back from the constant the server spreads.
+    expect(harness.client.getServerVersion()).toEqual({
+      name: 'shipstatic',
+      title: 'ShipStatic',
+      description:
+        'Deploy static websites, landing pages, and prototypes instantly from AI agents.',
+      websiteUrl: 'https://shipstatic.com',
+      icons: [
+        { src: 'https://www.shipstatic.com/logo.svg', mimeType: 'image/svg+xml', sizes: ['any'] },
+      ],
+      version,
+    });
   });
 });
 

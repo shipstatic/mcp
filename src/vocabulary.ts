@@ -28,6 +28,7 @@
  * how the next year's drift starts.
  */
 
+import type { Implementation } from '@modelcontextprotocol/sdk/types.js';
 import {
   IDEMPOTENCY_KEY_CONSTRAINTS,
   LABEL_CONSTRAINTS,
@@ -62,6 +63,34 @@ import { formatDuration, PUBLIC_DEPLOYMENT_TTL_SECONDS } from '@shipstatic/types
  * is exactly the shape this package exists to delete.
  */
 export const SERVER_NAME = 'shipstatic';
+
+/**
+ * Who the server is, as every transport reports it in `serverInfo`: the
+ * fields a client shows a person when they connect. Everything but the
+ * version, which each transport reads from its own manifest.
+ *
+ * - **`title`** is the product's name as people read it (CANON §1).
+ * - **`description`** is this package's root sentence (CANON §2) with no
+ *   qualifier. The hosted server reports it on every door, and on an
+ *   auth-first door "no account needed" is false.
+ * - **`websiteUrl`** and the **icon** name the product, so they are
+ *   production values in every environment, as in any published package.
+ * - **The icon** is the brand mark the marketing site serves
+ *   (`web/www/logo.svg`), on our own domain. A scalable mark is `any` size.
+ *
+ * The MCP Registry entry (`server.json`) states the same title, website and
+ * icons, and `package.json`'s description opens with the same sentence; the
+ * docs contract holds both to this object.
+ */
+export const SERVER_INFO: Omit<Implementation, 'version'> = {
+  name: SERVER_NAME,
+  title: 'ShipStatic',
+  description: 'Deploy static websites, landing pages, and prototypes instantly from AI agents.',
+  websiteUrl: 'https://shipstatic.com',
+  icons: [
+    { src: 'https://www.shipstatic.com/logo.svg', mimeType: 'image/svg+xml', sizes: ['any'] },
+  ],
+};
 
 /**
  * The one tool authored per transport — its INPUT differs (a filesystem path

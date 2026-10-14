@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { ACCOUNT_TOOL_NAMES } from '../../src/tools.js';
-import { PUBLIC_EXPIRY, UPLOAD_TOOL_NAME } from '../../src/vocabulary.js';
+import { PUBLIC_EXPIRY, SERVER_INFO, UPLOAD_TOOL_NAME } from '../../src/vocabulary.js';
 
 /**
  * @file Fence: the PUBLISHED docs track the tool surface.
@@ -23,6 +23,9 @@ const README = readFileSync(fileURLToPath(new URL('../../README.md', import.meta
 const SERVER_JSON = JSON.parse(
   readFileSync(fileURLToPath(new URL('../../server.json', import.meta.url)), 'utf8'),
 );
+const PACKAGE_JSON = JSON.parse(
+  readFileSync(fileURLToPath(new URL('../../package.json', import.meta.url)), 'utf8'),
+);
 
 describe('server.json', () => {
   it('keeps its description inside the MCP Registry limit', () => {
@@ -39,6 +42,23 @@ describe('server.json', () => {
     // published in its API error, and there is nothing in this repo to derive
     // it from. Restating it here is the cheapest place it can be wrong.
     expect(SERVER_JSON.description.length).toBeLessThanOrEqual(100);
+  });
+
+  it('states the title, website and icons the server reports', () => {
+    // A registry listing and a connected client show the same product, so
+    // the three identity fields a manifest can import nothing for are held
+    // to the one object both transports report. The description is not one
+    // of them: the registry caps it at 100 characters and it carries the
+    // hosted door's qualifier, which `serverInfo` cannot.
+    expect({
+      title: SERVER_JSON.title,
+      websiteUrl: SERVER_JSON.websiteUrl,
+      icons: SERVER_JSON.icons,
+    }).toEqual({
+      title: SERVER_INFO.title,
+      websiteUrl: SERVER_INFO.websiteUrl,
+      icons: SERVER_INFO.icons,
+    });
   });
 
   it('names the same package npm does', () => {
@@ -73,6 +93,15 @@ describe('server.json', () => {
       'utf8',
     );
     expect(CI).toContain('.version = $v | .packages[0].version = $v');
+  });
+});
+
+describe('package.json', () => {
+  it('opens its description with the sentence the server reports', () => {
+    // The canon fence holds this description to the package's root sentence
+    // (CANON §2), and the server reports that sentence as its own; this row
+    // closes the chain, so the two cannot say different things.
+    expect(PACKAGE_JSON.description.startsWith(`${SERVER_INFO.description} `)).toBe(true);
   });
 });
 

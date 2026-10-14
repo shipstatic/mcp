@@ -10,9 +10,9 @@
   },
   "icons": [
     {
-      "src": "https://raw.githubusercontent.com/shipstatic/mcp/main/icon.svg",
+      "src": "https://www.shipstatic.com/logo.svg",
       "mimeType": "image/svg+xml",
-      "sizes": ["480x480"]
+      "sizes": ["any"]
     }
   ],
   "websiteUrl": "https://shipstatic.com",

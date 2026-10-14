@@ -11,7 +11,7 @@ import {
   INSTRUCTION_BLOCKS,
   PARAM_DESCRIPTIONS,
   PUBLIC_EXPIRY,
-  SERVER_NAME,
+  SERVER_INFO,
   titled,
   UPLOAD_TOOL_NAME,
   UPLOAD_TOOL_TITLE,
@@ -76,7 +76,7 @@ export function createServer(ship: Ship, options: ServerOptions): McpServer {
 
   const server = new McpServer(
     {
-      name: SERVER_NAME,
+      ...SERVER_INFO,
       version,
     },
     {

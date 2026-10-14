@@ -28,8 +28,10 @@
  * what lets the hosted catalogue fence name the fourteen without counting them
  * again, `TOOLS` and `annotate` replaced four annotation classes plus a
  * hand-annotated upload on each transport plus a separate list for the auth
- * need (three owners for one tool's facts, 1.11.0), and `createServer`
- * deleted three regexes in another repo's build (see below).
+ * need (three owners for one tool's facts, 1.11.0), `SERVER_INFO` is the
+ * title, description, website and icon both transports report rather than
+ * each stating its own, and `createServer` deleted three regexes in another
+ * repo's build (see below).
  *
  * **`createServer` is exported; the configured `call` is not.** The extension
  * previously reached stdio's composition by REGEX-PATCHING this package's
@@ -84,6 +86,7 @@ export {
   INSTRUCTION_BLOCKS,
   PARAM_DESCRIPTIONS,
   PUBLIC_EXPIRY,
+  SERVER_INFO,
   SERVER_NAME,
   type ToolContract,
   titled,

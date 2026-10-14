@@ -49,6 +49,10 @@ const PUBLIC_API = [
   // both doors — while the description addresses the caller, which is exactly
   // what differs.
   'SERVER_NAME',
+  // Who the server is beyond its name (title, description, website, icon):
+  // what a client shows a person at connect, reported identically by both
+  // transports, and the facts the registry entry states too.
+  'SERVER_INFO',
   'UPLOAD_TOOL_NAME',
   'UPLOAD_TOOL_TITLE',
   // The fourteen account-tied tools, identical on every transport. Exported
