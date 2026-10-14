@@ -172,9 +172,9 @@ side had `'Deploy Static Site'` inline before this package had titles at all),
 test literal that could only prove one of them matched itself), and
 `createServer` was three regexes patching this package's compiled output in the
 VS Code extension's bundler. `SERVER_INFO` is who the server says it is at
-connect (title, description, website, icon): without it the hosted door would
-state its own, and the registry entry's title, website and icons are held to
-it by the docs contract. Adding an export that deletes no restatement is
+connect (title, description, website, icons): without it the hosted door would
+state its own, and the registry entry's identity fields are held to it by the
+docs contract. Adding an export that deletes no restatement is
 how a curated surface becomes a grab bag.
 
 ## Quick Reference
@@ -523,7 +523,7 @@ The CI workflow (`.github/workflows/ci.yml`) runs on pushes to `main` and `devel
 
 `package.json` is the single source of truth for the version — CI patches both `.version` and `.packages[0].version` in `server.json` with `jq` before registry publish. **The version in the tracked `server.json` is therefore a placeholder, and since 2026-08-31 it says so on sight**: both fields read `0.0.0`, and `tests/architecture/docs-contract.test.ts` fences the sentinel AND the ci.yml sync it depends on (an exemption is licensed by a compensating control's existence, fenced, never by its intention). Until then the placeholder read `0.2.0`, a plausible-looking version that the directory audit flagged as estate-wide rot while the registry it feeds was fully current at 1.7.0 with `remotes` — a placeholder that can be mistaken for a version costs an investigation each time someone meets it. Never run `mcp-publisher publish` by hand from a checkout, which would register the sentinel literally. DNS authentication uses an Ed25519 key on `shipstatic.com`.
 
-**`server.json`** — MCP Registry metadata. `mcpName` in `package.json` must match `name` in `server.json` (`com.shipstatic/mcp`). Its `title`, `websiteUrl` and `icons` are `SERVER_INFO`'s, held by the docs contract; its `description` is the registry's own, under the 100-character cap.
+**`server.json`** — MCP Registry metadata. `mcpName` in `package.json` must match `name` in `server.json` (`com.shipstatic/mcp`). Its `title`, `description`, `websiteUrl` and `icons` are `SERVER_INFO`'s, held by the docs contract; the description also stays under the registry's 100-character cap.
 
 ## Adding New Tools
 

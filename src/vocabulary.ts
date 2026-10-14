@@ -73,14 +73,16 @@ export const SERVER_NAME = 'shipstatic';
  * - **`description`** is this package's root sentence (CANON §2) with no
  *   qualifier. The hosted server reports it on every door, and on an
  *   auth-first door "no account needed" is false.
- * - **`websiteUrl`** and the **icon** name the product, so they are
+ * - **`websiteUrl`** and the **icons** name the product, so they are
  *   production values in every environment, as in any published package.
- * - **The icon** is the brand mark the marketing site serves
- *   (`web/www/logo.svg`), on our own domain. A scalable mark is `any` size.
+ * - **The icons** are the brand mark the marketing site serves, on our own
+ *   domain: `logo.svg` at `any` size, and `logo.png` rendered from it at
+ *   512x512, because a client that renders icons must support PNG and need
+ *   not support SVG.
  *
- * The MCP Registry entry (`server.json`) states the same title, website and
- * icons, and `package.json`'s description opens with the same sentence; the
- * docs contract holds both to this object.
+ * The MCP Registry entry (`server.json`) states the same title, description,
+ * website and icons, and `package.json`'s description opens with the same
+ * sentence; the docs contract holds both to this object.
  */
 export const SERVER_INFO: Omit<Implementation, 'version'> = {
   name: SERVER_NAME,
@@ -89,6 +91,7 @@ export const SERVER_INFO: Omit<Implementation, 'version'> = {
   websiteUrl: 'https://shipstatic.com',
   icons: [
     { src: 'https://www.shipstatic.com/logo.svg', mimeType: 'image/svg+xml', sizes: ['any'] },
+    { src: 'https://www.shipstatic.com/logo.png', mimeType: 'image/png', sizes: ['512x512'] },
   ],
 };
 

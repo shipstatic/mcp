@@ -44,18 +44,18 @@ describe('server.json', () => {
     expect(SERVER_JSON.description.length).toBeLessThanOrEqual(100);
   });
 
-  it('states the title, website and icons the server reports', () => {
+  it('states who the server is, exactly as the server reports it', () => {
     // A registry listing and a connected client show the same product, so
-    // the three identity fields a manifest can import nothing for are held
-    // to the one object both transports report. The description is not one
-    // of them: the registry caps it at 100 characters and it carries the
-    // hosted door's qualifier, which `serverInfo` cannot.
+    // every identity field a manifest can import nothing for is held to the
+    // one object both transports report.
     expect({
       title: SERVER_JSON.title,
+      description: SERVER_JSON.description,
       websiteUrl: SERVER_JSON.websiteUrl,
       icons: SERVER_JSON.icons,
     }).toEqual({
       title: SERVER_INFO.title,
+      description: SERVER_INFO.description,
       websiteUrl: SERVER_INFO.websiteUrl,
       icons: SERVER_INFO.icons,
     });
@@ -98,9 +98,9 @@ describe('server.json', () => {
 
 describe('package.json', () => {
   it('opens its description with the sentence the server reports', () => {
-    // The canon fence holds this description to the package's root sentence
-    // (CANON §2), and the server reports that sentence as its own; this row
-    // closes the chain, so the two cannot say different things.
+    // `scripts/check-canon.sh` holds this description's opener to the
+    // package's sentence in CANON §2, and the server reports that sentence
+    // as its own; this row closes the chain, so the two cannot differ.
     expect(PACKAGE_JSON.description.startsWith(`${SERVER_INFO.description} `)).toBe(true);
   });
 });

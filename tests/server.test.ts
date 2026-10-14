@@ -484,6 +484,7 @@ describe('tool catalogue', () => {
       websiteUrl: 'https://shipstatic.com',
       icons: [
         { src: 'https://www.shipstatic.com/logo.svg', mimeType: 'image/svg+xml', sizes: ['any'] },
+        { src: 'https://www.shipstatic.com/logo.png', mimeType: 'image/png', sizes: ['512x512'] },
       ],
       version,
     });
