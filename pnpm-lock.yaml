@@ -15,8 +15,8 @@ importers:
         specifier: 3.6.1
         version: 3.6.1
       '@shipstatic/types':
-        specifier: 3.11.0-beta.1
-        version: 3.11.0-beta.1
+        specifier: 3.11.0
+        version: 3.11.0
       zod:
         specifier: ^4.4.3
         version: 4.4.3
@@ -616,8 +616,8 @@ packages:
     engines: {node: '>=20.19.0'}
     hasBin: true
 
-  '@shipstatic/types@3.11.0-beta.1':
-    resolution: {integrity: sha512-E3uNJDVeNzOemV17qaT7Ax/sOfwX/001xRkdnk0GhaY/LbhyVYOsnB+RsIjkRrEv8HEz7m2j7LvXFDQFJuWqXQ==}
+  '@shipstatic/types@3.11.0':
+    resolution: {integrity: sha512-cUqYSTstJhyvlqafLYR7tL6vsREjbQ0vMByU+RQpVGbjjh9hj9ps6WooD1ovU7iaeQfRDuUkLcXYj7yktK20+w==}
     engines: {node: '>=20.19.0'}
 
   '@sindresorhus/is@4.6.0':
@@ -1829,7 +1829,7 @@ snapshots:
       spark-md5: 3.0.2
       zod: 4.4.3
 
-  '@shipstatic/types@3.11.0-beta.1':
+  '@shipstatic/types@3.11.0':
     dependencies:
       zod: 4.4.3
 
