@@ -593,7 +593,16 @@ audience**: a human notices a duplicate deployment, an automated retry does
 not. The `describe()` teaches the law — key the ATTEMPT (a run id, a commit
 sha, a uuid minted before the first try), never the try. MCP never mints,
 derives or normalizes the key; a key the agent did not choose cannot identify
-the agent's attempt.
+the agent's attempt. The `describe()` also states the API's one rule for every
+caller: a key returns the live deployment it made within the account that sent
+it, and an anonymous key is ignored. Because the rule is the API's and the same
+everywhere, both doors speak the shared sentence whole and neither appends a
+clause.
+
+**A large deploy needs nothing here.** `deployments_upload` hands the SDK a
+path, and the SDK sends a deployment larger than one request in several (the
+declaration, then a fill per batch); the tool's input, its answer and its card
+are the same either way.
 
 **Ephemeral deploys (`ttl`) — taken 2026-08-13.** `deployments_upload` accepts
 `ttl` in seconds and passes it straight to the SDK. The product fit is exact:

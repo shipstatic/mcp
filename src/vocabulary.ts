@@ -308,12 +308,13 @@ export const PARAM_DESCRIPTIONS = {
   labels: `Labels for organizing deployments (e.g. ["env:production", "v1.2"]). Each is a word, or a key and a value split by one ":". Lowercase, ${LABEL_CONSTRAINTS.MIN_LENGTH}-${LABEL_CONSTRAINTS.MAX_LENGTH} chars, allows . _ - inside a word. Up to ${LABEL_CONSTRAINTS.MAX_COUNT}.`,
   password: `Optional password to gate the deployment behind an unlock prompt (${PASSWORD_CONSTRAINTS.MIN_LENGTH}–${PASSWORD_CONSTRAINTS.MAX_LENGTH} characters; whitespace significant). Visitors must enter this password before viewing the site, including on any custom domains pointing at it.`,
   /**
-   * Shared even though only stdio offers the option today: the hosted door
-   * gains it with OAuth (it can scope a replay per user once callers have an
-   * identity), and the law this teaches — key the ATTEMPT, never the try — is
-   * the same one on both. The window is derived, never typed out.
+   * Spoken by both doors, whole: the API keeps one rule for every caller (a
+   * key names the live deployment it made, within the account that sent it,
+   * and an anonymous key is ignored), so no door appends a clause of its own.
+   * The law it teaches, key the ATTEMPT and never the try, is the same on
+   * both. The window is derived, never typed out.
    */
-  idempotencyKey: `Makes this deploy replayable instead of repeatable. A deploy is not naturally idempotent: if a call times out you cannot tell "it never landed" from "it landed and the response was lost", and retrying creates a second deployment. Send the same key on the retry and the original deployment is replayed instead (within ${IDEMPOTENCY_KEY_CONSTRAINTS.WINDOW_SECONDS / 3600} hours). Key the ATTEMPT — a run id, a commit sha, a uuid minted before the first try — never one minted fresh on each retry, which would defeat the point.`,
+  idempotencyKey: `Makes this deploy replayable instead of repeatable. A deploy is not naturally idempotent: if a call times out you cannot tell "it never landed" from "it landed and the response was lost", and retrying creates a second deployment. Send the same key on the retry and you get back the deployment the first try made, if it went live in the last ${IDEMPOTENCY_KEY_CONSTRAINTS.WINDOW_SECONDS / 3600} hours. A key works only within the account that sent it: without an account it is ignored, and a retry deploys again. Key the ATTEMPT (a run id, a commit sha, a uuid minted before the first try), never one minted fresh on each retry, which would defeat the point.`,
   /**
    * Shared and spoken by BOTH doors — stdio declared it first (2026-08-13)
    * and the hosted door converged the same day, importing this describe

@@ -56,6 +56,16 @@ describe('parameter descriptions', () => {
     expect(PARAM_DESCRIPTIONS.idempotencyKey).toContain('never one minted fresh on each retry');
   });
 
+  it('says a key replays only within the account that sent it, and is ignored without one', () => {
+    // The API keeps one rule for every caller, so every door says it whole.
+    // An agent deploying anonymously that believes its key protects a retry
+    // will retry, and make a second site it did not expect.
+    expect(PARAM_DESCRIPTIONS.idempotencyKey).toContain(
+      'A key works only within the account that sent it: without an account it is ignored, and a retry deploys again.',
+    );
+    expect(PARAM_DESCRIPTIONS.idempotencyKey).toContain('if it went live');
+  });
+
   it('ttl teaches both refusals — either one omitted is a deploy an agent will attempt and lose', () => {
     // The platform refuses a ttl twice, and the two are unrelated: an anonymous
     // deploy has no deployer to hold a lease, and a domain is a commitment

@@ -171,7 +171,7 @@ const CATALOGUE: Record<string, ToolSurface> = {
       // The window is interpolated from the SDK constant for the same reason
       // the label lengths are: the prose is pinned, the number stays derived.
       idempotencyKey: str(
-        `Makes this deploy replayable instead of repeatable. A deploy is not naturally idempotent: if a call times out you cannot tell "it never landed" from "it landed and the response was lost", and retrying creates a second deployment. Send the same key on the retry and the original deployment is replayed instead (within ${IDEMPOTENCY_KEY_CONSTRAINTS.WINDOW_SECONDS / 3600} hours). Key the ATTEMPT — a run id, a commit sha, a uuid minted before the first try — never one minted fresh on each retry, which would defeat the point.`,
+        `Makes this deploy replayable instead of repeatable. A deploy is not naturally idempotent: if a call times out you cannot tell "it never landed" from "it landed and the response was lost", and retrying creates a second deployment. Send the same key on the retry and you get back the deployment the first try made, if it went live in the last ${IDEMPOTENCY_KEY_CONSTRAINTS.WINDOW_SECONDS / 3600} hours. A key works only within the account that sent it: without an account it is ignored, and a retry deploys again. Key the ATTEMPT (a run id, a commit sha, a uuid minted before the first try), never one minted fresh on each retry, which would defeat the point.`,
         false,
       ),
       // No number appears in this string, and none should: the range lives in

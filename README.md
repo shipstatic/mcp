@@ -157,7 +157,7 @@ All fifteen tools are on both doors. What changes is not which tools exist, but 
 
 ### Retrying a deploy safely
 
-`deployments_upload` accepts an `idempotencyKey`. If a deploy times out you cannot tell "it never landed" from "it landed and the response was lost", and retrying without a key creates a second site. Send the same key on the retry and the original deployment is returned instead.
+`deployments_upload` accepts an `idempotencyKey`. If a deploy times out you cannot tell "it never landed" from "it landed and the response was lost", and retrying without a key creates a second site. Send the same key on the retry and you get back the site the first try made, once it went live. A key works only within your account: an anonymous deploy ignores it, and a retry makes a new site.
 
 Key the *attempt*, not the try — a run id, a commit sha, or a uuid generated before the first call. A key that changes on every retry does nothing.
 
