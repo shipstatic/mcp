@@ -11,8 +11,8 @@ import { PUBLIC_EXPIRY, SERVER_INFO, UPLOAD_TOOL_NAME } from '../../src/vocabula
  * Registry — for a human deciding whether to install, it IS the product
  * description, and nothing else checks it. The platform has paid for this
  * exact gap before: the 2026-07 `remove` → `delete` rename swept every source
- * file and test, and the published SKILL.md kept teaching three commands that
- * no longer existed, because every fence of that wave fenced code.
+ * file and test, and a published doc kept teaching three commands that no
+ * longer existed, because every fence of that wave fenced code.
  *
  * Two assertions, deliberately narrow. Prose is free to change — the fence
  * holds only the facts the docs restate from code: the tool names, and the
