@@ -1,17 +1,19 @@
 #!/usr/bin/env bash
 # Estate-standard commit-msg hook, byte-identical in every repo, enabled by
 # the same `core.hooksPath` that enables the pre-commit beside it.
+# `scripts/check-commit-msg-hook.sh` holds the copies equal and switched on.
 #
-# A commit message carries no attribution line: no `Co-Authored-By` trailer
-# and no "Generated with" line naming an assistant (root CLAUDE.md, "No
-# Co-Authored-By" and "No AI attribution"). The rule lived in prose, and one
-# evening a harness reminder overrode it on eight commits across four repos,
-# so it is a hook now: a message is refused before it lands, whatever wrote
-# it. A product mention in the message body (a connector for Claude, say) is
-# not an attribution and passes.
+# A commit message carries no attribution line: no `Co-Authored-By` or
+# `Claude-Session` trailer, no link to an assistant's session, and no
+# "Generated with" line naming an assistant (root CLAUDE.md, "No
+# Co-Authored-By" and "No AI attribution"). A harness can ask for these lines
+# in the same breath as it writes the commit, so the refusal is mechanical: a
+# message is refused before it lands, whatever wrote it. A product mention in
+# the message body (a connector for Claude, say) is not an attribution and
+# passes.
 set -euo pipefail
 
-OFFENDERS=$(grep -v '^#' "$1" | grep -E -i '^co-authored-by:|generated with|🤖' || true)
+OFFENDERS=$(grep -v '^#' "$1" | grep -E -i '^(co-authored-by|claude-session):|claude\.ai/code/session|generated with|🤖' || true)
 if [ -n "$OFFENDERS" ]; then
   echo "commit-msg: the message carries an attribution line, which this estate refuses:" >&2
   echo "$OFFENDERS" >&2
