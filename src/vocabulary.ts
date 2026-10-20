@@ -87,7 +87,8 @@ export const SERVER_NAME = 'shipstatic';
 export const SERVER_INFO: Omit<Implementation, 'version'> = {
   name: SERVER_NAME,
   title: 'ShipStatic',
-  description: 'Deploy static websites, landing pages, and prototypes instantly from AI agents.',
+  description:
+    'Deploy static websites, landing pages, and prototypes instantly. Free, no account needed.',
   websiteUrl: 'https://shipstatic.com',
   icons: [
     { src: 'https://www.shipstatic.com/logo.svg', mimeType: 'image/svg+xml', sizes: ['any'] },

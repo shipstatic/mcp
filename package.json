@@ -1,7 +1,7 @@
 {
   "name": "@shipstatic/mcp",
   "version": "2.7.1",
-  "description": "Deploy static websites, landing pages, and prototypes instantly from AI agents. Start with the hosted endpoint at mcp.shipstatic.com (no install, no signup, no API key). This package runs the same fifteen tools on your own machine.",
+  "description": "Deploy static websites, landing pages, and prototypes instantly. Free, no account needed. Start with the hosted endpoint at mcp.shipstatic.com, or run the same fifteen tools on your own machine with this package.",
   "type": "module",
   "main": "./dist/index.js",
   "sideEffects": [

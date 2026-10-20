@@ -2,9 +2,11 @@
 
 **One URL. Your agent ships.**
 
-Deploy static websites, landing pages, and prototypes instantly from AI agents. Ask yours to put your site online and get back a real, shareable link in seconds. Free, no account needed.
+Deploy static websites, landing pages, and prototypes instantly. Free, no account needed.
 
-## Add it to your agent
+Ask your agent to put your site online, and get back a real link you can share in seconds.
+
+## Try it in seconds, no account needed
 
 Drop `https://mcp.shipstatic.com` into any MCP client. No install, no signup, no API key: your agent can publish a website in its next message.
 
@@ -42,32 +44,31 @@ claude mcp add --transport http shipstatic https://mcp.shipstatic.com
 
 Install [ShipStatic for VS Code](https://marketplace.visualstudio.com/items?itemName=shipstatic.shipstatic). The server is built in, with no config at all.
 
-## Then just ask
+### Then just ask
 
 > "Publish this with ShipStatic."
 
-Your agent publishes the files and answers with two links:
-
-- **The live site:** a real URL you can share right away.
-- **A claim link:** the site stays live for 3 days, and opening the claim link keeps it for good. A free account is all it takes.
+Your agent publishes it, and you get back a link you can share right away, and a claim link. The site stays up for 3 days, and opening the claim link keeps it for good.
 
 Want the site private? Say "publish this with ShipStatic's built-in password protection". Visitors have to type the password before they see anything, and saying "built-in" keeps your agent from writing a password page of its own.
 
-## Connect an account for more
+## Keep your sites with a free account
 
-Everything above works with no account at all. Connect one when your client offers to sign you in, and the same URL answers with the rest: everything you've published, your own domains, and sites that never expire. There is nothing to install and no key to paste: your client starts the sign-in itself.
+Everything above works with no account. A free account keeps your sites for good, lets you use your own domain, and shows you everything you've published in one place.
+
+Connect one when your client offers to sign you in, and the same URL answers with the rest. There's nothing to install and no key to paste: your client starts the sign-in itself.
 
 ## Tools
 
 All fifteen tools are on both doors. What changes is not which tools exist, but which ones answer: `deployments_upload` is the one that needs no account, and the other fourteen answer once you have connected one (hosted) or set `SHIP_TOKEN` (local).
 
-### Publishing — no account needed
+### Publishing, with no account
 
 | Tool | Description |
 |------|-------------|
 | `deployments_upload` | Publish files and get a live URL instantly, optionally protected by a password |
 
-### Deployments — with an account
+### Deployments, with an account
 
 | Tool | Description |
 |------|-------------|
@@ -76,7 +77,7 @@ All fifteen tools are on both doors. What changes is not which tools exist, but 
 | `deployments_set` | Update the labels on a deployment for organization and filtering |
 | `deployments_delete` | Permanently delete a deployment and all its files |
 
-### Domains — with an account
+### Domains, with an account
 
 | Tool | Description |
 |------|-------------|
@@ -90,7 +91,7 @@ All fifteen tools are on both doors. What changes is not which tools exist, but 
 | `domains_verify` | Check if DNS is configured correctly after you set up the records |
 | `domains_delete` | Permanently disconnect and delete a custom domain |
 
-### Account — with an account
+### Account, with an account
 
 | Tool | Description |
 |------|-------------|
@@ -98,23 +99,23 @@ All fifteen tools are on both doors. What changes is not which tools exist, but 
 
 ### Paging long lists
 
-`deployments_list` and `domains_list` accept `limit` and `cursor`. Each response carries a `cursor` — pass it back to fetch the next page; `null` means you are on the last one.
+`deployments_list` and `domains_list` accept `limit` and `cursor`. Each response carries a `cursor`: pass it back to fetch the next page. A `null` cursor means you're on the last one.
 
 ### Retrying a deploy safely
 
 `deployments_upload` accepts an `idempotencyKey`. If a deploy times out you cannot tell "it never landed" from "it landed and the response was lost", and retrying without a key creates a second site. Send the same key on the retry and you get back the site the first try made, once it went live. A key works only within your account: an anonymous deploy ignores it, and a retry makes a new site.
 
-Key the *attempt*, not the try — a run id, a commit sha, or a uuid generated before the first call. A key that changes on every retry does nothing.
+Key the *attempt*, not the try: a run id, a commit sha, or a uuid generated before the first call. A key that changes on every retry does nothing.
 
 ### Deployments that clean themselves up
 
-`deployments_upload` accepts a `ttl` in seconds. The deployment expires when the time is up and the platform reclaims it — handy for previews and throwaway iterations you would otherwise have to remember to delete.
+`deployments_upload` accepts a `ttl` in seconds. The deployment expires when the time is up and the platform removes it. That's useful for previews and quick experiments you'd otherwise have to remember to delete.
 
 ```json
 { "path": "/path/to/dist", "ttl": 3600 }
 ```
 
-It needs an account — `SHIP_TOKEN` here, a connected account on the hosted endpoint: a deploy with no account already expires on the platform's schedule, so a `ttl` on one is refused rather than ignored. A deployment carrying a `ttl` cannot be linked to any domain: deploy without one when the site needs a domain.
+It needs an account (a connected account on the hosted endpoint, or `SHIP_TOKEN` locally): a deploy with no account already expires on the platform's schedule, so a `ttl` on one is refused rather than ignored. A deployment carrying a `ttl` cannot be linked to any domain: deploy without one when the site needs a domain.
 
 ## Run it on your own machine
 
