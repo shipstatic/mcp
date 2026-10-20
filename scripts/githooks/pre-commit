@@ -24,7 +24,11 @@ if [ -n "$LEAKS" ]; then
   exit 1
 fi
 
-pnpm exec biome check --staged --no-errors-on-unmatched || exit 1
+# Lint and format where the repo has a manifest to run Biome from. A repo with
+# no package.json (integrations/action) keeps the credential scan above alone.
+if [ -f package.json ]; then
+  pnpm exec biome check --staged --no-errors-on-unmatched || exit 1
+fi
 
 # Typecheck when the repo defines it — cheap; CI runs the superset.
 if node -e "process.exit(require('./package.json').scripts?.typecheck ? 0 : 1)" 2>/dev/null; then
