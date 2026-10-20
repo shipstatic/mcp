@@ -509,7 +509,7 @@ describe('server instructions', () => {
   // not silently disappear.
 
   it('leads with the no-account promise', () => {
-    expect(instructions).toContain('Free, no account required.');
+    expect(instructions).toContain('Free, no account needed.');
     expect(instructions).toContain(
       'Deploy straight away, and bring up an account only when the user asks to see or manage their sites, or to use their own domain.',
     );

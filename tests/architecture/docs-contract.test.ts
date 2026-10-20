@@ -61,10 +61,19 @@ describe('server.json', () => {
     });
   });
 
-  it('names the same package npm does', () => {
-    // `mcpName` in package.json must equal `name` in server.json, or the
-    // registry entry and the npm package stop being the same product.
+  it('lists the hosted server, and only the hosted server', () => {
+    // The registry entry is the product's front door, and that door is the
+    // hosted URL: it publishes with no install and no account. A registry
+    // client offered an npm package beside it tends to install the package
+    // and ask for a key first, which is the wrong first step for someone
+    // who only wants a link. The npm package is this repo's to document,
+    // in its README, and the registry never names it.
     expect(SERVER_JSON.name).toBe('com.shipstatic/mcp');
+    expect(SERVER_JSON.remotes).toEqual([
+      { type: 'streamable-http', url: 'https://mcp.shipstatic.com' },
+    ]);
+    expect(SERVER_JSON).not.toHaveProperty('packages');
+    expect(PACKAGE_JSON).not.toHaveProperty('mcpName');
   });
 
   it('keeps its version fields the sentinel the derivation overwrites', () => {
@@ -78,7 +87,6 @@ describe('server.json', () => {
     // well-meaning hand from "fixing" it back to something that can look
     // stale again (or, worse, that a hand-run publish would register).
     expect(SERVER_JSON.version).toBe('0.0.0');
-    expect(SERVER_JSON.packages[0].version).toBe('0.0.0');
   });
 
   it('is only allowed a placeholder because the CI sync exists — so the sync is fenced too', () => {
@@ -92,7 +100,9 @@ describe('server.json', () => {
       fileURLToPath(new URL('../../.github/workflows/ci.yml', import.meta.url)),
       'utf8',
     );
-    expect(CI).toContain('.version = $v | .packages[0].version = $v');
+    expect(CI).toContain(
+      `jq --arg v "\${{ needs.version.outputs.version }}" '.version = $v' server.json`,
+    );
   });
 });
 

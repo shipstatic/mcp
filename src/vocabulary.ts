@@ -236,7 +236,7 @@ export function titled<C extends { title: string; annotations?: object }>(config
  * precisely when someone would otherwise copy them across.
  */
 export const INSTRUCTION_BLOCKS = {
-  opening: 'ShipStatic deploys static websites instantly. Free, no account required.',
+  opening: 'ShipStatic deploys static websites instantly. Free, no account needed.',
   /**
    * Publishing first, on every door. The no-account promise holds only if
    * nothing stands between a person and their first link, so the agent

@@ -2,22 +2,23 @@
 
 **One URL. Your agent ships.**
 
-> ⚡ **You probably don't need to install this.** The same server is hosted at **`https://mcp.shipstatic.com`** — drop that URL into any MCP client and your agent can publish a website in its next message. No install, no Node.js, no signup, no API key.
->
-> **This package is the local alternative.** Install it when your agent needs to deploy a folder on your own machine, when you'd rather configure a token once than sign in, or when your client doesn't speak OAuth yet — the same fifteen tools, reached the other way. [Local setup ↓](#local-the-same-tools-from-your-own-machine)
+Deploy static websites, landing pages, and prototypes instantly from AI agents. Ask yours to put your site online and get back a real, shareable link in seconds. Free, no account needed.
 
-Deploy static websites, landing pages, and prototypes instantly from AI agents. Ask yours to put your site online and get back a real, shareable link in seconds.
+## Add it to your agent
 
-[![smithery badge](https://smithery.ai/badge/shipstatic/ship)](https://smithery.ai/servers/shipstatic/ship)
-[![glama badge](https://img.shields.io/badge/glama-MCP%20server-1f7ade)](https://glama.ai/mcp/servers/shipstatic/mcp)
-
-## Hosted: start here
-
-Drop `https://mcp.shipstatic.com` into any MCP client. No install, no signup, no API key — your agent can publish a website in its next message.
+Drop `https://mcp.shipstatic.com` into any MCP client. No install, no signup, no API key: your agent can publish a website in its next message.
 
 ```
 https://mcp.shipstatic.com
 ```
+
+### ChatGPT
+
+Add the [ShipStatic plugin](https://chatgpt.com/plugins/plugin_asdk_app_6a06f62b2f50819181136d58192063d1) from its page in ChatGPT. There is nothing to paste.
+
+### Claude Desktop and claude.ai
+
+**Settings → Connectors → Add custom connector**, paste `https://mcp.shipstatic.com`, save.
 
 ### Claude Code
 
@@ -25,11 +26,7 @@ https://mcp.shipstatic.com
 claude mcp add --transport http shipstatic https://mcp.shipstatic.com
 ```
 
-### Claude Desktop and claude.ai
-
-**Settings → Connectors → Add custom connector**, paste `https://mcp.shipstatic.com`, save.
-
-### Cursor, Antigravity, Windsurf, n8n, Zed — anywhere with `mcp.json`
+### Cursor, Antigravity, Windsurf, n8n, Zed, and anywhere with `mcp.json`
 
 ```json
 {
@@ -43,74 +40,22 @@ claude mcp add --transport http shipstatic https://mcp.shipstatic.com
 
 ### VS Code
 
-Install [ShipStatic for VS Code](https://marketplace.visualstudio.com/items?itemName=shipstatic.shipstatic) — the server is built in, with no config at all.
+Install [ShipStatic for VS Code](https://marketplace.visualstudio.com/items?itemName=shipstatic.shipstatic). The server is built in, with no config at all.
 
-### Then just ask
+## Then just ask
 
 > "Publish this with ShipStatic."
 
 Your agent publishes the files and answers with two links:
 
-- **The live site** — a real URL you can share right away.
-- **A claim link** — the site stays live for 3 days; open the claim link to keep it forever. A free account is all it takes.
+- **The live site:** a real URL you can share right away.
+- **A claim link:** the site stays live for 3 days, and opening the claim link keeps it for good. A free account is all it takes.
 
-Want the site private? Say "publish this with ShipStatic's built-in password protection". Visitors must enter the password before they can see anything, and saying "built-in" keeps your agent from writing a password page of its own.
+Want the site private? Say "publish this with ShipStatic's built-in password protection". Visitors have to type the password before they see anything, and saying "built-in" keeps your agent from writing a password page of its own.
 
-### Then connect, if you want more
+## Connect an account for more
 
-Everything above works with no account at all. Connect one when your client offers to sign you in, and the same URL answers with the rest: everything you've shipped, your own domains, and sites that stay up permanently. Nothing to install, no key to paste — your client starts the sign-in itself.
-
-## Local: the same tools, from your own machine
-
-Install this package when your agent needs to deploy **a folder on your own machine** — the hosted endpoint takes files inline, so it has no path to read from — when you'd rather configure a token once than sign in, or when your MCP client doesn't speak OAuth yet.
-
-The config asks for one thing: `SHIP_TOKEN`. **Its value is your API key** — one credential, two names. The console mints it as an *API key* (it starts with `ship-`), and the setting that carries it is called the *token*. Get yours free at [my.shipstatic.com/api-key](https://my.shipstatic.com/api-key), paste it where the snippets below show `ship-your-api-key`, and every site you publish lands in your account and never expires, with a rate limit of your own instead of the shared anonymous pools.
-
-The key is optional: leave it out and the local server behaves exactly like the hosted endpoint with no account connected — public sites, claim links, live for 3 days.
-
-The server runs with `npx`, which ships with [Node.js](https://nodejs.org) (20.19 or newer).
-
-### Claude Code
-
-```bash
-claude mcp add shipstatic -e SHIP_TOKEN=ship-your-api-key -- npx -y @shipstatic/mcp
-```
-
-### Cursor
-
-Add to `~/.cursor/mcp.json`:
-
-```json
-{
-  "mcpServers": {
-    "shipstatic": {
-      "command": "npx",
-      "args": ["-y", "@shipstatic/mcp"],
-      "env": { "SHIP_TOKEN": "ship-your-api-key" }
-    }
-  }
-}
-```
-
-### Antigravity
-
-Add to `~/.gemini/antigravity/mcp_config.json`:
-
-```json
-{
-  "mcpServers": {
-    "shipstatic": {
-      "command": "npx",
-      "args": ["-y", "@shipstatic/mcp"],
-      "env": { "SHIP_TOKEN": "ship-your-api-key" }
-    }
-  }
-}
-```
-
-### Windsurf, Zed, and other MCP clients
-
-Same config shape — `npx -y @shipstatic/mcp`, with `SHIP_TOKEN` in `env`. Works with any MCP-compatible client.
+Everything above works with no account at all. Connect one when your client offers to sign you in, and the same URL answers with the rest: everything you've published, your own domains, and sites that never expire. There is nothing to install and no key to paste: your client starts the sign-in itself.
 
 ## Tools
 
@@ -171,9 +116,31 @@ Key the *attempt*, not the try — a run id, a commit sha, or a uuid generated b
 
 It needs an account — `SHIP_TOKEN` here, a connected account on the hosted endpoint: a deploy with no account already expires on the platform's schedule, so a `ttl` on one is refused rather than ignored. A deployment carrying a `ttl` cannot be linked to any domain: deploy without one when the site needs a domain.
 
-## Registry
+## Run it on your own machine
 
-Published to the [MCP Registry](https://registry.modelcontextprotocol.io/v0.1/servers?search=com.shipstatic/mcp) as `com.shipstatic/mcp`. Registry-aware clients see both the hosted endpoint and the local install and pick whichever fits their environment.
+This package runs the same fifteen tools, reached the other way: as a local process instead of the hosted URL. Use it when your MCP client doesn't speak OAuth yet, or when you'd rather set a key once than sign in. To publish a folder from your own machine, use the [ShipStatic CLI](https://github.com/shipstatic/ship) instead: it reads the files straight from disk.
+
+It needs [Node.js](https://nodejs.org) 20.19 or newer, and takes one setting, `SHIP_TOKEN`, whose value is your API key from [my.shipstatic.com/api-key](https://my.shipstatic.com/api-key). Without it, the local server works like the hosted URL with no account connected.
+
+```bash
+claude mcp add shipstatic -e SHIP_TOKEN=ship-your-api-key -- npx -y @shipstatic/mcp
+```
+
+Any other client takes the same command and setting in its `mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "shipstatic": {
+      "command": "npx",
+      "args": ["-y", "@shipstatic/mcp"],
+      "env": { "SHIP_TOKEN": "ship-your-api-key" }
+    }
+  }
+}
+```
+
+The [MCP Registry](https://registry.modelcontextprotocol.io/v0.1/servers?search=com.shipstatic/mcp) lists ShipStatic as `com.shipstatic/mcp`, with the hosted URL.
 
 ## Also available
 
