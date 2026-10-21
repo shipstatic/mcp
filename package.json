@@ -1,6 +1,6 @@
 {
   "name": "@shipstatic/mcp",
-  "version": "2.7.4-beta.0",
+  "version": "2.7.4",
   "description": "Deploy static websites, landing pages, and prototypes instantly. Free, no account needed. Start with the hosted endpoint at mcp.shipstatic.com, or run the same fifteen tools on your own machine with this package.",
   "type": "module",
   "main": "./dist/index.js",
@@ -67,8 +67,8 @@
   "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
-    "@shipstatic/ship": "3.8.0-beta.0",
-    "@shipstatic/types": "3.13.0-beta.0",
+    "@shipstatic/ship": "3.8.0",
+    "@shipstatic/types": "3.13.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
