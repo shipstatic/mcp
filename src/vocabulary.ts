@@ -248,6 +248,13 @@ export const INSTRUCTION_BLOCKS = {
     'Deploy straight away, and bring up an account only when the user asks to see or manage their sites, or to use their own domain.',
   live: 'The site is live immediately.',
   /**
+   * The platform refuses a deployment with no `index.html` at its root (the
+   * deploy rules in `@shipstatic/types`). The refusal says so too; this
+   * sentence is here so an agent shapes the files right the first time,
+   * above all the one-file publish, which is where the rule is easiest to miss.
+   */
+  home: "The files need an `index.html` at the top: it's the page visitors see first, and a site without one is refused. To publish one page, name it `index.html`. To publish another kind of file, like a PDF, add a small `index.html` that links to it.",
+  /**
    * A block of its own rather than a clause of `live`: two sentences, two
    * facts, and a door may compose them independently.
    *

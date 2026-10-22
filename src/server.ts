@@ -26,7 +26,7 @@ const D = DESCRIPTION_BLOCKS;
 // around its own two.
 const INSTRUCTIONS = `${B.opening} ${B.accountLater}
 
-To deploy: call ${UPLOAD_TOOL_NAME} with the build output directory path. ${B.live} ${B.password}
+To deploy: call ${UPLOAD_TOOL_NAME} with the build output directory path. ${B.home} ${B.live} ${B.password}
 
 Without SHIP_TOKEN, deployments are public and expire in ${PUBLIC_EXPIRY}. ${B.claim}
 

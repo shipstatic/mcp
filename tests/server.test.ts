@@ -520,6 +520,15 @@ describe('server instructions', () => {
     expect(instructions).toMatch(/always show the deployment URL and the claim URL to the user/);
   });
 
+  it('asks for an index.html at the top, and says how to publish one file', () => {
+    // The platform refuses a site with no home page; saying so up front keeps
+    // a one-file publish from costing the agent a refused call first.
+    expect(instructions).toContain(
+      "The files need an `index.html` at the top: it's the page visitors see first",
+    );
+    expect(instructions).toContain('To publish one page, name it `index.html`.');
+  });
+
   it('names built-in password protection and keeps the agent from building its own', () => {
     // A password page written into the site is read past in its source; the
     // platform's protection is checked before any file is served.
