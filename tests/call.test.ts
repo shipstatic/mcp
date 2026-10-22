@@ -1,6 +1,6 @@
 import { ErrorType, MY_API_KEY_URL, ShipError } from '@shipstatic/types';
 import { describe, expect, it } from 'vitest';
-import { type AuthFailure, call, createCall } from '../src/call.js';
+import { type AuthFailure, call, createCall, ERROR_META_KEY } from '../src/call.js';
 import { textOf } from './harness.js';
 
 /**
@@ -169,7 +169,7 @@ describe('ShipError mapping', () => {
   );
 
   it.each(Object.values(ErrorType))(
-    'carries the wire’s own %s payload as structuredContent, on every arm',
+    'carries the wire’s own %s payload under its _meta key, on every arm',
     async (type) => {
       // The typed contract used to terminate at this boundary: an agent got
       // prose and `isError`, so `status`, the `ErrorType` and every `details`
@@ -188,21 +188,24 @@ describe('ShipError mapping', () => {
       // `toResponse()` verbatim — not a shape this file invents. It is the
       // same `ErrorResponse` the API put on the wire, so an agent branching on
       // it branches on exactly what every other client sees.
-      expect(result.structuredContent).toEqual({ ...error.toResponse() });
-      expect(result.structuredContent).toMatchObject({ error: type, status: 429 });
+      expect(result._meta?.[ERROR_META_KEY]).toEqual({ ...error.toResponse() });
+      expect(result._meta?.[ERROR_META_KEY]).toMatchObject({ error: type, status: 429 });
+      // Never as `structuredContent`, which the tool's output schema describes:
+      // a client validating it against that schema hides the refusal.
+      expect(result).not.toHaveProperty('structuredContent');
     },
   );
 
   it('leaves the text authoritative — the structure rides beside it, never instead', async () => {
     // The hint is the actionable half and lives only in the prose. A client
-    // that reads `structuredContent` alone must not lose it, which is why this
+    // that reads the structure alone must not lose it, which is why this
     // asserts both channels on the same result rather than either alone.
     const result = await call(() =>
       Promise.reject(ShipError.authentication('Authentication required')),
     );
 
     expect(textOf(result)).toContain('SHIP_TOKEN');
-    expect(result.structuredContent).toMatchObject({
+    expect(result._meta?.[ERROR_META_KEY]).toMatchObject({
       error: ErrorType.Authentication,
       status: 401,
     });
@@ -309,7 +312,7 @@ describe('onAuthFailure — the credential-refusal seam', () => {
     const plain = await call(reject(ShipError.authentication('Authentication required')));
 
     expect(observed.isError).toBe(true);
-    expect(observed.structuredContent).toEqual(plain.structuredContent);
+    expect(observed._meta).toEqual(plain._meta);
     expect(textOf(observed)).toContain('Authentication required');
     expect(textOf(observed)).toContain('Hint: auth hint');
   });

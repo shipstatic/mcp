@@ -70,6 +70,7 @@ export {
   type CallFn,
   type CallOptions,
   createCall,
+  ERROR_META_KEY,
   type ErrorHints,
 } from './call.js';
 export { createServer } from './server.js';

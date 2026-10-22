@@ -315,17 +315,26 @@ caller most in need of a precise backoff to parse "try again in 9 minutes" out
 of English. The hosted transport feels it hardest (a 5/hr per-caller anonymous
 bucket).
 
-`toErrorResult` now attaches `structuredContent: error.toResponse()` — the same
-`ErrorResponse` the wire itself carries — on every ShipError arm. Three things
-make that safe rather than a surface expansion:
+`toErrorResult` attaches `error.toResponse()`, the same `ErrorResponse` the
+wire itself carries, on every ShipError arm, under the result's
+`_meta["com.shipstatic/error"]` (`ERROR_META_KEY`, exported). Two things make
+that the shape:
 
-- **The text is unchanged and stays the contract**, hints included. It has to
-  be: the API authors its messages for the end user at the throw site
-  (`cloudflare/api/CLAUDE.md`, "Message authoring law"), so a client that reads
-  only prose still works. Structure rides BESIDE it, never instead.
-- **The MCP SDK validates `structuredContent` against a declared
-  `outputSchema` only when `isError` is not set**, so the error envelope never
-  meets a success schema. Checked in the pinned SDK, not assumed.
+- **The text is the contract**, hints included. It has to be: the API authors
+  its messages for the end user at the throw site (`cloudflare/api/CLAUDE.md`,
+  "Message authoring law"), so a client that reads only prose still works.
+  Structure rides BESIDE it, never instead.
+- **The structure never rides `structuredContent`.** That field belongs to the
+  tool's `outputSchema`, which describes a success, and the TypeScript SDK's
+  client validates it against the schema even on an `isError` result
+  (modelcontextprotocol/typescript-sdk#1943, fix open as #1945): a client built
+  on it, after reading the catalogue as every host does, threw "Structured
+  content does not match the tool's output schema" in place of the refusal.
+  The SDK's SERVER skips that check on errors, which is why the earlier shape
+  passed every server-side test. `_meta` is validated by nobody.
+  `tests/server-calls.test.ts` lists the tools first and then expects the
+  refusal's own sentence, the order a real host uses; drilled against the old
+  shape, it fails with the field's exact message.
 
 **Every success carries `structuredContent` too, on both transports, since
 1.12.0.** Every tool publishes an `outputSchema` imported from the

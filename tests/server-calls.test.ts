@@ -626,6 +626,27 @@ describe('error surfaces', () => {
     expect(text).toContain('Stop retrying');
   });
 
+  it('a refusal reaches a client that has read the catalogue, as its own sentence', async () => {
+    // A host lists the tools before it calls one, and the SDK's client then
+    // holds each tool's output schema and checks every result's
+    // `structuredContent` against it, an error's included
+    // (modelcontextprotocol/typescript-sdk#1943). So an error result carries
+    // no `structuredContent`, or the client throws "does not match the tool's
+    // output schema" in place of the refusal.
+    await harness.client.listTools();
+    harness.ship.deployments.upload.mockRejectedValue(
+      ShipError.business('File "tool.exe" has an extension that is not allowed.'),
+    );
+
+    const result = await harness.client.callTool({
+      name: 'deployments_upload',
+      arguments: { path: ABS_PATH },
+    });
+
+    expect(result.isError).toBe(true);
+    expect(textOf(result)).toContain('has an extension that is not allowed');
+  });
+
   it('a tool failure is an in-band result, not a protocol error — the session survives it', async () => {
     harness.ship.whoami.mockRejectedValue(ShipError.authentication('Invalid API key'));
 

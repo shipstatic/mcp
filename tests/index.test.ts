@@ -64,6 +64,9 @@ const PUBLIC_API = [
   // The result envelope, so both transports answer in one shape. A consumer
   // configures its own hints; `call` (stdio's instance) stays internal.
   'createCall',
+  // Where an error result carries the wire's `ErrorResponse`: the hosted
+  // deploy card reads its failed notice from it.
+  'ERROR_META_KEY',
   // Stdio's whole composition, for a consumer that wants it verbatim: the VS
   // Code extension bundles a stdio server into its `.vsix`. Admitted in
   // 1.0.0-beta.7, and it deleted a restatement like every other name here —

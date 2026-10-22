@@ -156,28 +156,35 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 }
 
 /**
+ * Where an error result carries the wire's own `ErrorResponse`: a key of the
+ * result's `_meta`, named under the platform's domain as the specification
+ * asks of a `_meta` key.
+ *
+ * Not `structuredContent`, because that field belongs to the tool's
+ * `outputSchema`, which describes a SUCCESS. The specification's error example
+ * carries no structure, and the TypeScript SDK's client validates
+ * `structuredContent` against the output schema even on an `isError` result
+ * (modelcontextprotocol/typescript-sdk#1943, fix open as #1945), so a client
+ * built on it shows "Structured content does not match the tool's output
+ * schema" instead of the refusal. `_meta` is read by whoever asks for it and
+ * validated by nobody, and the deploy card reads its notice from here.
+ */
+export const ERROR_META_KEY = 'com.shipstatic/error';
+
+/**
  * The failure envelope: authoritative prose, with the wire's own structure
  * riding beside it.
  *
- * The TEXT is unchanged and stays the contract — hints included. It has to be:
- * the API authors its messages for the end user at the throw site
- * (`cloudflare/api/CLAUDE.md`, "Message authoring law"), so the sentence
- * always contains what the agent needs, and a client that ignores everything
- * else still works.
+ * The TEXT is the contract, hints included. The API authors its messages for
+ * the end user at the throw site (`cloudflare/api/CLAUDE.md`, "Message
+ * authoring law"), so the sentence always contains what the agent needs, and
+ * a client that reads nothing else still works.
  *
- * `structuredContent` carries `ShipError.toResponse()` verbatim — the same
- * `ErrorResponse` the wire itself uses. Until 1.0.0-beta.8 the typed contract
- * terminated here: `status`, `ErrorType`, and every `details` payload except
- * the Validation arm's were dropped, so the platform's own law — *clients
- * branch on error type and status, never on message strings* — held for every
- * consumer EXCEPT the one best equipped to obey it. The recorded bite was a
- * 429: `details.expires` died at this boundary, leaving the caller most in
- * need of a precise backoff to parse "try again in 9 minutes" out of English.
- *
- * Safe on every arm, and checked rather than assumed: the MCP SDK validates
- * `structuredContent` against a declared `outputSchema` only when `isError`
- * is not set, so an error envelope never meets a success schema. Every tool
- * declares one (imported from the constitution), and this arm is unaffected.
+ * `_meta[ERROR_META_KEY]` carries `ShipError.toResponse()` verbatim, the same
+ * `ErrorResponse` the wire uses, so a client that branches on error type and
+ * status (the platform's law: never on message strings) reads exactly what
+ * every other client sees, `details` included: a 429's `details.expires` is
+ * the precise backoff its sentence rounds into words.
  */
 function toErrorResult(
   error: unknown,
@@ -214,7 +221,7 @@ function toErrorResult(
 
     return {
       content: [{ type: 'text', text: message }],
-      structuredContent: { ...error.toResponse() },
+      _meta: { [ERROR_META_KEY]: { ...error.toResponse() } },
       isError: true,
     };
   }
