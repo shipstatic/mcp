@@ -9,11 +9,11 @@ Claude Code instructions for the **ShipStatic MCP Server**.
 - **2.0.0 (2026-09-20) — `Domain.status` means something else.** It was the DNS enum (`pending`, `partial`, `success`) plus `paused`; it is now the domain's STANDING, the one derived word saying what the domain needs from its owner (`live`, `unlinked`, `unverified`, `paused`), and the DNS fact moved to a `verification` field beside it. `domains_get` and `domains_list` answer with the new shape, and the flow sentence and both tool descriptions name `status` outright. An agent workflow branching on `"success"` stops matching — silently, because `DomainStatusSchema` is a described `z.string()` rather than a closed enum, so nothing refuses the new word at the schema boundary. That is exactly why this is a major rather than a minor.
 - **1.0.0** — `SHIP_API_KEY` is no longer read (every existing server config breaks until its env var is renamed) and the delete tools were renamed (`deployments_remove` → `deployments_delete`, `domains_remove` → `domains_delete`), so a saved agent workflow naming the old tool stops resolving.
 
-A **hosted Streamable-HTTP variant** lives at `https://mcp.shipstatic.com`, and it is what the `com.shipstatic/mcp` registry entry lists (`server.json` `remotes`). Source: `cloudflare/mcp/` in the monorepo. It serves the same fifteen tools: `deployments_upload` to anyone, the other fourteen to an OAuth-connected caller (since 2026-08-13 in production). The user-facing strings — tool description, INSTRUCTIONS — must stay coordinated where they overlap; the hosted side documents the divergence boundaries.
+A **hosted Streamable-HTTP variant** lives at `https://mcp.shipstatic.com`, and it is what the `com.shipstatic/mcp` registry entry lists (`server.json` `remotes`). It serves the same fifteen tools: `deployments_upload` to anyone, the other fourteen to an OAuth-connected caller (since 2026-08-13 in production). The user-facing strings — tool description, INSTRUCTIONS — must stay coordinated where they overlap; the hosted side documents the divergence boundaries.
 
 ## README positioning (public docs)
 
-`README.md` ships to npm, Glama, and the MCP Registry. From the reader's perspective, **ShipStatic MCP is one product whose door is the hosted endpoint**, with this package as the local alternative for a different NEED — never a bigger feature set. The README never reveals that the hosted variant lives in a separate, private repo (`cloudflare/mcp/`).
+`README.md` ships to npm, Glama, and the MCP Registry. From the reader's perspective, **ShipStatic MCP is one product whose door is the hosted endpoint**, with this package as the local alternative for a different NEED — never a bigger feature set. The README never reveals that the hosted variant is a separate codebase.
 
 **The README tells the hosted story first and whole**: add the URL, ask, connect for more, the tools. The local server is a short note at the end, "Run it on your own machine", for a client that does not speak OAuth yet or a reader who would rather set a key once. A folder on disk is the CLI's job, so the note sends that reader to the CLI rather than to this package.
 
@@ -23,8 +23,8 @@ That is a positioning decision rather than a demotion — the fifteen tools are 
 
 Voice is owned by the monorepo's `CANON.md` §4 as of 2026-09-01 — keep these
 phrases verbatim when editing, and change them THERE, never here. (They used
-to be owned by this file and by `cloudflare/mcp/CLAUDE.md`, each naming the
-other as the canonical source, which is a doctrine sentence promising two
+to be owned by this file and by the hosted transport's doctrine, each naming
+the other as the canonical source, which is a doctrine sentence promising two
 repos would stay aligned: the shape the estate refuses everywhere else.)
 
 - Slogan: **"One URL. Your agent ships."**
@@ -37,7 +37,7 @@ The counts in that sentence are fenced, not trusted: `tests/architecture/docs-co
 Do not surface in the README:
 - That the hosted endpoint is a separate Worker / different codebase
 - Implementation details (transport names, base64 file encoding, defensive caps, etc.)
-- Anything about the `cloudflare/mcp/` repo
+- Anything about the hosted transport's codebase
 
 Keep the public surface coherent: one ShipStatic MCP, two doors in.
 
@@ -55,7 +55,7 @@ src/
 
 ## One product, two transports — the shape that survives OAuth
 
-The hosted Streamable-HTTP server (`cloudflare/mcp`, private) **gained OAuth on
+The hosted Streamable-HTTP server **gained OAuth on
 2026-08-08 and reached production on 2026-08-13**, so both transports now offer
 the complete toolset for authenticated callers and the anonymous deploy for
 everyone else. The architecture was built for that end state rather than the
@@ -86,8 +86,8 @@ environment `domain`. Everything else either is shared today or converges when
 OAuth lands (INSTRUCTIONS bodies, the auth hint, `idempotencyKey`).
 
 **`bin.ts` is the executable; `index.ts` is a library.** Importing the package
-has no side effects, which is what lets the hosted transport
-(`cloudflare/mcp`, private) import this package's vocabulary rather than
+has no side effects, which is what lets the hosted transport import this
+package's vocabulary rather than
 re-authoring the strings an agent reads.
 
 That claim is stated three ways, and the third is the one bundlers can read:
@@ -116,7 +116,7 @@ built green and shipped a server that starts and does nothing.
 `index.ts` reads "what a second CONSUMER needs" rather than "a second
 TRANSPORT". It still only grows by deletion: the admission removed three
 regexes in another repo's build in exchange for a fifteen-line entry point.
-Two things stay true — `cloudflare/mcp` must keep authoring its own upload
+Two things stay true — the hosted transport must keep authoring its own upload
 tool (a filesystem-path input is a footgun for a Worker; that is now the
 caller's judgement rather than an absence), and the export is safe for the
 Worker graph only because `version` is an ARGUMENT, so no `node:module`
@@ -155,7 +155,7 @@ importable, and the two servers kept ten user-visible strings equal by hand
 module boundary says the same thing to every caller.
 
 **What is shared, and what is deliberately not**, lives in `vocabulary.ts`'s
-header and in `cloudflare/mcp/CLAUDE.md`'s divergence table. The short form:
+header and in the hosted transport's divergence table. The short form:
 the two identifiers (`SERVER_NAME`, `UPLOAD_TOOL_NAME`), who the server is
 (`SERVER_INFO`), the registry and `annotate`, the deploy-param descriptions, the INSTRUCTIONS sentences, the upload-description
 fragments and the public-deploy expiry are imported by both; the file-input
@@ -312,8 +312,8 @@ that *clients branch on error type and status, never on message strings* — and
 the agent, the consumer best equipped to obey it, was the only one that could
 not. The recorded bite is a 429, whose `details.expires` died here, leaving the
 caller most in need of a precise backoff to parse "try again in 9 minutes" out
-of English. The hosted transport feels it hardest (a 5/hr per-caller anonymous
-bucket).
+of English. The hosted transport feels it hardest, since its anonymous callers
+meet that limit first.
 
 `toErrorResult` attaches `error.toResponse()`, the same `ErrorResponse` the
 wire itself carries, on every ShipError arm, under the result's
@@ -468,7 +468,7 @@ configured" assertions) and wraps `fetch` to throw on any non-loopback host
 | the `ErrorType` sweep in `call.test.ts` | An error arm nobody thought about. It enumerates `Object.values(ErrorType)` rather than a hand-written list, so "exhaustive" is derived from types, not claimed in prose. Coverage is blind to this class: `handleError` has three branches, so six arms exercise them all and the other five sit untested at 100% — which is how a transport failure moving from `internal_server_error` to `network_error` reached agents unasserted. Bidirectional: a hint added to `call.ts` without recording it in `HINTED` turns the arm red, and a hint removed turns it red too. |
 | `test-naming.test.ts` | Layout drift: a filename describing the test instead of its subject, a mirror file with no `src/` counterpart, an aspect split not recorded below. |
 | `coverage.thresholds` | Coverage decay. 100/100/100/100 — MCP has no in-process-unreachable corner, so the bar is the ceiling and an untested new tool fails the run. |
-| `worker-safety.test.ts` | A `node:` builtin entering the graph `index.ts` exposes — which the Workers-hosted transport imports. It was proven only by that PRIVATE repo's build failing: late, elsewhere, and after a publish. Not hypothetical — the obvious next admission to the public surface was a `startStdio` composing the transport for consumers, and the MCP SDK's `server/stdio.js` imports `node:process`. It would have built green and published green. `bin.ts` is exempt by construction (unreachable from `index.ts`), and a second assertion proves the probe can SEE a builtin, so the first cannot pass vacuously. |
+| `worker-safety.test.ts` | A `node:` builtin entering the graph `index.ts` exposes — which the Workers-hosted transport imports. Without this fence it shows only when the hosted transport's build fails: late, elsewhere, and after a publish. Not hypothetical — the obvious next admission to the public surface was a `startStdio` composing the transport for consumers, and the MCP SDK's `server/stdio.js` imports `node:process`. It would have built green and published green. `bin.ts` is exempt by construction (unreachable from `index.ts`), and a second assertion proves the probe can SEE a builtin, so the first cannot pass vacuously. |
 | the `SHIP_*` sweep in `vocabulary.test.ts` | A SHARED string naming how ONE door authenticates. Both hosted strings once named this package's env var, stdio 0.7.0 renamed it, and nothing failed — the Worker simply began giving advice that silently lands a user's deploy in the wrong account. The hosted side fences its own error hints the same way; this is the half that lives with the vocabulary, so a `describe()` added here can never become the next copy. Derived from the export maps rather than a list, so a member nobody has written yet is already covered, and a second row proves the probe can SEE a variable name — otherwise an empty map would report a clean surface it never read. |
 | the `ACCOUNT_TOOL_NAMES` comparison in `server.test.ts` | The exported name list drifting from the registrations it names. Both directions, through a real `tools/list`: a registration added without its name, a name without its registration, a typo in either. It is what lets the hosted transport state its expected catalogue as `[UPLOAD_TOOL_NAME, ...ACCOUNT_TOOL_NAMES]` instead of counting to fifteen in a second repo. |
 
@@ -482,8 +482,8 @@ naming fence fails the suite if a split is not named here by full basename.
 ### `smoke.mjs` — the live gate, and the one thing the suite cannot be
 
 `pnpm smoke` drives the **published** package over `npx`, against a real API,
-through all fifteen tools. Manual and dev-only, like `cloudflare/api/smoke.mjs`
-and `cloudflare/mcp/smoke.mjs`; deliberately **not** in `ci.yml`, which has
+through all fifteen tools. Manual and dev-only, like the API's and the hosted
+transport's own smokes; deliberately **not** in `ci.yml`, which has
 neither a live API nor a credential.
 
 It exists because the suite is structurally blind to one whole class. The ship
