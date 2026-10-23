@@ -216,8 +216,8 @@ jobs:
   # Every publish, and every red run on a push, reaches the operator's alerts
   # channel; a pull request's red already has a reader, its author. The
   # webhook lives in this job alone, which runs nothing but curl, and an unset
-  # secret fails the job rather than skipping it. Root CLAUDE.md, "CI
-  # notifications".
+  # secret fails the job rather than skipping it. The platform's
+  # release rules hold this for every repo.
   notify:
     needs: [test, version, publish, release, registry]
     if: always() && github.event_name != 'pull_request' && (contains(needs.*.result, 'failure') || needs.version.outputs.publish == 'true')

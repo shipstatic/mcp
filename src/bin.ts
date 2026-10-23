@@ -34,8 +34,8 @@ async function main() {
   const ship = new Ship({ token: process.env[SHIP_ENV.TOKEN] });
   // Unset, this executable IS the `mcp` origin, which is the default. A
   // first-party wrapper that composes this invocation relabels it through
-  // the subprocess slot the CLI shares (`SHIP_VIA_ENV` in types): the Gemini
-  // extension sends `gmn`. An unrecognized label is dropped rather than
+  // the subprocess slot the CLI shares (`SHIP_VIA_ENV` in types); none does
+  // today. An unrecognized label is dropped rather than
   // forwarded: the server silently ignores what the vocabulary does not
   // name, so a typo records the honest default instead of nothing.
   const server = createServer(ship, { version, via: normalizeVia(process.env[SHIP_VIA_ENV]) });
