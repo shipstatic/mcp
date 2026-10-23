@@ -2,42 +2,33 @@
 
 Claude Code instructions for the **ShipStatic MCP Server**.
 
-**@shipstatic/mcp** — MCP server that exposes the ShipStatic SDK to AI agents via stdio. Thin wrapper over `@shipstatic/ship`. This repo also publishes the MCP Registry entry `com.shipstatic/mcp`, which names the hosted server alone (see "The registry entry names the hosted server" below). **Maturity:** v2.x — Deployments + Domains (15 tools).
+**@shipstatic/mcp** is the MCP server that exposes the ShipStatic SDK to AI agents via stdio, a thin wrapper over `@shipstatic/ship`. This repo also publishes the MCP Registry entry `com.shipstatic/mcp`, which names the hosted server alone (see "The registry entry names the hosted server" below). **Maturity:** v2.x, Deployments + Domains (15 tools).
 
-**The version says which platform it speaks to: the 2.x MCP is the one that speaks to the 3.x platform.** Each major has been a true major for consumers, and each is recorded here with what it breaks.
+**The version says which platform it speaks to: the 2.x MCP speaks to the 3.x platform.** A major is a true major for consumers: a renamed tool, a credential variable no longer read, or a changed meaning in a field an agent branches on (a described `z.string()` refuses nothing at the schema boundary, so a changed word breaks workflows silently). Each major's breaks are listed here:
 
-- **2.0.0 (2026-09-20) — `Domain.status` means something else.** It was the DNS enum (`pending`, `partial`, `success`) plus `paused`; it is now the domain's STANDING, the one derived word saying what the domain needs from its owner (`live`, `unlinked`, `unverified`, `paused`), and the DNS fact moved to a `verification` field beside it. `domains_get` and `domains_list` answer with the new shape, and the flow sentence and both tool descriptions name `status` outright. An agent workflow branching on `"success"` stops matching — silently, because `DomainStatusSchema` is a described `z.string()` rather than a closed enum, so nothing refuses the new word at the schema boundary. That is exactly why this is a major rather than a minor.
-- **1.0.0** — `SHIP_API_KEY` is no longer read (every existing server config breaks until its env var is renamed) and the delete tools were renamed (`deployments_remove` → `deployments_delete`, `domains_remove` → `domains_delete`), so a saved agent workflow naming the old tool stops resolving.
+- **2.0.0: `Domain.status` means the domain's standing** (`live`, `unlinked`, `unverified`, `paused`), not the DNS enum (`pending`, `partial`, `success`); the DNS fact is the `verification` field beside it. A workflow branching on `"success"` stops matching, silently, because `DomainStatusSchema` is a described `z.string()`.
+- **1.0.0: `SHIP_API_KEY` is no longer read**, and the delete tools were renamed (`deployments_remove` → `deployments_delete`, `domains_remove` → `domains_delete`).
 
-A **hosted Streamable-HTTP variant** lives at `https://mcp.shipstatic.com`, and it is what the `com.shipstatic/mcp` registry entry lists (`server.json` `remotes`). It serves the same fifteen tools: `deployments_upload` to anyone, the other fourteen to an OAuth-connected caller (since 2026-08-13 in production). The user-facing strings — tool description, INSTRUCTIONS — must stay coordinated where they overlap; the hosted side documents the divergence boundaries.
+A **hosted Streamable-HTTP variant** lives at `https://mcp.shipstatic.com` (the hosted transport), and it is what the registry entry lists (`server.json` `remotes`). It serves the same fifteen tools: `deployments_upload` to anyone, the other fourteen to an OAuth-connected caller. The user-facing strings must stay coordinated where they overlap; this package's vocabulary is how.
 
 ## README positioning (public docs)
 
-`README.md` ships to npm, Glama, and the MCP Registry. From the reader's perspective, **ShipStatic MCP is one product whose door is the hosted endpoint**, with this package as the local alternative for a different NEED — never a bigger feature set. The README never reveals that the hosted variant is a separate codebase.
+`README.md` ships to npm, Glama and the MCP Registry. To the reader, **ShipStatic MCP is one product whose door is the hosted endpoint**, with this package as the local alternative for a different NEED, never a bigger feature set.
 
-**The README tells the hosted story first and whole**: add the URL, ask, connect for more, the tools. The local server is a short note at the end, "Run it on your own machine", for a client that does not speak OAuth yet or a reader who would rather set a key once. A folder on disk is the CLI's job, so the note sends that reader to the CLI rather than to this package.
+**The README tells the hosted story first and whole**: add the URL, ask, connect for more, the tools. The local server is a short note at the end, "Run it on your own machine". A folder on disk is the CLI's job, so the note sends that reader to the CLI. **An anchor phrase that states a CAPABILITY has a shelf life; one that states a NEED does not.**
 
-That is a positioning decision rather than a demotion — the fifteen tools are the same, and the anonymous-publish pillar reads identically on both doors. What changed on 2026-08-13 is which door a reader should reach for FIRST, and the prose followed on 2026-08-15.
-
-**The upgrade line died on 2026-08-13 and its replacement is the law's own worked example.** "Install this package for the full toolset" was true while the hosted door was anonymous-only, and stopped being true the day OAuth landed there — but a README has no compiler, so it sold the placeholder for months while the product underneath it had changed. Nothing failed; nothing could. The lesson the anchor list now carries: **an anchor phrase that states a CAPABILITY has a shelf life, and one that states a NEED does not.** The three surviving anchors describe what the reader does; the dead one described what the product was.
-
-Voice is owned by the monorepo's `CANON.md` §4 as of 2026-09-01 — keep these
-phrases verbatim when editing, and change them THERE, never here. (They used
-to be owned by this file and by the hosted transport's doctrine, each naming
-the other as the canonical source, which is a doctrine sentence promising two
-repos would stay aligned: the shape the estate refuses everywhere else.)
+The anchors are owned by the brand canon. Keep them verbatim here; a change to one is a change to the canon, never a local edit:
 
 - Slogan: **"One URL. Your agent ships."**
 - Action: **"Drop `https://mcp.shipstatic.com` into any MCP client."**
 - Qualifier: **"No install, no signup, no API key."**
-- The two doors: **"the same fifteen tools, reached the other way"** — and the local door's reasons are a NEED, never a capability: a folder on your own machine, a token configured once instead of a sign-in, a client that doesn't speak OAuth yet.
+- The two doors: **"the same fifteen tools, reached the other way"**, and the local door's reasons are a NEED, never a capability: a folder on your own machine, a token configured once instead of a sign-in, a client that doesn't speak OAuth yet.
 
-The counts in that sentence are fenced, not trusted: `tests/architecture/docs-contract.test.ts` derives both from `ACCOUNT_TOOL_NAMES`, so a sixteenth tool turns the README red until the prose follows. The retired spellings ("Single tool", "Anonymous-only", "exposes `deployments_upload` only") are held one level up by `scripts/check-prose-vocabulary.sh`, which reaches the www surfaces this suite cannot.
+The counts are fenced: `tests/architecture/docs-contract.test.ts` derives both from `ACCOUNT_TOOL_NAMES`, so a sixteenth tool turns the README red until the prose follows. The platform's prose vocabulary check holds the retired spellings ("Single tool", "Anonymous-only", "exposes `deployments_upload` only") on every published surface.
 
 Do not surface in the README:
-- That the hosted endpoint is a separate Worker / different codebase
+- That the hosted endpoint is a separate codebase or runs anywhere in particular
 - Implementation details (transport names, base64 file encoding, defensive caps, etc.)
-- Anything about the hosted transport's codebase
 
 Keep the public surface coherent: one ShipStatic MCP, two doors in.
 
@@ -45,137 +36,90 @@ Keep the public surface coherent: one ShipStatic MCP, two doors in.
 
 ```
 src/
-├── bin.ts        # THE EXECUTABLE (dist/bin.js) — env read, Ship construction, stdio transport
-├── index.ts      # The LIBRARY entry — curated exports, no side effects
-├── server.ts     # createServer(ship, {version, via}) — stdio's own upload tool + INSTRUCTIONS
+├── bin.ts        # THE EXECUTABLE (dist/bin.js): env read, Ship construction, stdio transport
+├── index.ts      # The LIBRARY entry: curated exports, no side effects
+├── server.ts     # createServer(ship, {version, via}): stdio's own upload tool + INSTRUCTIONS
 ├── tools.ts      # TOOLS (the registry: one row per tool) + registerAccountTools(), the 14 identical on EVERY transport
-├── call.ts       # createCall() — the result envelope + error mapping, parameterised by hints
+├── call.ts       # createCall(): the result envelope + error mapping, parameterised by hints
 └── vocabulary.ts # What BOTH transports say: annotate() + shared param descriptions
 ```
 
-## One product, two transports — the shape that survives OAuth
-
-The hosted Streamable-HTTP server **gained OAuth on
-2026-08-08 and reached production on 2026-08-13**, so both transports now offer
-the complete toolset for authenticated callers and the anonymous deploy for
-everyone else. The architecture was built for that end state rather than the
-one-tool present, and the payoff was measured: the fourteen tools arrived in
-the hosted worker as ONE import, not as fourteen copies in a second repo — and
-the copy is the moment two surfaces begin to drift.
+## One product, two transports
 
 **The 14 / 1 split is the product's own shape.** `deployments_upload` is the
 anonymous door: the one operation needing no account, and the one whose INPUT
-differs by transport (a filesystem path here, inline bytes there, because a
-Worker has no filesystem). It also carries the Apps-SDK widget hosted-side. So
-it is authored per transport. The other fourteen need an identity, and once a
-transport has one, nothing about them depends on how bytes arrived — identical
-names, schemas, prose and 1:1 SDK calls. They live in `tools.ts` and the hosted
-side registers them with one call when OAuth lands.
+differs by transport (a filesystem path here, inline bytes there, because the
+hosted transport has no filesystem). It also carries the Apps-SDK widget on the
+hosted side. So it is authored per transport. The other fourteen need an
+identity, and nothing about them depends on how bytes arrived: identical names,
+schemas, prose and 1:1 SDK calls. They live in `tools.ts`, and the hosted
+transport registers them with one call.
 
 **The catalogue is static; identity decides what SUCCEEDS.** All fifteen are
 registered whether or not a credential is present. An anonymous caller sees
 them and gets a typed authentication error naming how to authenticate *on this
-transport* — which is exactly `createCall`'s one per-transport argument. The
-alternative, a tool list that changes shape under the caller, is a second and
-dynamic contract for an agent to track, and MCP clients cache catalogues.
-Anonymous deploy remains the headline promise on both doors.
+transport*, which is `createCall`'s one per-transport argument. A tool list that
+changes shape under the caller is a second, dynamic contract, and MCP clients
+cache catalogues.
 
-**What stays different forever**, and it is a short list: the upload input
-schema, the Apps-SDK widget and its `outputSchema`, the `via` tag, and the
-environment `domain`. Everything else either is shared today or converges when
-OAuth lands (INSTRUCTIONS bodies, the auth hint, `idempotencyKey`).
+**What stays different forever** is a short list: the upload input schema, the
+Apps-SDK widget and its `outputSchema`, the `via` tag, and the environment
+`domain`. Everything else is shared or converges; the description bodies stay apart for the reason below.
 
 **`bin.ts` is the executable; `index.ts` is a library.** Importing the package
 has no side effects, which is what lets the hosted transport import this
-package's vocabulary rather than
-re-authoring the strings an agent reads.
+package's vocabulary rather than re-author the strings an agent reads.
 
-That claim is stated three ways, and the third is the one bundlers can read:
-the docblocks say it, `tests/index.test.ts` proves it, and
-**`sideEffects: ["./dist/bin.js"]` in `package.json` declares it** — exactly
-one entry because exactly one module runs on import. Load-bearing for
-consumers that bundle: without the field, esbuild must assume every
-re-exported module might matter, so a host importing one vocabulary string
-drags the whole MCP SDK along (measured in the VS Code extension: +142KB on a
-bundle that never starts a server). The surface ledger pins the field
-verbatim, and a bare `false` is refused there by design — claiming inertness
-for `bin.js` too is one refactor away from a bundler dropping the
-executable's body.
+The docblocks say it, `tests/index.test.ts` proves it, and
+**`sideEffects: ["./dist/bin.js"]` in `package.json` declares it**, exactly
+one entry because exactly one module runs on import. Without the field a
+bundler must assume every re-exported module matters, so a host importing one
+vocabulary string drags the whole MCP SDK along (+142KB in the VS Code
+extension's host bundle). The surface ledger pins the field verbatim, and a
+bare `false` is refused: claiming inertness for `bin.js` too is one refactor
+away from a bundler dropping the executable's body.
 
-**Two consumers, not one — and the second one widened the export rule.** The
-VS Code extension (`integrations/vscode`) bundles a stdio server into its
-`.vsix`, so it wants stdio's composition verbatim. It used to get it by
-REGEX-PATCHING this package's compiled `dist/` at bundle time: strip `bin`'s
-shebang, and rewrite the `createRequire(import.meta.url)('../package.json')`
-line inside `server.js` to inline a version literal. Every one of those hacks
-broke on the 1.x library split — the runnable entry moved from `main` to
-`bin`, and the version became a parameter — so a naive pin bump would have
-built green and shipped a server that starts and does nothing.
+**Two consumers, and the second one set the export rule.** The VS Code
+extension (the `shipstatic/vscode` repo) bundles a stdio server into its `.vsix` by
+composing `createServer` in its own entry point. So the rule in `index.ts`
+reads "what a second CONSUMER needs", not "a second TRANSPORT", and it still
+grows only by deletion. Two things stay true: the hosted transport authors its
+own upload tool (a filesystem-path input is a footgun there), and the export is
+safe for the hosted graph only because `version` is an ARGUMENT, so no
+`node:module` rides along.
 
-`createServer` is therefore exported as of **1.0.0-beta.7**, and the rule in
-`index.ts` reads "what a second CONSUMER needs" rather than "a second
-TRANSPORT". It still only grows by deletion: the admission removed three
-regexes in another repo's build in exchange for a fifteen-line entry point.
-Two things stay true — the hosted transport must keep authoring its own upload
-tool (a filesystem-path input is a footgun for a Worker; that is now the
-caller's judgement rather than an absence), and the export is safe for the
-Worker graph only because `version` is an ARGUMENT, so no `node:module`
-rides along.
-
-**A `startStdio` was proposed and REJECTED (2026-08-06) — do not re-propose it
-without reading this.** `bin.ts` and the extension's `mcp-entry.ts` are the
-same five lines (construct `Ship`, `createServer`, connect a
-`StdioServerTransport`, print the banner), which looks like exactly the
-restatement an export should delete. It is not, for two reasons that only show
-up when you try:
+**A `startStdio` composing the transport is REFUSED.** `bin.ts` and the
+extension's `mcp-entry.ts` are the same five lines, which looks like a
+restatement an export should delete. It is not:
 
 - **It cannot live in `index.ts`.** `@modelcontextprotocol/sdk`'s
-  `server/stdio.js` imports `node:process`, so exporting the composition from
-  the library entry puts a Node builtin in the graph the Workers-hosted
-  transport imports — the exact invariant that makes `version` a parameter.
-  Measured, not assumed; `worker-safety.test.ts` is now the fence. Shipping it
-  anyway would mean a SECOND published entry point (`@shipstatic/mcp/stdio`),
-  an `exports` map row, and a recorded exemption from that fence — more
-  machinery than the five lines it deletes.
-- **The hazard it was really aimed at is fenced elsewhere.** The argument for
-  it was deleting the extension's direct `@modelcontextprotocol/sdk`
-  dependency, whose version range must stay matched with this package's or
-  esbuild bundles two SDK copies and `connect()` receives a transport from
-  another realm. The extension's build now asserts single-copy resolution
-  across both bundles, so that failure is caught at build time where it
-  happens.
+  `server/stdio.js` imports `node:process`, so the library entry would put a
+  Node builtin in the graph the hosted transport imports. `worker-safety.test.ts`
+  is the fence. Shipping it anyway needs a second published entry point
+  (`@shipstatic/mcp/stdio`), an `exports` row and an exemption from that fence:
+  more machinery than five lines.
+- **The hazard it aimed at is fenced elsewhere.** The extension's direct SDK
+  dependency must match this package's range or esbuild bundles two SDK
+  copies; the extension's build asserts single-copy resolution.
 
-Two thin `main()` functions with different version sources and different
-process policies are not a restatement of a rule. They are two executables.
-
-Until 1.0.0-beta.2 they were one file — importing the package started a
-stdio server that could `process.exit` in its consumer, nothing was
-importable, and the two servers kept ten user-visible strings equal by hand
-(they did not stay equal). `npm/ship` untied the same knot the same way — a
-module boundary says the same thing to every caller.
+Two thin `main()` functions with different version sources are two
+executables, not a restatement.
 
 **What is shared, and what is deliberately not**, lives in `vocabulary.ts`'s
-header and in the hosted transport's divergence table. The short form:
-the two identifiers (`SERVER_NAME`, `UPLOAD_TOOL_NAME`), who the server is
-(`SERVER_INFO`), the registry and `annotate`, the deploy-param descriptions, the INSTRUCTIONS sentences, the upload-description
-fragments and the public-deploy expiry are imported by both; the file-input
-schema, the description bodies, and everything Apps-SDK are forced apart by the
-transport and stay separate.
+header. The short form: the two identifiers (`SERVER_NAME`,
+`UPLOAD_TOOL_NAME`), who the server is (`SERVER_INFO`), the registry and
+`annotate`, the deploy-param descriptions, the INSTRUCTIONS sentences, the
+upload-description fragments and the public-deploy expiry are imported by both;
+the file-input schema, the description bodies and everything Apps-SDK are
+forced apart by the transport.
 
 **The export list is the drift ledger, and it only grows by deletion.** Every
-name in `index.ts` was a restatement somewhere before it was an export —
-`SERVER_NAME` was two literals in two repos that an Apps host compares to each
-other, `UPLOAD_TOOL_TITLE` was on its way to being the same pair (the hosted
-side had `'Deploy Static Site'` inline before this package had titles at all),
-`PUBLIC_EXPIRY` was the same duration written out eight times,
-`DESCRIPTION_BLOCKS` were fragments with three copies each (both servers plus a
-test literal that could only prove one of them matched itself), and
-`createServer` was three regexes patching this package's compiled output in the
-VS Code extension's bundler. `SERVER_INFO` is who the server says it is at
-connect (title, description, website, icons): without it the hosted door would
-state its own, and the registry entry's identity fields are held to it by the
-docs contract. Adding an export that deletes no restatement is
-how a curated surface becomes a grab bag.
+name in `index.ts` replaced a restatement: two literals in two repos, a
+duration written out several times, fragments copied into both servers, a
+build patch in a consumer. `SERVER_INFO` is who the server says it is at
+connect (title, description, website, icons), and the registry entry's
+identity fields are held to it by the docs contract. Adding an export that
+deletes no restatement is how a curated surface becomes a grab bag.
 
 ## Quick Reference
 
@@ -185,12 +129,9 @@ pnpm test --run     # All tests
 pnpm check:package  # publint + attw over the built artifact
 ```
 
-**`check:package` ignores one attw rule, and it is a decided property.** This
-package is ESM-only, so a CJS consumer resolving it produces
-`CJSResolvesToESM` by construction; the platform's `engines.node >=20.19.0`
-floor is exactly where `require(esm)` was backported, measured at the floor.
-Added 2026-09-01 by the coherence program, which found this package and
-`@shipstatic/types` publishing without the gate four npm siblings ran.
+**`check:package` ignores one attw rule, by decision.** This package is
+ESM-only, so a CJS consumer produces `CJSResolvesToESM` by construction; the
+`engines.node >=20.19.0` floor is exactly where `require(esm)` was backported.
 
 ## Core Patterns
 
@@ -198,29 +139,27 @@ Added 2026-09-01 by the coherence program, which found this package and
 
 Every MCP tool maps 1:1 to a single `@shipstatic/ship` SDK method. The MCP layer handles only:
 - Tool registration (name, schema, description)
-- Response formatting (`call()` — JSON.stringify for data, "Done." for void)
+- Response formatting (`call()`: JSON.stringify for data, "Done." for void)
 - Error mapping (ShipError → `{ content, isError: true }` with hints)
 
-Three arms earn a hint, and they split on ONE question — does the text differ
+Three arms earn a hint, and they split on ONE question: does the text differ
 per transport? The two credential arms (authentication, forbidden) do, so they
 are `ErrorHints` arguments: stdio can name the environment variable it owns and
-the hosted endpoint deliberately cannot. **Maintenance does not** — a closed
-platform is closed identically everywhere — so it is a module constant,
-`MAINTENANCE_HINT`, and the hosted transport inherits it with no code of its
-own. It also does NOT notify `onAuthFailure`: a maintenance window is not a
-credential problem, and answering one with a 401 challenge would send a client
-round a consent flow against a door that is closed for everyone.
+the hosted endpoint cannot. **Maintenance does not**, so it is a module
+constant, `MAINTENANCE_HINT`, which the hosted transport inherits. It also does
+NOT notify `onAuthFailure`: a maintenance window is not a credential problem,
+and a 401 challenge would send a client round a consent flow against a door
+closed for everyone.
 
 No HTTP calls, no auth logic, no domain validation. The SDK handles everything.
 
 ### Tool Naming
 
-`resource_action` — matches SDK's `ship.resource.action()` and CLI's `ship resource action`.
+`resource_action` matches the SDK's `ship.resource.action()` and the CLI's `ship resource action`.
 
-**One recorded exception: `whoami`.** It reads the account, so the law would
-spell it `account_get` — but the CLI and SDK both surface this as `whoami`, and
-a tool named for the word a user already knows beats one named for the rule.
-The exception is the parity, not an oversight; every other tool obeys.
+**One recorded exception: `whoami`.** The law would spell it `account_get`,
+but the CLI and SDK both surface `whoami`, and the word a user already knows
+beats the rule. Every other tool obeys.
 
 ### The registry: one row per tool, everything else derived
 
@@ -228,64 +167,48 @@ The exception is the parity, not an oversight; every other tool obeys.
 three axes a host reads: `auth` (`optional` works without an account),
 `mutation` (`none` | `add` | `replace` | `remove`) and `reach` (`account` |
 `public`). Fifteen rows, upload included even though each transport authors
-that registration itself: its INPUT differs per transport, its contract does
-not. Everything else is derived. `annotate(row)` is every registration's
-`annotations`; `ACCOUNT_TOOL_NAMES` is the rows whose `auth` is `required`,
-and the hosted door reads the same column for `securitySchemes` and its
-challenge scope; `integrations/gpt`'s preflight holds the live door to the
-hints the rows produce.
-
-It replaced three owners (1.11.0, 2026-09-13): four annotation classes here
-that all spread `openWorldHint: true`, a hand-written name list for the auth
-need, and the upload tool annotated by hand on both transports. The classes
-are how ten account reads came to claim they touch the open world, and how
-every read and replace came to promise a free retry.
+that registration: its INPUT differs per transport, its contract does not.
+`annotate(row)` is every registration's `annotations`; `ACCOUNT_TOOL_NAMES` is
+the rows whose `auth` is `required`, and the hosted door reads the same column
+for `securitySchemes` and its challenge scope; the ChatGPT listing's preflight
+holds the live door to the hints the rows produce. Never annotate a tool by
+hand or keep a second name list.
 
 **What `annotate` promises, and what it withholds.** `readOnlyHint` is
 `mutation === 'none'`; `destructiveHint` is a replace or a remove (the spec's
-"not additive"); `openWorldHint` is `reach === 'public'`, which both hosts
-read as "changes public internet state" (a deploy, a domain link, a
-verification, both deletes) rather than "reaches a remote API" (everything).
-`idempotentHint` is promised ONLY for a remove, the one mutation where a
-repeat is MEASURED to do nothing further (both deletes are fenced in the API:
-a repeat neither flips state nor writes an audit row). A replace writes an
-activity row per call and `domains_set` notifies and may enqueue DNS work, so
-it is not claimed; an add creates on every call, and `idempotencyKey` cannot
-rescue the claim because that property is per-CALL while the hint is static
-per tool; reads carry none because the spec defines the hint only for
-mutating tools.
+"not additive"); `openWorldHint` is `reach === 'public'`, read by hosts as
+"changes public internet state" (a deploy, a domain link, a verification, both
+deletes), never "reaches a remote API". `idempotentHint` is promised ONLY for a
+remove, where a repeat does nothing further (both deletes are fenced in the
+API: a repeat neither flips state nor writes an audit row). A replace writes an
+activity row per call and `domains_set` may enqueue DNS work, so it is not
+claimed; an add creates on every call, and `idempotencyKey` cannot rescue the
+claim because it is per-CALL while the hint is static; reads carry none because
+the spec defines the hint only for mutating tools.
 
 `domains_set` stays one tool with the conservative destructive hint: the API
 is one upsert by decision ("single paths with flags"), and three facade tools
 would add surface without adding truth. The UX cost, a prompt before
 reserving a name, is recorded here rather than solved.
 
-**A description describes the tool; it instructs nobody.** Both listing
-reviews reject a description that tells the model how to behave ("You MUST
-confirm with the user", "always show both to the user", "Share the link with
-the user"). Confirmation is `destructiveHint`'s job; what an agent should DO
-with a claim URL or a password is the server's `instructions`, the one
-sanctioned place for guidance (`INSTRUCTION_BLOCKS.claim`,
-`INSTRUCTION_BLOCKS.password`). Invocation guidance about the tool's
-FUNCTION ("Call after domains_set") is permitted and stays.
-`tests/server.test.ts` greps every description off a real `tools/list` for
-"you must", "always show", "share the link", "to the user" and "with the
-user"; the last two are what a tail like "…and show the DNS records to the
-user" slipped past a three-phrase inventory.
+**A description describes the tool; it instructs nobody.** Listing reviews
+reject a description that tells the model how to behave ("You MUST confirm with
+the user", "always show both to the user"). Confirmation is
+`destructiveHint`'s job; what an agent should DO with a claim URL or a password
+is the server's `instructions` (`INSTRUCTION_BLOCKS.claim`,
+`INSTRUCTION_BLOCKS.password`). Guidance about the tool's FUNCTION ("Call after
+domains_set") is permitted. `tests/server.test.ts` greps every description off
+a real `tools/list` for "you must", "always show", "share the link", "to the
+user" and "with the user".
 
-**A tool's result is the shape its description states.** `whoami` was the
-one tool whose wire entity said more than its sentence: `Account` carries
-billing state, the API-key hint, the picture and timestamps, and the
-description promised "email, plan, and usage". It is projected to
-`{ email, name, plan, usage, caps }` in the shared handler and the description
-names exactly those. `suspended` is deliberately out: it means every write is
-refused, and the refusal says so itself, authored for the user, at the moment
-it matters; a `whoami` field would teach an agent to pre-check a state the
-platform reports on contact. Revisit only if a real user asks why `whoami`
-did not warn them. The other tools return the product's own user-facing
-entities and stay as they are.
+**A tool's result is the shape its description states.** `whoami` is
+projected to `{ email, name, plan, usage, caps }` in the shared handler, and
+the description names exactly those. `suspended` is deliberately out: every
+write is refused, and the refusal says so itself at the moment it matters, so a
+field would teach an agent to pre-check a state the platform reports on
+contact. Revisit only if a real user asks why `whoami` did not warn them.
 
-### `call()` — The Single Abstraction
+### `call()`: The Single Abstraction
 
 Every tool handler is a one-liner that delegates to the SDK through `call()`:
 
@@ -301,93 +224,66 @@ server.registerTool('deployments_get', {
 
 `call()` handles try/catch, JSON serialization, void→"Done.", and ShipError→MCP error conversion.
 
-**The typed error contract reaches the agent — text authoritative, structure
-beside it.** Taken in 1.0.0-beta.8, and it was the first of the two futures
-this paragraph used to name.
+**The typed error contract reaches the agent: text authoritative, structure
+beside it.** Clients branch on error type and status, never on message strings,
+and an agent is the consumer best equipped to obey that (a 429's
+`details.expires` is a precise backoff). `toErrorResult` attaches
+`error.toResponse()`, the same `ErrorResponse` the wire carries, on every
+ShipError arm, under the result's `_meta["com.shipstatic/error"]`
+(`ERROR_META_KEY`, exported):
 
-`CallToolResult` carries text plus `isError`, so for most of this package's
-life an agent saw prose alone: `status`, `ErrorType`, and every `details`
-payload were dropped except the Validation arm's. The platform's own law is
-that *clients branch on error type and status, never on message strings* — and
-the agent, the consumer best equipped to obey it, was the only one that could
-not. The recorded bite is a 429, whose `details.expires` died here, leaving the
-caller most in need of a precise backoff to parse "try again in 9 minutes" out
-of English. The hosted transport feels it hardest, since its anonymous callers
-meet that limit first.
-
-`toErrorResult` attaches `error.toResponse()`, the same `ErrorResponse` the
-wire itself carries, on every ShipError arm, under the result's
-`_meta["com.shipstatic/error"]` (`ERROR_META_KEY`, exported). Two things make
-that the shape:
-
-- **The text is the contract**, hints included. It has to be: the API authors
-  its messages for the end user at the throw site (`cloudflare/api/CLAUDE.md`,
-  "Message authoring law"), so a client that reads only prose still works.
-  Structure rides BESIDE it, never instead.
+- **The text is the contract**, hints included. The API authors its messages
+  for the end user at the throw site, so a client that reads only prose still
+  works. Structure rides BESIDE it, never instead.
 - **The structure never rides `structuredContent`.** That field belongs to the
   tool's `outputSchema`, which describes a success, and the TypeScript SDK's
-  client validates it against the schema even on an `isError` result
-  (modelcontextprotocol/typescript-sdk#1943, fix open as #1945): a client built
-  on it, after reading the catalogue as every host does, threw "Structured
+  CLIENT validates it even on an `isError` result
+  (modelcontextprotocol/typescript-sdk#1943): a host would throw "Structured
   content does not match the tool's output schema" in place of the refusal.
-  The SDK's SERVER skips that check on errors, which is why the earlier shape
-  passed every server-side test. `_meta` is validated by nobody.
+  Only the SDK's SERVER skips that check. `_meta` is validated by nobody.
   `tests/server-calls.test.ts` lists the tools first and then expects the
-  refusal's own sentence, the order a real host uses; drilled against the old
-  shape, it fails with the field's exact message.
+  refusal's own sentence, the order a real host uses.
 
-**Every success carries `structuredContent` too, on both transports, since
-1.12.0.** Every tool publishes an `outputSchema` imported from the
-constitution (`@shipstatic/types/schemas`, where each schema is fenced to its
-interface at compile time), and the SDK validates each result against it and
-refuses a result that carries none. So `call` attaches every plain-object
-result as `structuredContent` beside the text; there is no flag, because
-there is no transport that would turn it off. Until 1.12.0 the flag existed
-for the hosted door alone and the fourteen account tools had no schema, on
-the reasoning that a schema written beside a tool is a hand-maintained twin
-of a published type. That reasoning still holds; what changed is where the
-schema lives. **Do not write an output schema in this package**: name the
-constitution's, or add one there, fenced, first. `whoami` shows the shape at
-its sharpest: its result is `AccountSchema.pick(...)`, and parsing the wire
-through that pick IS the projection, so one declaration owns the published
-schema and the five keys the tool answers with.
+**Every success carries `structuredContent` too, on both transports.** Every
+tool publishes an `outputSchema` imported from the constitution
+(`@shipstatic/types/schemas`, each schema fenced to its interface at compile
+time), and the SDK refuses a result that carries none, so `call` attaches every
+plain-object result as `structuredContent` beside the text, with no flag.
+**Do not write an output schema in this package**: name the constitution's, or
+add one there, fenced, first. `whoami`'s result is `AccountSchema.pick(...)`,
+and parsing the wire through that pick IS the projection. The other tools
+return the product's own user-facing entities and stay as they are.
 
 A non-ShipError still answers text-only: there is no wire shape to report, and
 inventing one would tell an agent the failure came from the platform.
 
 ### Dependency Injection
 
-`bin.ts` owns the process: reads `SHIP_TOKEN` from the environment, constructs `new Ship({ token })`, passes it to `createServer(ship, { version })`. The factory never touches `process.env` or constructs its own dependencies. Tests pass a fake directly, and `tests/bin.test.ts` fences the split — `server.ts`, `call.ts`, `vocabulary.ts` and `index.ts` must contain no `process.env` read at all.
+`bin.ts` owns the process: reads `SHIP_TOKEN` from the environment, constructs `new Ship({ token })`, passes it to `createServer(ship, { version })`. The factory never touches `process.env` or constructs its own dependencies. Tests pass a fake directly, and `tests/bin.test.ts` fences the split: `server.ts`, `call.ts`, `vocabulary.ts` and `index.ts` contain no `process.env` read at all.
 
-The **version** is an argument for the same reason: the executable knows its own manifest, a library must not assume it has one, and reading it inside `server.ts` would put `node:module` — a Node builtin — in the import graph of a module the Workers-hosted transport also loads.
+The **version** is an argument for the same reason: the executable knows its own manifest, a library must not assume it has one, and reading it inside `server.ts` would put `node:module` in the import graph the hosted transport also loads.
 
 ### Credential Isolation
 
-`SHIP_TOKEN` is **optional**. Without it, deployments go to the public account and expire in 3 days; with it, they go to the user's account permanently. The token is forwarded explicitly to the `Ship` constructor — and that's all MCP needs to do.
+`SHIP_TOKEN` is **optional**. Without it, deployments go to the public account and expire in 3 days; with it, they go to the user's account permanently. The token is forwarded explicitly to the `Ship` constructor, and that is all MCP does.
 
-**One slot, any platform token.** Since ship 2.0 there is a single `token` option. The value's prefix says what it is — `ship-` API key, `deploy-` deploy token, `oauth-` OAuth access token (since types 2.8.0), anything else an opaque bearer — and the *server* classifies it. MCP never inspects or routes on the credential, which is why adding a new credential kind never requires a release here.
+**One slot, any platform token.** The value's prefix says what it is (`ship-` API key, `deploy-` deploy token, `oauth-` OAuth access token, anything else an opaque bearer) and the *server* classifies it. MCP never inspects or routes on the credential, so a new credential kind never requires a release here.
 
-The SDK's strict-isolation contract (synchronous constructor, no filesystem reads, only documented `SHIP_*` env-var fallbacks) is what keeps embedded credentials predictable. See `npm/ship/CLAUDE.md` "Strict-isolation contract for embedded hosts" for the full rationale.
+The SDK's strict-isolation contract (synchronous constructor, no filesystem reads, only documented `SHIP_*` env-var fallbacks) keeps embedded credentials predictable; the SDK's CLAUDE.md, "Strict-isolation contract for embedded hosts", has the rationale.
 
 ### Deployment Tracking
 
-`deployments_upload` sets `via` — matching CLI's `via: 'cli'` for origin
-tracking. It **defaults to `'mcp'` and is a `ServerOptions` field**, because
-`via` names the DISTRIBUTION SURFACE rather than the protocol: the GitHub
-Action reports `git` whatever invoked the workflow, and the web apps report
-`web`. `bin.ts` stays the `mcp` origin unless a wrapper relabels it: since
-1.9.0 it reads the subprocess-wrapper slot the CLI shares —
-`normalizeVia(process.env[SHIP_VIA_ENV])`, the constant owned by
-`@shipstatic/types` — so a first-party manifest that composes the `npx`
-invocation can name its own surface. The Gemini extension sends `gmn`. An
-unrecognized value is dropped, exactly as the CLI drops one, so a typo lands
-on the honest `mcp` default rather than being silently discarded server-side.
+`deployments_upload` sets `via`. It **defaults to `'mcp'` and is a
+`ServerOptions` field**, because `via` names the DISTRIBUTION SURFACE rather
+than the protocol. `bin.ts` stays the `mcp` origin unless a wrapper relabels
+it through the subprocess slot the CLI shares,
+`normalizeVia(process.env[SHIP_VIA_ENV])` (the constant is owned by
+`@shipstatic/types`), so a first-party manifest that composes the `npx`
+invocation can name its own surface. An unrecognized value is dropped, exactly
+as the CLI drops one, so a typo lands on the honest `mcp` default.
 
-The VS Code extension bundles `createServer` into its `.vsix` and passes
-`'vsc'` programmatically — the in-process half of the same mechanism. Without
-the parameter every agent-mode deploy from the editor reported
-as generic `mcp`, indistinguishable from an npx install in some other client —
-nobody decided that; the composition simply had nowhere to say otherwise.
+The VS Code extension passes `'vsc'` to `createServer` programmatically, the
+in-process half of the same mechanism.
 
 ## Testing
 
@@ -396,145 +292,146 @@ pnpm test --run     # the whole suite
 pnpm coverage       # the same suite, plus the ratchet
 pnpm typecheck      # tsc over src AND tests, 0 errors
 pnpm lint           # biome, 0 warnings
-pnpm smoke          # the PUBLISHED artifact, live — see below. Manual, never CI
+pnpm smoke          # the PUBLISHED artifact, live (see below). Manual, never CI
 ```
 
 ```
 tests/
 ├── architecture/
+│   ├── docs-contract.test.ts    # fence: README, server.json and the manifest against the code
 │   ├── test-integrity.test.ts   # fence: every test file reaches src/
 │   ├── test-naming.test.ts      # fence: the layout law
 │   └── worker-safety.test.ts    # fence: no node: builtin in the LIBRARY graph
-├── fixtures/builders.ts         # the only fixture source — wire shapes, cited
+├── fixtures/builders.ts         # the only fixture source: wire shapes, cited
 ├── mocks/ship.ts                # the one fake, typed against the SDK contract
 ├── harness.ts                   # real Client ↔ real server, InMemoryTransport
 ├── setup.ts                     # SHIP_* scrub + no-network guard
 ├── call.test.ts                 # call() → CallToolResult, every error arm
 ├── bin.test.ts                  # the process boundary + credential isolation
-├── index.test.ts                # the PUBLIC SURFACE — curated exports, both directions
+├── index.test.ts                # the PUBLIC SURFACE: curated exports, both directions
 ├── vocabulary.test.ts           # the shared values: numbers stay derived, CREATE withholds its hint
 ├── server.test.ts               # the tool CATALOGUE (tools/list, instructions)
 └── server-calls.test.ts         # tool CALLS (wiring, payloads, claim, errors)
 ```
 
 **Recorded mirror-axis exception: `src/tools.ts` has no `tools.test.ts`.** Its
-fourteen tools are registered by `createServer` and therefore already pinned
-where it matters — `server.test.ts` asserts every one of them in the catalogue
-an agent reads, and `server-calls.test.ts` asserts every one of their SDK
-wirings, both through the real protocol. A mirror file would have to
-re-register them against a bare `McpServer` to say anything the two protocol
-suites do not already say, which is a weaker assertion in a new place.
+fourteen tools are registered by `createServer`, so `server.test.ts` pins every
+one in the catalogue and `server-calls.test.ts` pins every SDK wiring, both
+through the real protocol. A mirror file would re-register them against a bare
+`McpServer`: a weaker assertion in a new place.
 
 **Tests run through the protocol.** A real `Client` drives the real server
-over `InMemoryTransport.createLinkedPair()`. Nothing pokes a handler
-function directly — that was the previous design, and under it zod never ran,
-`tools/list` was never issued, and the wire format was never exercised. If a
-test cannot be expressed as something an MCP client does, it is testing the
-wrong thing.
-
-**The catalogue is the product.** An agent's entire understanding of
-ShipStatic is the `initialize` instructions plus one `tools/list` response.
-`server.test.ts` pins that response exactly — names, descriptions, JSON
-Schema, required fields, annotations. A reworded description turns it red on
-purpose; the fix is to accept the new wording in the pinned catalogue, which
-makes every copy change a decision.
+over `InMemoryTransport.createLinkedPair()`; nothing pokes a handler directly,
+because then zod never runs. **The catalogue is the product**: `server.test.ts`
+pins the `tools/list` response exactly (names, descriptions, JSON Schema,
+required fields, annotations), so every copy change is a decision: a reworded
+description turns it red on purpose, and the fix is to accept the new wording
+in the pinned catalogue. If a test cannot be expressed as something an MCP
+client does, it is testing the wrong thing.
 
 **One fake, at one boundary.** `tests/mocks/ship.ts` is the only mock. Its
 methods are parameterised by the real resource interfaces
 (`vi.fn<DeploymentResource['upload']>()`), so a wrong-shaped
-`mockResolvedValue` is a compile error, and an SDK signature change breaks
-`pnpm typecheck` in one file. Ship 2.0's injectable `fetch` makes a real
-`Ship` over a wire-truth handler *possible*, and it is still declined on
-purpose — MCP would then maintain a second, undetected-drift twin of
-`cloudflare/api` to re-prove what ship's suite already proves. The full
-reasoning is in that file's header; don't re-litigate it from the tooling
-alone.
+`mockResolvedValue` is a compile error. A real `Ship` over a wire-truth
+`fetch` handler is declined on purpose: it would be a second, undetected-drift
+twin of the API re-proving what ship's suite proves. The file's header has the
+reasoning.
 
-**`tests/**` is typechecked.** `pnpm typecheck` runs `tsconfig.check.json`
-over `src` and `tests` together. Load-bearing: vitest transpiles through
-esbuild WITHOUT checking types, and the predecessor config
-(`tsconfig.test.json`) was wired into no script or hook — it had 9 errors
-sitting in it, and under that gap the ship fake was `as any` with five return
-shapes the API cannot produce.
-
-**Hermeticity.** `tests/setup.ts` scrubs every `SHIP_*` variable (a
-developer's exported credential would otherwise authenticate the "no key
-configured" assertions) and wraps `fetch` to throw on any non-loopback host
-(the SDK's default API URL is production).
+**`tests/**` is typechecked** (`tsconfig.check.json`), because vitest
+transpiles WITHOUT checking types. **Hermeticity**: `tests/setup.ts` scrubs every `SHIP_*` variable (an exported
+credential would authenticate the "no key configured" assertions) and wraps
+`fetch` to throw on any non-loopback host (the SDK's default API URL is
+production).
 
 | Fence | Catches |
 |---|---|
-| `test-integrity.test.ts` | A test file reaching NO production code — the tautology class. Acute here, where most assertions are about strings: a file asserting its own constants looks exactly like a test of the tool surface. Reach resolves transitively through `harness.ts`/`mocks/`, but importing only `fixtures/builders` does not count. |
-| the `ErrorType` sweep in `call.test.ts` | An error arm nobody thought about. It enumerates `Object.values(ErrorType)` rather than a hand-written list, so "exhaustive" is derived from types, not claimed in prose. Coverage is blind to this class: `handleError` has three branches, so six arms exercise them all and the other five sit untested at 100% — which is how a transport failure moving from `internal_server_error` to `network_error` reached agents unasserted. Bidirectional: a hint added to `call.ts` without recording it in `HINTED` turns the arm red, and a hint removed turns it red too. |
+| `test-integrity.test.ts` | A test file reaching NO production code: the tautology class, acute where most assertions are about strings. Reach resolves transitively through `harness.ts`/`mocks/`; importing only `fixtures/builders` does not count. |
+| the `ErrorType` sweep in `call.test.ts` | An error arm nobody thought about. It enumerates `Object.values(ErrorType)`, so "exhaustive" is derived; coverage is blind here because a few arms exercise every branch. Bidirectional: a hint added to `call.ts` without recording it in `HINTED` turns red, and so does one removed. |
 | `test-naming.test.ts` | Layout drift: a filename describing the test instead of its subject, a mirror file with no `src/` counterpart, an aspect split not recorded below. |
-| `coverage.thresholds` | Coverage decay. 100/100/100/100 — MCP has no in-process-unreachable corner, so the bar is the ceiling and an untested new tool fails the run. |
-| `worker-safety.test.ts` | A `node:` builtin entering the graph `index.ts` exposes — which the Workers-hosted transport imports. Without this fence it shows only when the hosted transport's build fails: late, elsewhere, and after a publish. Not hypothetical — the obvious next admission to the public surface was a `startStdio` composing the transport for consumers, and the MCP SDK's `server/stdio.js` imports `node:process`. It would have built green and published green. `bin.ts` is exempt by construction (unreachable from `index.ts`), and a second assertion proves the probe can SEE a builtin, so the first cannot pass vacuously. |
-| the `SHIP_*` sweep in `vocabulary.test.ts` | A SHARED string naming how ONE door authenticates. Both hosted strings once named this package's env var, stdio 0.7.0 renamed it, and nothing failed — the Worker simply began giving advice that silently lands a user's deploy in the wrong account. The hosted side fences its own error hints the same way; this is the half that lives with the vocabulary, so a `describe()` added here can never become the next copy. Derived from the export maps rather than a list, so a member nobody has written yet is already covered, and a second row proves the probe can SEE a variable name — otherwise an empty map would report a clean surface it never read. |
-| the `ACCOUNT_TOOL_NAMES` comparison in `server.test.ts` | The exported name list drifting from the registrations it names. Both directions, through a real `tools/list`: a registration added without its name, a name without its registration, a typo in either. It is what lets the hosted transport state its expected catalogue as `[UPLOAD_TOOL_NAME, ...ACCOUNT_TOOL_NAMES]` instead of counting to fifteen in a second repo. |
+| `coverage.thresholds` | Coverage decay. 100/100/100/100: no in-process-unreachable corner, so an untested new tool fails the run. |
+| `worker-safety.test.ts` | A `node:` builtin entering the graph `index.ts` exposes, which the hosted transport imports; otherwise it shows only when the hosted build fails, after a publish. `bin.ts` is exempt by construction, and a second assertion proves the probe can SEE a builtin. |
+| the `SHIP_*` sweep in `vocabulary.test.ts` | A SHARED string naming how ONE door authenticates, which would send a hosted user's deploy to the wrong account. Derived from the export maps, and a second row proves the probe can SEE a variable name. |
+| the `ACCOUNT_TOOL_NAMES` comparison in `server.test.ts` | The exported name list drifting from the registrations, both directions, through a real `tools/list`. It lets the hosted transport state its catalogue as `[UPLOAD_TOOL_NAME, ...ACCOUNT_TOOL_NAMES]`. |
 
-**Recorded aspect splits** — one subject, more than one mirror file. The
+**Recorded aspect splits**: one subject, more than one mirror file. The
 naming fence fails the suite if a split is not named here by full basename.
 
 | Module | Files | Why |
 |---|---|---|
-| `src/server.ts` | `server`, `server-calls` | Two separable contracts on one module. `server.test.ts` asserts the STATIC surface an agent reads before acting — `tools/list`, instructions, schemas — and is a pinned table. `server-calls.test.ts` asserts BEHAVIOUR: the 1:1 SDK wiring, pass-through payload fidelity, the anonymous claim story, and the error surfaces. A single file would mix a specification with a test suite. |
+| `src/server.ts` | `server`, `server-calls` | Two separable contracts on one module. `server.test.ts` asserts the STATIC surface an agent reads before acting (`tools/list`, instructions, schemas) and is a pinned table. `server-calls.test.ts` asserts BEHAVIOUR: the 1:1 SDK wiring, pass-through payload fidelity, the anonymous claim story, and the error surfaces. |
 
-### `smoke.mjs` — the live gate, and the one thing the suite cannot be
+### `smoke.mjs`: the live gate
 
 `pnpm smoke` drives the **published** package over `npx`, against a real API,
-through all fifteen tools. Manual and dev-only, like the API's and the hosted
-transport's own smokes; deliberately **not** in `ci.yml`, which has
-neither a live API nor a credential.
+through all fifteen tools. Manual, deliberately **not** in `ci.yml`, which has
+neither a live API nor a credential. It exists because the fake is derived from
+the SDK's interfaces: it catches *signature* drift and cannot catch the API
+answering differently than those types promise.
 
-It exists because the suite is structurally blind to one whole class. The ship
-fake is derived from the SDK's own interfaces, so it catches *signature* drift
-at compile time and cannot, even in principle, catch the API answering
-differently than those types promise. Published `0.6.0` is the recorded cost: it
-pinned a ship that mints an agent token through an endpoint the 2.x API deleted,
-so anonymous deploy — the headline feature — 404'd, and the suite was green
-throughout and would have stayed green through any number of releases.
-
-Four properties, each load-bearing:
-
-- **The published artifact, not the checkout.** `npx -y @shipstatic/mcp@<v>`.
-  A local `node dist/bin.js` proves your tree works; what ships is the tarball
-  with its own resolved dependency tree, and that resolution is where 0.6.0
-  broke. The version defaults to this repo's `package.json`, so run after a
-  publish it asserts *what I am is what the registry serves* — and the exact pin
-  defeats a stale npx cache.
+- **The published artifact, not the checkout.** `npx -y @shipstatic/mcp@<v>`:
+  what ships is the tarball with its own resolved dependency tree. The version
+  defaults to this repo's `package.json`, so run after a publish it asserts
+  *what I am is what the registry serves*, and the exact pin defeats a stale
+  npx cache.
 - **Refusals skip, they never fail.** No `SHIP_TOKEN` runs the anonymous half
   alone; a token for another environment says so; a plan without custom domains
-  skips the domain block. Every skip names what went unverified and exits 0 —
-  an unprovable half is "not verified", never "failed".
+  skips the domain block. Every skip names what went unverified and exits 0.
 - **Two processes, because the credential is process-scoped.** `bin.ts` reads
-  `SHIP_TOKEN` once at construction, so anonymous and authenticated cannot be
-  two calls. Every `SHIP_*` is scrubbed from the child's environment and only
-  the two the run means to set are put back — an exported credential would
-  otherwise authenticate the "no token" half, and an exported `SHIP_VIA` would
-  falsify the origin-tracking assertion.
-- **No hostname in tracked source.** This repo is public: the API URL arrives
-  from `--api=` or `SHIP_API_URL` and defaults to the SDK's own `DEFAULT_API`.
-  Excluded from the tarball by `files` — confirm with `npm pack --dry-run`
-  rather than assuming.
+  `SHIP_TOKEN` once. Every `SHIP_*` is scrubbed from the child and only the two
+  the run means to set are put back, so an exported credential or `SHIP_VIA`
+  cannot falsify a half.
+- **No hostname in tracked source.** The API URL arrives from `--api=` or
+  `SHIP_API_URL` and defaults to the SDK's `DEFAULT_API`. Excluded from the
+  tarball by `files`; confirm with `npm pack --dry-run`.
 
 ## Publishing
 
-The CI workflow (`.github/workflows/ci.yml`) runs on pushes to `main` and `development`. The guarded `publish` job publishes to npm only when `package.json` holds a version not yet on the registry, with the dist-tag derived from the version (`-` suffix → `beta`, else `latest`).
+**Bump `version` in `package.json` and push.** `.github/workflows/ci.yml` runs
+on `main` and `development`; a version not yet on npm publishes, a prerelease
+(`-` suffix) to `beta` (from either branch, normally `development`), a stable one to `latest` from
+`main`. Publishes are idempotent: a push at a published version does nothing.
 
-**The MCP Registry publish is its own job (`registry`), by the platform's one-job-one-credential law** — see root `CLAUDE.md`, "The npm publish law". It carries `MCP_PRIVATE_KEY` and deliberately NOT `id-token: write`: `mcp-publisher` is a downloaded binary, and it must not run where a token could be minted that npm would exchange for a publish credential. That binary is **exact-pinned** (`v1.8.1`) for the same reason npm is — it emits a published artifact — where it used to be fetched from `releases/latest`, the identical floating-tool defect. It is **stable-only**, now expressed as one job-level `if: needs.version.outputs.tag == 'latest'` rather than four step-level guards; the registry has no channel concept, so betas live on npm's `beta` dist-tag alone. A registry failure after a green npm publish gets its own honest state (🟠) instead of the old, false "publish failed".
+**The MCP Registry publish is its own job (`registry`), one job, one
+credential.** It carries `MCP_PRIVATE_KEY` and deliberately NOT
+`id-token: write`: `mcp-publisher` is a downloaded binary and must not run
+where a token npm would exchange for a publish credential could be minted. It
+is **exact-pinned** (`v1.8.1`) because it emits a published artifact. It is
+**stable-only** (one job-level `if: needs.version.outputs.tag == 'latest'`):
+the registry has no channel concept, so betas live on npm's `beta` dist-tag
+alone. A registry failure after a green npm publish reports its own state. DNS
+authentication uses an Ed25519 key on `shipstatic.com`.
 
-**How that failure is repaired depends on its CAUSE, and the doctrine said "Re-run failed jobs" for both — which is wrong for one of them (learned 2026-08-14 by hitting it).** The `version` job's idempotence guard asks **npm and only npm**, so once a version is on npm, every later push at that version sets `publish=false`, which skips `publish` and therefore skips `registry` — permanently. A re-run replays the same commit and hits the same rejection.
+**A registry failure is repaired by its CAUSE.** The `version` job's
+idempotence guard asks npm only, so once a version is on npm every later push
+at it skips `publish` and therefore `registry`.
 
-- **Transient failure** (network, registry outage): re-run the failed jobs. The bytes were fine.
-- **The bytes were rejected**: re-running cannot help and neither can a fix-up commit at the same version. **Bump the patch version.** The npm side republishes harmlessly (idempotent by content, a new version by number) and the registry finally accepts.
+- **Transient failure** (network, registry outage): "Re-run failed jobs". The
+  bytes were fine.
+- **The bytes were rejected**: a re-run or a fix-up commit at the same version
+  cannot help. **Bump the patch version**; npm publishes the new number and
+  the registry accepts.
 
-**The rejection that taught this: the registry caps `description` at 100 characters and enforces it at PUBLISH with a 422.** W3's prose wave set `server.json`'s description to 117, npm accepted the release, the registry refused it, and the listing kept serving the previous description — which was the exact "Install for the full toolset" line the wave existed to retire. So the half that reached users was the half that was already right, and the half that was wrong stayed wrong. `tests/architecture/docs-contract.test.ts` now bounds it in the suite; the npm `description` beside it has no such cap and is legitimately longer.
+**The registry caps `description` at 100 characters and enforces it at
+PUBLISH with a 422.** `tests/architecture/docs-contract.test.ts` bounds it in
+the suite; the npm `description` has no such cap.
 
-`package.json` is the single source of truth for the version: CI patches `.version` in `server.json` with `jq` before registry publish. **The version in the tracked `server.json` is therefore a placeholder, and it says so on sight**: it reads `0.0.0`, and `tests/architecture/docs-contract.test.ts` fences the sentinel AND the ci.yml sync it depends on (an exemption is licensed by a compensating control's existence, fenced, never by its intention). Until then the placeholder read `0.2.0`, a plausible-looking version that the directory audit flagged as estate-wide rot while the registry it feeds was fully current at 1.7.0 with `remotes` — a placeholder that can be mistaken for a version costs an investigation each time someone meets it. Never run `mcp-publisher publish` by hand from a checkout, which would register the sentinel literally. DNS authentication uses an Ed25519 key on `shipstatic.com`.
+**`server.json`** is the MCP Registry metadata. Its `title`, `description`,
+`websiteUrl` and `icons` are `SERVER_INFO`'s, held by the docs contract.
+`package.json` is the one source of the version: CI patches `.version` in
+`server.json` with `jq` before the registry publish, so **the tracked version
+is the `0.0.0` sentinel**, a value nobody can mistake for a real one. The docs
+contract fences the sentinel AND the ci.yml sync it depends on. Never run
+`mcp-publisher publish` by hand from a checkout, which would register the
+sentinel literally.
 
-**`server.json`** — MCP Registry metadata. Its `title`, `description`, `websiteUrl` and `icons` are `SERVER_INFO`'s, held by the docs contract; the description also stays under the registry's 100-character cap.
-
-**The registry entry names the hosted server, and only the hosted server.** `remotes` holds `https://mcp.shipstatic.com`; there is no `packages` entry, and `package.json` carries no `mcpName`. A registry client offered an npm package beside the URL tends to install the package and ask for `SHIP_TOKEN` first, which is the wrong first step for someone who only wants a link; the hosted URL publishes with no install and no account. Stripe, Notion, Neon and Linear list their hosted servers the same way though each publishes a local package too (measured 2026-10-20). So the registry no longer validates anything against npm: the job publishes after npm only to keep the two version numbers in step. The docs contract holds the shape.
+**The registry entry names the hosted server, and only the hosted server.**
+`remotes` holds `https://mcp.shipstatic.com`; there is no `packages` entry,
+and `package.json` carries no `mcpName`. A registry client offered an npm
+package beside the URL tends to install it and ask for `SHIP_TOKEN` first,
+the wrong first step for someone who only wants a link. Stripe, Notion, Neon
+and Linear list their hosted servers the same way. The job publishes after npm
+only to keep the two version numbers in step; the docs contract holds the
+shape.
 
 ## Adding New Tools
 
@@ -544,25 +441,23 @@ shared file, not this server's:
 1. Add its row to **`TOOLS`** in **`tools.ts`** (`auth`, `mutation`,
    `reach`; the registry section above says what each value promises) and
    its `server.registerTool()` beneath, with `annotations: annotate(TOOLS.<name>)`.
-   The comparison in `server.test.ts` fails until both exist, in either
-   order, and `ACCOUNT_TOOL_NAMES` derives itself from the row.
+   The comparison in `server.test.ts` fails until both exist, and
+   `ACCOUNT_TOOL_NAMES` derives itself from the row.
 2. Handler is a one-liner: `(args) => call(() => ship.resource.action(args))`,
    and the registration names its `outputSchema` from
    `@shipstatic/types/schemas`. Never write one here; if the constitution
    lacks the shape, add it there (fenced to its interface) first.
-3. Give it a **`title`** — a short Title Case verb phrase naming what the user
-   gets ("List Deployments", "Set Domain"). Not optional and not
-   cosmetic: the Claude connectors directory refuses submission for a tool
-   without one, so a titleless tool makes the whole product unlistable. Both
-   catalogue pins fail on an untitled tool by name.
+3. Give it a **`title`**, a short Title Case verb phrase naming what the user
+   gets ("List Deployments", "Set Domain"). Not optional: the Claude
+   connectors directory refuses a tool without one, so a titleless tool makes
+   the whole product unlistable. Both catalogue pins fail on an untitled tool.
 4. Pin the new tool in `server.test.ts`'s `CATALOGUE` and its SDK wiring in
-   `server-calls.test.ts`. Add the live assertion to `smoke.mjs` — the matrix
-   is "all fifteen tools" precisely so a tool no run has ever invoked cannot
-   exist.
+   `server-calls.test.ts`. Add the live assertion to `smoke.mjs`: the matrix
+   is "all fifteen tools" so a tool no run has invoked cannot exist.
 
 `server.ts` is for the one tool this transport authors for itself
-(`deployments_upload`, whose input is a filesystem path). Adding an account tool
-there instead would give the hosted door fourteen tools and this one fifteen.
+(`deployments_upload`, whose input is a filesystem path). An account tool
+there would give the hosted door fourteen tools and this one fifteen.
 
 ## User Configuration
 
@@ -572,7 +467,7 @@ there instead would give the hosted door fourteen tools and this one fifteen.
     "shipstatic": {
       "command": "npx",
       "args": ["-y", "@shipstatic/mcp"],
-      "env": { "SHIP_TOKEN": "ship-..." }
+      "env": { "SHIP_TOKEN": "ship-your-api-key" }
     }
   }
 }
@@ -581,110 +476,74 @@ there instead would give the hosted door fourteen tools and this one fifteen.
 ## Option Completeness
 
 **Every SDK option an agent could meaningfully choose is exposed, and every
-absence is a recorded decision.** That is the standing bar — when the SDK
-grows an option, it belongs here unless a line below says otherwise.
+absence is a recorded decision.** When the SDK grows an option, it belongs
+here unless a line below says otherwise.
 
-**Pagination — taken 2026-08-06.** Both list tools accept `{limit, cursor}`
-and pass them straight through. The contract an agent must learn is taught in
-the schema itself: `cursor` is an opaque position from the previous response,
-omitted for the first page, and **`cursor: null` is the entire has-more
-signal** — there is no `total` and no boolean, because a count is an aggregate
-over a collection, not a property of a page.
+**Pagination.** Both list tools accept `{limit, cursor}` and pass them
+straight through. The schema teaches the contract: `cursor` is an opaque
+position from the previous response, omitted for the first page, and
+**`cursor: null` is the entire has-more signal**; there is no `total` and no
+boolean, because a count is an aggregate, not a property of a page. **No
+page-size cap is stated**, in the schema or the prose: the API clamps and owns
+that number. `min(1)` is not a cap. `PAGINATION_INPUT` in `src/tools.ts` is one
+shared shape for both tools.
 
-**The MCP states no page-size cap**, in the schema or the prose. The API
-clamps an unusable `limit` server-side and owns that number; restating it here
-would give one fact two owners and let them drift. `min(1)` is not a cap — it
-rejects a value that could never mean anything. (`PAGINATION_INPUT` in
-`src/server.ts` is one shared shape for both tools, because it is one contract
-rather than two.)
+**Idempotency.** `deployments_upload` accepts `idempotencyKey`, because an
+automated retry does not notice a duplicate deployment. The `describe()`
+teaches the law: key the ATTEMPT (a run id, a commit sha, a uuid minted before
+the first try), never the try. MCP never mints, derives or normalizes the key.
+The `describe()` also states the API's one rule: a key returns the live
+deployment it made within the account that sent it, and an anonymous key is
+ignored. Both doors speak that shared sentence whole, and neither appends a
+clause: a key the agent did not choose cannot identify the agent's attempt.
 
-**Idempotency — taken 2026-08-06.** `deployments_upload` accepts
-`idempotencyKey`. A deploy is not naturally idempotent, and **agents are the
-audience**: a human notices a duplicate deployment, an automated retry does
-not. The `describe()` teaches the law — key the ATTEMPT (a run id, a commit
-sha, a uuid minted before the first try), never the try. MCP never mints,
-derives or normalizes the key; a key the agent did not choose cannot identify
-the agent's attempt. The `describe()` also states the API's one rule for every
-caller: a key returns the live deployment it made within the account that sent
-it, and an anonymous key is ignored. Because the rule is the API's and the same
-everywhere, both doors speak the shared sentence whole and neither appends a
-clause.
+**A large deploy needs nothing here.** The SDK sends a deployment larger than
+one request in several; the tool's input, answer and card are the same.
 
-**A large deploy needs nothing here.** `deployments_upload` hands the SDK a
-path, and the SDK sends a deployment larger than one request in several (the
-declaration, then a fill per batch); the tool's input, its answer and its card
-are the same either way.
+**Ephemeral deploys (`ttl`).** `deployments_upload` accepts `ttl` in seconds and
+passes it to the SDK; the semantics are the SDK's CLAUDE.md, "Ephemeral
+deployments (`--ttl`)". Three things are deliberately NOT done, all one rule
+(the MCP relays the platform's own refusals):
 
-**Ephemeral deploys (`ttl`) — taken 2026-08-13.** `deployments_upload` accepts
-`ttl` in seconds and passes it straight to the SDK. The product fit is exact:
-agents are the platform's most ephemeral deployers, and one iterating on
-previews wants deploys that clean themselves up rather than a delete it must
-remember to issue. Design source is `npm/ship/CLAUDE.md`, "Ephemeral
-deployments (`--ttl`)" — none of the semantics are this package's to re-derive.
-
-Three things are deliberately NOT done, and all three are the same rule:
-
-- **No preflight, and no second validator** (the handover law: the MCP relays
-  the platform's own refusals). The CLI's `--ttl` preflight exists to spare a
-  CLI user the upload cost and to name the flag; here `validateTtl` runs inside
-  `@shipstatic/ship` at the request boundary, before a byte is uploaded, and
-  the anonymous refusal mints nothing — so the fail-fast is already had, in the
-  constitution's own words.
+- **No preflight, no second validator.** `validateTtl` runs inside
+  `@shipstatic/ship` before a byte is uploaded, and the anonymous refusal mints
+  nothing.
 - **No range in the `describe()`,** and no `.int()` / `.min()` / `.max()` on
-  the zod schema. Every one of those restates a rule `validateTtl` owns, in a
-  place that can only disagree with it silently; the absence fails loudly
-  instead. `tests/vocabulary.test.ts` holds the prose to it (no digits at all),
-  and the catalogue pin holds the schema to a bare `number`.
-- **No credential named in the describe.** It is SHARED vocabulary — stdio owns
-  `SHIP_TOKEN`, the hosted door owns "connect an account" — so it says "only
-  for authenticated deploys" and neither door's word.
+  the zod schema: each restates a rule `validateTtl` owns. `tests/vocabulary.test.ts`
+  holds the prose to no digits, and the catalogue pin holds the schema to a
+  bare `number`.
+- **No credential named in the describe.** It is SHARED vocabulary, so it says
+  "only for authenticated deploys" and neither door's word.
 
-**And it created a third deployment state, which every surface must stop
-conflating.** Until `ttl`, `expires` and `claim` arrived together and left
-together, so "expiring" and "claimable" were one fact under two names. An owned
-deployment can now carry `expires` with no `claim`: an agent reading the pair
-as one either sends the user to a claim URL that does not exist, or calls a
+**Three deployment states, never conflated.** An owned deployment can carry
+`expires` with no `claim`, so "expiring" and "claimable" are separate facts:
+reading them as one sends a user to a claim URL that does not exist, or calls a
 site permanent because none came back. Pinned in `server-calls.test.ts` and
 asserted live in `smoke.mjs`.
 
-**No composed deploy-and-link tool — decided 2026-08-13, do not add.** The
-CLI's `--domain` answers constraints MCP does not have: one process, one exit
-code, one JSON document, a `bash -e` workflow without `pipefail`. An agent
-sequences `deployments_upload → domains_set` natively, and the INSTRUCTIONS'
-domain workflow already teaches the order. A sixteenth tool restating two
-others expands the catalogue every agent must read before acting — against the
-static-catalogue shape this server is built on. Revisit only with evidence that
-agents fail the sequence.
+**Refused, so none is re-proposed:**
 
-**No `tokens_*` tools — recorded, do not add without a new product call.** The
-SDK has `tokens.get`/`tokens.list`/`tokens.create`; this server exposes none.
-An MCP server's credential is *configured by the human* in the server config,
-never minted by the agent that would then hold it. Same shape as web/my's
-"deploy tokens are CLI-only" and the SDK's own `/activities` absence.
+- **No composed deploy-and-link tool.** The CLI's `--domain` answers
+  constraints MCP does not have (one process, one exit code, a `bash -e`
+  workflow). An agent sequences `deployments_upload → domains_set` natively,
+  and the INSTRUCTIONS teach the order; a sixteenth tool restating two others
+  grows the catalogue every agent reads. Revisit only with evidence that agents
+  fail the sequence.
+- **No `tokens_*` tools.** An MCP server's credential is *configured by the
+  human*, never minted by the agent that would then hold it. Reopen only with
+  a new product call.
+- **No `ping` tool.** An agent's next tool call is already the reachability
+  probe, and a failure arrives as an actionable `network_error`. A probe earns
+  its place when a caller must decide whether to proceed.
+- **No `getLimits` tool.** The platform teaches caps *reactively*: an over-cap
+  deploy fails with a validation error naming the limit, and the SDK already
+  fetches limits for its own pre-validation.
+- **Not agent knobs:** `signal` (process-level cancellation), `pathDetect` (a
+  local path default) and `spaDetect` (the SDK asks the single-page question by
+  default, so an agent's app gets its routing config without choosing).
 
-**A labels tool stays an open product call.** The SDK has `GET /labels`; no
-tool exposes it. Unlike `tokens_*` this is undecided rather than closed —
-decide before wiring.
-
-**No `ping` tool — decided, not overlooked.** `ship.ping()` exists. An agent's
-*next tool call is already the reachability probe*: a tool answering "the
-server is up" spends a turn to learn what the following turn tells you anyway,
-and if the platform is down the real call fails with a `network_error` the
-agent can act on. A probe earns its place when a caller must decide whether to
-proceed; an agent has nothing else to do with the answer.
-
-**No `getLimits` tool — decided, not overlooked.** `ship.getLimits()` exists,
-and the platform teaches its caps *reactively*: an over-cap deploy fails with a
-validation error naming the limit, which reaches the agent as actionable text
-(the same mechanism that surfaced "Labels must be at least 3 characters long"
-during live verification). A proactive lookup would buy a round trip and a
-second number to keep true. The SDK already fetches dynamic limits for its own
-client-side pre-validation, so the agent gets that protection without a tool.
-
-**Deliberately not agent knobs.** `signal` (a process-level cancellation
-concern), `pathDetect` (a local path default) and `spaDetect` (the SDK asks
-the single-page question by default, so an agent's app gets its routing config
-without choosing). These are not absences to close.
+**Open, not refused: a labels tool.** `GET /labels` has no tool. Unlike
+`tokens_*` this is undecided rather than closed; decide before wiring.
 
 ---
 
