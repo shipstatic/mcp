@@ -31,7 +31,7 @@ import { MY_API_KEY_URL } from '@shipstatic/types';
  * retry and closes with the reassurance the agent should relay to its user.
  */
 const MAINTENANCE_HINT =
-  'The platform is temporarily closed for scheduled maintenance. Do not retry in a loop — wait and try again later. Deployed sites are unaffected and stay online.';
+  'The platform is temporarily closed for scheduled maintenance. Do not retry in a loop: wait and try again later. Deployed sites are unaffected and stay online.';
 
 export interface ErrorHints {
   /** Appended after `Hint: ` when the SDK rejects the credential. */
@@ -253,9 +253,9 @@ function safeStringify(value: unknown): string {
  * strands them holding an "API key" a config asks for as a "token".
  */
 const STDIO_HINTS: ErrorHints = {
-  authentication: `Set the SHIP_TOKEN environment variable in your MCP server configuration — its value is the user's API key, free at ${MY_API_KEY_URL}.`,
+  authentication: `Set the SHIP_TOKEN environment variable in your MCP server configuration. Its value is the user's API key, free at ${MY_API_KEY_URL}.`,
   forbidden:
-    'This action is not permitted. Likely cause: plan limits reached or the account is terminated. Stop retrying — the user needs to upgrade or contact support at https://my.shipstatic.com.',
+    'This action is not permitted. Likely cause: plan limits reached or the account is terminated. Stop retrying: the user needs to upgrade or contact support at https://my.shipstatic.com.',
 };
 
 export const call = createCall({ hints: STDIO_HINTS });

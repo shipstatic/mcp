@@ -65,7 +65,7 @@ describe('ShipError mapping', () => {
     expect(result.isError).toBe(true);
     expect(textOf(result)).toContain('Invalid API key');
     expect(textOf(result)).toContain('SHIP_TOKEN');
-    expect(textOf(result)).toContain("its value is the user's API key");
+    expect(textOf(result)).toContain("Its value is the user's API key");
     expect(textOf(result)).toContain(MY_API_KEY_URL);
   });
 
