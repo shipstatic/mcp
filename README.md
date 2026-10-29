@@ -54,7 +54,7 @@ Want the site private? Say "publish this with ShipStatic's built-in password pro
 
 ## Keep your sites with a free account
 
-Everything above works with no account. A free account keeps your sites for good, lets you use your own domain, and shows you everything you've published in one place.
+Everything above works with no account. A free account keeps your sites for good, gives you a ShipStatic domain like `yourname.shipstatic.com`, and shows you everything you've published in one place. A custom domain like `www.example.com` needs a paid plan.
 
 Connect one when your client offers to sign you in, and the same URL answers with the rest. There's nothing to install and no key to paste: your client starts the sign-in itself.
 
