@@ -1,0 +1,33 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "ship",
+  "version": "1.0.0",
+  "description": "Deploy static websites, landing pages, and prototypes instantly. Free, no account needed.",
+  "author": {
+    "name": "ShipStatic",
+    "email": "hello@shipstatic.com",
+    "url": "https://shipstatic.com"
+  },
+  "homepage": "https://shipstatic.com",
+  "repository": "https://github.com/shipstatic/mcp",
+  "license": "MIT",
+  "keywords": [
+    "shipstatic",
+    "deploy",
+    "hosting",
+    "static-site",
+    "static-hosting",
+    "web-hosting",
+    "website",
+    "publish",
+    "mcp",
+    "agent"
+  ],
+  "extensions": {
+    "com.nousresearch.hermes": {
+      "servers": {
+        "ship": { "trust": "untrusted" }
+      }
+    }
+  }
+}

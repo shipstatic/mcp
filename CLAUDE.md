@@ -433,6 +433,32 @@ and Linear list their hosted servers the same way. The job publishes after npm
 only to keep the two version numbers in step; the docs contract holds the
 shape.
 
+## `hermes/`: the Hermes catalog package
+
+Hermes (Nous Research) lists plugins in a catalog of one-file YAML entries,
+each pinning a public repository at an exact commit, installable with
+`hermes plugins install <name>`. A hosted server is listed as a portable
+Agent Plugins v1 package of configuration only, which is what `hermes/`
+holds: `plugin.json` (identity and the Hermes trust block), `mcp.json` (the
+one server, `streamable-http`, the plain `https://mcp.shipstatic.com`) and a
+`README.md` that tells the hosted story in the README's own words. No code,
+no skill: Hermes receives `publish-online` through its Skills Hub, so a copy
+here would give a Hermes user the skill twice.
+
+**The package is named `ship`, by decision.** The catalog key is first come,
+first kept, and the server key in `mcp.json` is the tool prefix Hermes shows
+(`mcp__ship__deployments_upload`), where a short name costs nothing. The
+server is `shipstatic` by name in every other host and registry; `ship` is
+Hermes's handle for the same server, and the product is called ShipStatic in
+every word a person reads.
+
+**The pin moves only when these three files move.** The catalog entry
+(`plugin-catalog/ship.yaml` in `NousResearch/hermes-agent`) pins a commit on
+`main`; the server behind the URL updates itself, so a hosted release owes
+Hermes nothing. A change to the package is a commit here, then a SHA-bump PR
+to the catalog, reviewed like the first. `npm`'s `files` excludes the folder,
+so it never ships in the package.
+
 ## Adding New Tools
 
 An account-tied tool is a tool **both transports get**, so it goes in the
