@@ -439,9 +439,9 @@ Hermes (Nous Research) lists plugins in a catalog of one-file YAML entries,
 each pinning a public repository at an exact commit, installable with
 `hermes plugins install <name>`. A hosted server is listed as a portable
 Agent Plugins v1 package of configuration only, which is what `hermes/`
-holds: `plugin.json` (identity and the Hermes trust block), `mcp.json` (the
-one server, `streamable-http`, the plain `https://mcp.shipstatic.com`) and a
-`README.md` that tells the hosted story in the README's own words. No code,
+holds: `plugin.json` (identity), `mcp.json` (the one server,
+`streamable-http`, the plain `https://mcp.shipstatic.com`) and a `README.md`
+that tells the hosted story in the README's own words. No code,
 no skill: Hermes receives `publish-online` through its Skills Hub, so a copy
 here would give a Hermes user the skill twice.
 
@@ -462,6 +462,19 @@ connection, which the anonymous-first door never gives. So the README sends
 account use to the CLI with an API key, as the docs' MCP page does, and
 promises no sign-in. Refused: a second server entry for sign-in, and a door
 for Hermes (`cloudflare/mcp/CLAUDE.md`, the door birth rule).
+
+**The server runs at Hermes's default trust, `full`, by decision (operator,
+2026-11-10).** A package may mark its server `untrusted`, which makes every
+write-capable call ask the user first and refuses it where nobody can
+answer (a cron job, an unattended run). Hermes's developer guide reserves
+that for servers whose tools spend money, trade, send messages or change
+accounts; a publish does none of these, and in Hermes it is the only write
+the server can reach, since the account tools need a sign-in Hermes never
+starts here. The mark would put a card in front of the one thing the plugin
+is for, and close it to automation. Refused: `trust: untrusted`, and a cost
+or spend-limit block (publishing is free). A user who wants the gate adds a
+`ship` entry with `trust: untrusted` to their `config.yaml`, which replaces
+the package's.
 
 **The pin moves only when these three files move.** The catalog entry
 (`plugin-catalog/ship.yaml` in `NousResearch/hermes-agent`) pins a commit on
