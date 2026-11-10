@@ -452,6 +452,17 @@ server is `shipstatic` by name in every other host and registry; `ship` is
 Hermes's handle for the same server, and the product is called ShipStatic in
 every word a person reads.
 
+**The README says what Hermes does, and the walk holds it.** Hermes installs
+a portable package disabled and asks whether to enable it, default no, so
+the README says to say yes. Hermes starts no sign-in on this server: the
+account tools answer with a tool-level Unauthorized, which its OAuth
+recovery reads as nothing (it acts on an HTTP 401), and a native entry with
+`auth: oauth` never connects, since its login starts only on a refused
+connection, which the anonymous-first door never gives. So the README sends
+account use to the CLI with an API key, as the docs' MCP page does, and
+promises no sign-in. Refused: a second server entry for sign-in, and a door
+for Hermes (`cloudflare/mcp/CLAUDE.md`, the door birth rule).
+
 **The pin moves only when these three files move.** The catalog entry
 (`plugin-catalog/ship.yaml` in `NousResearch/hermes-agent`) pins a commit on
 `main`; the server behind the URL updates itself, so a hosted release owes

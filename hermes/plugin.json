@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "ship",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Deploy static websites, landing pages, and prototypes instantly. Free, no account needed.",
   "author": {
     "name": "ShipStatic",
