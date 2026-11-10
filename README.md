@@ -28,7 +28,7 @@ Add the [ShipStatic plugin](https://chatgpt.com/plugins/plugin_asdk_app_6a06f62b
 claude mcp add --transport http shipstatic https://mcp.shipstatic.com
 ```
 
-### Cursor, Antigravity, Windsurf, n8n, Zed, and anywhere with `mcp.json`
+### Cursor, Antigravity, Devin Desktop, n8n, Zed, and anywhere with `mcp.json`
 
 ```json
 {
