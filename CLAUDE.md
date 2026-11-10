@@ -461,7 +461,8 @@ recovery reads as nothing (it acts on an HTTP 401), and a native entry with
 connection, which the anonymous-first door never gives. So the README sends
 account use to the CLI with an API key, as the docs' MCP page does, and
 promises no sign-in. Refused: a second server entry for sign-in, and a door
-for Hermes (`cloudflare/mcp/CLAUDE.md`, the door birth rule).
+for Hermes (the door birth rule: a door is a dedicated submission to a
+host's directory, and a package we ship never earns one).
 
 **The server runs at Hermes's default trust, `full`, by decision (operator,
 2026-11-10).** A package may mark its server `untrusted`, which makes every
