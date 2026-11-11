@@ -30,6 +30,7 @@ Hermes connects with no account, so publishing works straight away. To keep site
 - **It connects Hermes to the hosted ShipStatic MCP server** at `https://mcp.shipstatic.com`. Nothing runs on your machine.
 - **It sends the files you publish to ShipStatic,** and nothing anywhere else.
 - **It holds no key, token or sign-in.** The account tools (your sites, your domains) answer Unauthorized in Hermes; the CLI with an API key covers that.
+- **Hermes asks before it publishes.** The server is marked untrusted, so a publish shows you what is about to be sent and waits for a yes (once, for the session, or always). To publish without the question, for example from a cron job, add `ship` to your `config.yaml` under `mcp_servers` with `trust: full`.
 - **The claim link is yours alone.** Whoever opens it and signs in owns the site, so don't share it.
 
 This package is configuration only: one server, no code. The same fifteen tools are at `https://mcp.shipstatic.com` for any MCP client, and in [`@shipstatic/mcp`](https://github.com/shipstatic/mcp) to run on your own machine.

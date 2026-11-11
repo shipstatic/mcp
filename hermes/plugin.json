@@ -22,5 +22,14 @@
     "publish",
     "mcp",
     "agent"
-  ]
+  ],
+  "extensions": {
+    "com.nousresearch.hermes": {
+      "servers": {
+        "ship": {
+          "trust": "untrusted"
+        }
+      }
+    }
+  }
 }

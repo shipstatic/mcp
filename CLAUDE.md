@@ -439,9 +439,9 @@ Hermes (Nous Research) lists plugins in a catalog of one-file YAML entries,
 each pinning a public repository at an exact commit, installable with
 `hermes plugins install <name>`. A hosted server is listed as a portable
 Agent Plugins v1 package of configuration only, which is what `hermes/`
-holds: `plugin.json` (identity), `mcp.json` (the one server,
-`streamable-http`, the plain `https://mcp.shipstatic.com`) and a `README.md`
-that tells the hosted story in the README's own words. No code,
+holds: `plugin.json` (identity and the Hermes trust block), `mcp.json` (the
+one server, `streamable-http`, the plain `https://mcp.shipstatic.com`) and a
+`README.md` that tells the hosted story in the README's own words. No code,
 no skill: Hermes receives `publish-online` through its Skills Hub, so a copy
 here would give a Hermes user the skill twice.
 
@@ -464,18 +464,20 @@ promises no sign-in. Refused: a second server entry for sign-in, and a door
 for Hermes (the door birth rule: a door is a dedicated submission to a
 host's directory, and a package we ship never earns one).
 
-**The server runs at Hermes's default trust, `full`, by decision (operator,
-2026-11-10).** A package may mark its server `untrusted`, which makes every
-write-capable call ask the user first and refuses it where nobody can
-answer (a cron job, an unattended run). Hermes's developer guide reserves
-that for servers whose tools spend money, trade, send messages or change
-accounts; a publish does none of these, and in Hermes it is the only write
-the server can reach, since the account tools need a sign-in Hermes never
-starts here. The mark would put a card in front of the one thing the plugin
-is for, and close it to automation. Refused: `trust: untrusted`, and a cost
-or spend-limit block (publishing is free). A user who wants the gate adds a
-`ship` entry with `trust: untrusted` to their `config.yaml`, which replaces
-the package's.
+**The server is marked `trust: untrusted`, by the catalog's rule.** Hermes
+holds a hosted server whose tools publish or delete to its approval gate
+(the catalog's review of 1.0.1, 2026-11-11): every write-capable call asks
+the user first, once, for the session or always, and is refused where
+nobody can answer (a cron job, an unattended run); the nine read-only tools
+(`readOnlyHint: true`) pass. In Hermes the one reachable write is the
+publish, so the card appears before a publish until the user answers
+"always". A user who wants unattended publishing sets their own
+`mcp_servers.ship` entry to `trust: full` in `config.yaml`, which replaces
+the package's, and the README says so. Weighed and refused: the default
+trust, `full`, which Hermes's developer guide reserves for servers that
+spend no money, trade nothing, send nothing and change no account; the
+catalog's reviewer applies the gate to publishing itself, and the listing
+is theirs. A cost or spend-limit block stays refused (publishing is free).
 
 **The pin moves only when these three files move.** The catalog entry
 (`plugin-catalog/ship.yaml` in `NousResearch/hermes-agent`) pins a commit on
