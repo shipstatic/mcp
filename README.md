@@ -151,6 +151,7 @@ The [MCP Registry](https://registry.modelcontextprotocol.io/v0.1/servers?search=
 | **[VS Code](https://marketplace.visualstudio.com/items?itemName=shipstatic.shipstatic)** | Search "ShipStatic" in the Marketplace |
 | **[Plugin](https://github.com/shipstatic/plugin)** | Install it in Cursor, Claude Code, Codex or Gemini CLI |
 | **[OpenCode](https://github.com/shipstatic/opencode)** | `opencode plugin add opencode-shipstatic` |
+| **[Antigravity](https://github.com/shipstatic/antigravity)** | `agy plugin install https://github.com/shipstatic/antigravity` |
 | **[n8n](https://www.npmjs.com/package/n8n-nodes-shipstatic)** | Search "ShipStatic" in n8n's node panel |
 | **[GitHub Action](https://github.com/shipstatic/action)** | `shipstatic/action@v3` |
 | **[Agent Skill](https://www.shipstatic.com/SKILL.md)** | `npx skills add shipstatic/plugin` |
