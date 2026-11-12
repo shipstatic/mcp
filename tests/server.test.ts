@@ -529,6 +529,16 @@ describe('server instructions', () => {
     expect(instructions).toContain('To publish one page, name it `index.html`.');
   });
 
+  it('says what a missed single-page app looks like, and the file that fixes it', () => {
+    // Detection misses some apps, and the agent that built one knows it
+    // routes. The fix is offered as a remedy for a 404 on reload, never as a
+    // default: a catch-all on plain pages hides every real 404.
+    expect(instructions).toContain('reloading one shows a 404');
+    expect(instructions).toContain(
+      '`{"rewrites":[{"source":"/(.*)","destination":"/index.html"}]}`',
+    );
+  });
+
   it('names built-in password protection and keeps the agent from building its own', () => {
     // A password page written into the site is read past in its source; the
     // platform's protection is checked before any file is served.

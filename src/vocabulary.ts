@@ -255,6 +255,16 @@ export const INSTRUCTION_BLOCKS = {
    */
   home: "The files need an `index.html` at the top: it's the page visitors see first, and a site without one is refused. To publish one page, name it `index.html`. To publish another kind of file, like a PDF, add a small `index.html` that links to it.",
   /**
+   * The platform sets up a single-page app's routing by itself, and misses
+   * some apps: a shell with words in it, or one beside a second HTML file.
+   * The agent that built the app is the one caller that knows it routes, so
+   * it is told the sign of a miss and the one file that fixes it. Written as
+   * a remedy, never as a default: a catch-all on a site of plain pages answers
+   * every mistyped URL with the home page.
+   */
+  routes:
+    'Single-page apps are detected, and their routes are set up for you. If the app has its own routes (like `/dashboard`) and reloading one shows a 404, add a `ship.json` at the top with `{"rewrites":[{"source":"/(.*)","destination":"/index.html"}]}` and deploy again.',
+  /**
    * A block of its own rather than a clause of `live`: two sentences, two
    * facts, and a door may compose them independently.
    *
