@@ -59,7 +59,7 @@ export const SERVER_NAME = 'shipstatic';
  * website and icons, and `package.json`'s description opens with the same
  * sentence. The docs contract holds both to this object.
  */
-export const SERVER_INFO: Omit<Implementation, 'version'> = {
+export const SERVER_INFO = {
   name: SERVER_NAME,
   title: 'ShipStatic',
   description:
@@ -69,7 +69,7 @@ export const SERVER_INFO: Omit<Implementation, 'version'> = {
     { src: 'https://www.shipstatic.com/logo.svg', mimeType: 'image/svg+xml', sizes: ['any'] },
     { src: 'https://www.shipstatic.com/logo.png', mimeType: 'image/png', sizes: ['512x512'] },
   ],
-};
+} satisfies Omit<Implementation, 'version'>;
 
 /**
  * The one tool each transport authors for itself: its input differs, its name

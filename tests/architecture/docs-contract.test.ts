@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { serverCard } from '../../src/server-card.js';
 import { ACCOUNT_TOOL_NAMES } from '../../src/tools.js';
 import { PUBLIC_EXPIRY, SERVER_INFO, UPLOAD_TOOL_NAME } from '../../src/vocabulary.js';
 
@@ -44,20 +45,15 @@ describe('server.json', () => {
     expect(SERVER_JSON.description.length).toBeLessThanOrEqual(100);
   });
 
-  it('states who the server is, exactly as the server reports it', () => {
-    // A registry listing and a connected client show the same product, so
-    // every identity field a manifest can import nothing for is held to the
-    // one object both transports report.
-    expect({
-      title: SERVER_JSON.title,
-      description: SERVER_JSON.description,
-      websiteUrl: SERVER_JSON.websiteUrl,
-      icons: SERVER_JSON.icons,
-    }).toEqual({
-      title: SERVER_INFO.title,
-      description: SERVER_INFO.description,
-      websiteUrl: SERVER_INFO.websiteUrl,
-      icons: SERVER_INFO.icons,
+  it('is the server card, under the registry’s schema', () => {
+    // A registry entry and a server card are one shape, and a manifest can
+    // import nothing, so the whole file is held to the card the hosted
+    // server serves: the production address, and the version sentinel that
+    // CI overwrites. A registry listing, a card and a connected client then
+    // describe one product.
+    expect(SERVER_JSON).toEqual({
+      ...serverCard({ version: '0.0.0', url: 'https://mcp.shipstatic.com' }),
+      $schema: 'https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json',
     });
   });
 

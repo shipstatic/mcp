@@ -41,7 +41,8 @@ src/
 ├── server.ts     # createServer(ship, {version, via}): stdio's own upload tool, INSTRUCTIONS, hints and `call`
 ├── tools.ts      # TOOLS (the registry: one row per tool) + registerAccountTools(), the 14 identical on EVERY transport
 ├── call.ts       # createCall(): the result envelope + error mapping every transport shares, parameterised by hints
-└── vocabulary.ts # What BOTH transports say: annotate() + shared param descriptions
+├── vocabulary.ts # What BOTH transports say: annotate() + shared param descriptions
+└── server-card.ts # Who the server is before a client connects: serverCard() and aiCatalog()
 ```
 
 ## One product, two transports
@@ -117,8 +118,8 @@ forced apart by the transport.
 name in `index.ts` replaced a restatement: two literals in two repos, a
 duration written out several times, fragments copied into both servers, a
 build patch in a consumer. `SERVER_INFO` is who the server says it is at
-connect (title, description, website, icons), and the registry entry's
-identity fields are held to it by the docs contract. Adding an export that
+connect (title, description, website, icons), and `serverCard` puts the same
+four in the card and the registry entry. Adding an export that
 deletes no restatement is how a curated surface becomes a grab bag.
 
 ## Quick Reference
@@ -319,6 +320,7 @@ tests/
 ├── bin.test.ts                  # the process boundary + credential isolation
 ├── index.test.ts                # the PUBLIC SURFACE: curated exports, both directions
 ├── vocabulary.test.ts           # the shared values: numbers stay derived, CREATE withholds its hint
+├── server-card.test.ts          # the card and the catalog, written out, on a planted version and address
 ├── server.test.ts               # the tool CATALOGUE (tools/list, instructions)
 └── server-calls.test.ts         # tool CALLS (wiring, payloads, claim, errors, stdio's own hints)
 ```
@@ -393,6 +395,38 @@ answering differently than those types promise.
   `SHIP_API_URL` and defaults to the SDK's `DEFAULT_API`. Excluded from the
   tarball by `files`; confirm with `npm pack --dry-run`.
 
+## The server card
+
+**`server-card.ts` owns who the server is before a client connects.** An MCP
+Server Card (SEP-2127) is a JSON document naming a remote server and where it
+answers; a client finds it at `<server URL>/server-card`, or through an AI
+Catalog at a domain's `/.well-known/ai-catalog.json`. `serverCard({ version,
+url })` builds the card and `aiCatalog(cardUrl)` the catalog that points at
+it. The hosted server serves both; this package serves neither, since a card
+describes a remote server.
+
+- **One shape, two publications.** The card is the registry entry's shape
+  under another schema, so `server.json` is held to `serverCard` whole. A
+  field added to one is added to both, in one place.
+- **What a person reads is `SERVER_INFO`'s**, so a card, a registry listing
+  and a connected client describe one product. The specification asks that a
+  card not contradict what the server says once connected.
+- **The card's `name` is the registry's reverse-DNS name**, which the schema
+  requires. `serverInfo.name` stays `shipstatic`: a host ties the deploy card
+  to its connector by that name.
+- **The catalog identifier is stated, never derived**, because an identifier
+  must not move when a website address or a title does.
+- **Held by** `tests/server-card.test.ts`, which writes both documents out on
+  a planted version and address, and restates the schema's two bounds (a
+  reverse-DNS name with one slash, a description of at most 100 characters).
+
+**Refused:** tools, resources or prompts in the card (the specification
+leaves them to the live list); the npm package in the card or the registry
+entry (a card describes remote connectivity, and a client offered a package
+beside the URL installs it first); a declared header list or protocol
+versions (the first restates what OAuth discovery already says, the second
+the SDK's own list).
+
 ## Publishing
 
 **Bump `version` in `package.json` and push.** `.github/workflows/ci.yml` runs
@@ -424,9 +458,10 @@ at it skips `publish` and therefore `registry`.
 PUBLISH with a 422.** `tests/architecture/docs-contract.test.ts` bounds it in
 the suite; the npm `description` has no such cap.
 
-**`server.json`** is the MCP Registry metadata. Its `title`, `description`,
-`websiteUrl` and `icons` are `SERVER_INFO`'s, held by the docs contract.
-`package.json` is the one source of the version: CI patches `.version` in
+**`server.json`** is the MCP Registry metadata, and it is the server card
+under the registry's schema: the docs contract holds the whole file equal to
+`serverCard` at the production address, so nothing in it is written by hand
+twice. `package.json` is the one source of the version: CI patches `.version` in
 `server.json` with `jq` before the registry publish, so **the tracked version
 is the `0.0.0` sentinel**, a value nobody can mistake for a real one. The docs
 contract fences the sentinel AND the ci.yml sync it depends on. Never run

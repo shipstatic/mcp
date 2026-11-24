@@ -20,6 +20,9 @@
  * - `createCall`, `ERROR_META_KEY`, `forbiddenHint` and their types: the
  *   result envelope, and the one hint both transports word alike.
  * - `createServer`: stdio's whole composition, for a host that bundles it.
+ * - `serverCard`, `aiCatalog`, `SERVER_CARD_TYPE`: who the server is, as the
+ *   documents a client reads before it connects. The hosted server serves
+ *   them, and the registry entry here is held to the same card.
  *
  * `createServer` takes the host's own facts as arguments: the version it
  * reports and the origin its uploads carry. That keeps `node:module` out of
@@ -42,6 +45,7 @@ export {
   forbiddenHint,
 } from './call.js';
 export { createServer } from './server.js';
+export { aiCatalog, SERVER_CARD_TYPE, type ServerCardOptions, serverCard } from './server-card.js';
 export {
   ACCOUNT_TOOL_NAMES,
   type AccountToolName,

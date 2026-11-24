@@ -68,6 +68,12 @@ const PUBLIC_API = [
   // The forbidden hint, worded once for both transports around the console
   // address each supplies. It deletes a second wording of one fact.
   'forbiddenHint',
+  // Who the server is before a client connects: the card, the catalog that
+  // points at it, and the media type the two share. The hosted server
+  // serves them; this repo's registry entry is held to the same card.
+  'serverCard',
+  'aiCatalog',
+  'SERVER_CARD_TYPE',
   // Stdio's whole composition, for a consumer that wants it verbatim: the VS
   // Code extension bundles a stdio server into its `.vsix`. Safe to publish
   // because `version` is an argument: no `node:module` enters the graph the
