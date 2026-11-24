@@ -25,9 +25,8 @@ import * as library from '../src/index.js';
 const PUBLIC_API = [
   // The registry and the one function that turns a row into MCP annotations.
   // Exported because the hosted worker authors its own upload registration
-  // and reads `securitySchemes` off the same rows; before 1.11.0 it imported
-  // four annotation classes and a separate name list, which was one tool's
-  // facts under three owners.
+  // and reads what each tool needs off the same rows, so one tool's facts
+  // have one owner.
   'TOOLS',
   'annotate',
   // What an agent reads: the deploy-param descriptions, the INSTRUCTIONS
@@ -56,9 +55,8 @@ const PUBLIC_API = [
   'UPLOAD_TOOL_NAME',
   'UPLOAD_TOOL_TITLE',
   // The fourteen account-tied tools, identical on every transport. Exported
-  // so the hosted transport registers them rather than copying them when it
-  // gains OAuth — the copy is what would start the drift — and names them
-  // rather than counting them.
+  // so the hosted transport registers them and names them, where a copy
+  // would start the drift.
   'registerAccountTools',
   'ACCOUNT_TOOL_NAMES',
   // The result envelope, so both transports answer in one shape. A consumer
@@ -71,11 +69,9 @@ const PUBLIC_API = [
   // address each supplies. It deletes a second wording of one fact.
   'forbiddenHint',
   // Stdio's whole composition, for a consumer that wants it verbatim: the VS
-  // Code extension bundles a stdio server into its `.vsix`. Admitted in
-  // 1.0.0-beta.7, and it deleted a restatement like every other name here —
-  // three regexes in that repo's esbuild config that patched this package's
-  // compiled `dist/` at bundle time. Safe to publish because `version` is an
-  // argument: no `node:module` enters the graph the Worker transport loads.
+  // Code extension bundles a stdio server into its `.vsix`. Safe to publish
+  // because `version` is an argument: no `node:module` enters the graph the
+  // hosted transport loads.
   'createServer',
 ] as const;
 
