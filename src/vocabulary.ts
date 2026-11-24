@@ -227,7 +227,7 @@ export const DESCRIPTION_BLOCKS = {
  * holds every shared string to that.
  */
 export const PARAM_DESCRIPTIONS = {
-  labels: `Labels for organizing deployments (e.g. ["env:production", "v1.2"]). Each is a word, or a key and a value split by one ":". Lowercase, ${LABEL_CONSTRAINTS.MIN_LENGTH}-${LABEL_CONSTRAINTS.MAX_LENGTH} chars, allows . _ - inside a word. Up to ${LABEL_CONSTRAINTS.MAX_COUNT}.`,
+  labels: `Labels for organizing deployments (e.g. ["env:production", "v1.2"]). Each is a word, or a key and a value split by one ":". Lowercase, ${LABEL_CONSTRAINTS.MIN_LENGTH} to ${LABEL_CONSTRAINTS.MAX_LENGTH} characters, allows . _ - inside a word. Up to ${LABEL_CONSTRAINTS.MAX_COUNT}.`,
   password: `Optional password to gate the deployment behind an unlock prompt (${PASSWORD_CONSTRAINTS.MIN_LENGTH} to ${PASSWORD_CONSTRAINTS.MAX_LENGTH} characters; spaces at the start and end are trimmed). Visitors must enter this password before viewing the site, including on any custom domains pointing at it.`,
   /**
    * The API keeps one rule for every caller: a key names the live deployment

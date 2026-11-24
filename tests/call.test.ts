@@ -1,6 +1,6 @@
 import { ErrorType, ShipError } from '@shipstatic/types';
 import { describe, expect, it } from 'vitest';
-import { type AuthFailure, createCall, ERROR_META_KEY } from '../src/call.js';
+import { type AuthFailure, createCall, ERROR_META_KEY, forbiddenHint } from '../src/call.js';
 import { textOf } from './harness.js';
 
 /**
@@ -330,6 +330,16 @@ describe('onAuthFailure — the credential-refusal seam', () => {
 
     expect(result.isError).toBe(true);
     expect(textOf(result)).toContain('Hint: PLANTED AUTH HINT');
+  });
+});
+
+describe('forbiddenHint', () => {
+  it('says the same sentence around the console address it is given', () => {
+    // One fact, worded once for both transports. The address is the only
+    // part a transport supplies, so a planted one must come back verbatim.
+    expect(forbiddenHint('https://console.example.test')).toBe(
+      'Stop retrying: this cannot succeed as sent. The account may be at its plan limits, or the action may be one this credential can never take (a connected app cannot create credentials or delete the account). Manage the account at https://console.example.test.',
+    );
   });
 });
 

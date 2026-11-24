@@ -17,7 +17,8 @@
  *   fourteen shared tools.
  * - `INSTRUCTION_BLOCKS`, `DESCRIPTION_BLOCKS`, `PARAM_DESCRIPTIONS`,
  *   `PUBLIC_EXPIRY`: the sentences both transports say.
- * - `createCall`, `ERROR_META_KEY` and their types: the result envelope.
+ * - `createCall`, `ERROR_META_KEY`, `forbiddenHint` and their types: the
+ *   result envelope, and the one hint both transports word alike.
  * - `createServer`: stdio's whole composition, for a host that bundles it.
  *
  * `createServer` takes the host's own facts as arguments: the version it
@@ -38,6 +39,7 @@ export {
   createCall,
   ERROR_META_KEY,
   type ErrorHints,
+  forbiddenHint,
 } from './call.js';
 export { createServer } from './server.js';
 export {

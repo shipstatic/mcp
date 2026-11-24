@@ -520,19 +520,27 @@ async function paginationBlock(client) {
       `${rows1[0]?.deployment} vs ${rows2[0]?.deployment}`,
     );
 
-    // Walk to exhaustion. The contract is that it TERMINATES — a cursor that
-    // never nulls is an infinite agent loop, so the bound is the assertion.
+    // Walk on at the server's own page size. The contract is that the walk
+    // always moves forward: a cursor seen twice is an agent looping for good.
+    // An account can hold more than this run will read, so reaching the page
+    // bound with every cursor new is a pass that says how far it got.
+    const seen = new Set([page1.data.cursor]);
     let cursor = page2.data?.cursor;
     let pages = 2;
-    while (cursor && pages < 50) {
-      const next = await client.call('deployments_list', { limit: 1, cursor });
+    let repeated = false;
+    while (cursor && pages < 50 && !repeated) {
+      repeated = seen.has(cursor);
+      seen.add(cursor);
+      const next = await client.call('deployments_list', { cursor });
       cursor = next.data?.cursor;
       pages += 1;
     }
     check(
-      `  walking to exhaustion terminates with cursor: null (${pages} pages)`,
-      cursor === null,
-      `stopped at ${String(cursor)} after ${pages} pages`,
+      cursor === null
+        ? `  the walk ends with cursor: null (${pages} pages)`
+        : `  the walk moves forward on every page (${pages} pages read, more remain)`,
+      !repeated && (cursor === null || typeof cursor === 'string'),
+      `a cursor came back twice after ${pages} pages`,
     );
   }
 
@@ -568,11 +576,13 @@ async function ttlBlock(client) {
     JSON.stringify(d).slice(0, 200),
   );
   check(
-    '  the lease is exactly the one requested — created + ttl, stamped on one clock',
+    '  the lease is the one requested: created + ttl, within a second',
     // Not merely "some expiry": an authenticated deploy defaults to null, so a
     // non-null value proves the option was READ, and the arithmetic proves it
     // was read at the value sent rather than rounded, clamped or defaulted.
-    d.expires === d.created + TTL_SECONDS,
+    // The two instants are stamped a moment apart, so they may straddle a
+    // second.
+    Math.abs(d.expires - (d.created + TTL_SECONDS)) <= 1,
     `created=${d.created} expires=${d.expires} — wanted ${d.created + TTL_SECONDS}`,
   );
   check(
@@ -652,8 +662,8 @@ async function domainBlock(client) {
 
     const share = await client.call('domains_share', { domain: testDomain });
     check(
-      'domains_share → {domain, hash}',
-      typeof share.data?.hash === 'string' && share.data.hash.length > 0,
+      'domains_share → {domain, url}',
+      share.data?.domain === testDomain && URL.canParse(share.data?.url ?? ''),
       share.text.slice(0, 140),
     );
 

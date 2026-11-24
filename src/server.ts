@@ -10,7 +10,7 @@ import type Ship from '@shipstatic/ship';
 import { DeploymentVia, type DeploymentViaType, MY_API_KEY_URL } from '@shipstatic/types';
 import { DeploymentCreateResponseSchema } from '@shipstatic/types/schemas';
 import { z } from 'zod';
-import { createCall, type ErrorHints } from './call.js';
+import { createCall, type ErrorHints, forbiddenHint } from './call.js';
 import { registerAccountTools, TOOLS } from './tools.js';
 import {
   annotate,
@@ -51,8 +51,7 @@ ${B.domainWorkflow}`;
  */
 const STDIO_HINTS: ErrorHints = {
   authentication: `Set the SHIP_TOKEN environment variable in your MCP server configuration. Its value is the user's API key, free at ${MY_API_KEY_URL}.`,
-  forbidden:
-    'This action is not permitted. Likely cause: plan limits reached or the account is terminated. Stop retrying: the user needs to upgrade or contact support at https://my.shipstatic.com.',
+  forbidden: forbiddenHint('https://my.shipstatic.com'),
 };
 
 const call = createCall({ hints: STDIO_HINTS });

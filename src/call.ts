@@ -30,6 +30,16 @@ export interface ErrorHints {
 }
 
 /**
+ * The forbidden hint both transports say, around the one thing that differs:
+ * the console's address, which on the hosted transport is the environment's.
+ * It covers every refusal no new consent can fix: plan limits, and the
+ * actions a credential may never take.
+ */
+export function forbiddenHint(consoleUrl: string): string {
+  return `Stop retrying: this cannot succeed as sent. The account may be at its plan limits, or the action may be one this credential can never take (a connected app cannot create credentials or delete the account). Manage the account at ${consoleUrl}.`;
+}
+
+/**
  * The maintenance hint, the same on every transport. A tool failure normally
  * invites a retry, which cannot succeed against a platform that is closed on
  * purpose, so the hint leads with the refusal to retry and ends with what the

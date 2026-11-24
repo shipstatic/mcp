@@ -81,15 +81,15 @@ All fifteen tools are on both doors. What changes is not which tools exist, but 
 
 | Tool | Description |
 |------|-------------|
-| `domains_set` | Connect a custom domain to your site, switch deployments, or update labels |
-| `domains_list` | List all domains with their linked deployment and verification status. Pages with `limit` and `cursor` |
-| `domains_get` | Get domain details including linked deployment, verification status, and labels |
-| `domains_records` | Get the DNS records you need to configure at your DNS provider |
+| `domains_set` | Give a site a ShipStatic domain or a custom domain, switch the deployment it's linked to, or update its labels |
+| `domains_list` | List all domains with their linked deployment and `status`. Pages with `limit` and `cursor` |
+| `domains_get` | Get domain details including linked deployment, labels, and `status`: `unverified`, `unlinked`, `live` or `paused` |
+| `domains_records` | Get the DNS records to set at your DNS provider, for a custom domain |
 | `domains_dns` | The DNS provider recorded for a domain, if known (e.g. Cloudflare, Namecheap) |
 | `domains_share` | Get a shareable link so someone else can see the required DNS records |
-| `domains_validate` | Check if a domain name is valid and available before connecting it |
-| `domains_verify` | Check if DNS is configured correctly after you set up the records |
-| `domains_delete` | Permanently disconnect and delete a custom domain |
+| `domains_validate` | Check if a domain name is valid and available before you use it |
+| `domains_verify` | Ask for a DNS check on a custom domain after you set up the records |
+| `domains_delete` | Permanently delete a domain |
 
 ### Account, with an account
 

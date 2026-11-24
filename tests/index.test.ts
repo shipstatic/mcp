@@ -67,6 +67,9 @@ const PUBLIC_API = [
   // Where an error result carries the wire's `ErrorResponse`: the hosted
   // deploy card reads its failed notice from it.
   'ERROR_META_KEY',
+  // The forbidden hint, worded once for both transports around the console
+  // address each supplies. It deletes a second wording of one fact.
+  'forbiddenHint',
   // Stdio's whole composition, for a consumer that wants it verbatim: the VS
   // Code extension bundles a stdio server into its `.vsix`. Admitted in
   // 1.0.0-beta.7, and it deleted a restatement like every other name here —

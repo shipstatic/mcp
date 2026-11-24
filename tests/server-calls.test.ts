@@ -630,8 +630,8 @@ describe('error surfaces', () => {
       .then(textOf);
 
     expect(text).toContain('Deployment limit reached');
-    expect(text).toContain('Stop retrying');
-    expect(text).toContain('upgrade or contact support');
+    expect(text).toContain('Stop retrying: this cannot succeed as sent.');
+    expect(text).toContain('Manage the account at https://my.shipstatic.com.');
   });
 
   it('a refusal reaches a client that has read the catalogue, as its own sentence', async () => {

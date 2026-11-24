@@ -149,6 +149,8 @@ for a refusal a new consent fixes. The two credential arms (authentication, forb
 are `ErrorHints` arguments: stdio can name the environment variable it owns and
 the hosted endpoint cannot. stdio's pair lives in `server.ts` beside the
 `call` built from it, so `call.ts` holds only what every transport shares.
+The forbidden hint differs only in the console's address, so both transports
+build it with `forbiddenHint(consoleUrl)` and word it once.
 **Maintenance does not**, so it is a module constant, `MAINTENANCE_HINT`,
 which the hosted transport inherits. It also does
 NOT notify `onAuthFailure`: a maintenance window is not a credential problem,
