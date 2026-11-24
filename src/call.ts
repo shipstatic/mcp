@@ -1,132 +1,103 @@
+/**
+ * The result envelope: SDK promise in, MCP `CallToolResult` out.
+ *
+ * Everything here is a wire fact an agent observes on every transport: the
+ * success shape, the `'Done.'` sentinel for a void result, which error arms
+ * earn a hint, and the `Details:` appendix. A transport builds its `call`
+ * with `createCall`, supplying the two hints that are its own.
+ */
+
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { ErrorType, isShipError } from '@shipstatic/ship';
-import { MY_API_KEY_URL } from '@shipstatic/types';
 
 /**
- * The two CREDENTIAL arms that earn a per-transport hint. Everything else
- * relays verbatim — a credential hint on any other type sends the agent
- * chasing a problem it does not have.
+ * The two credential arms, whose hint differs per transport: stdio names the
+ * environment variable it owns, and the hosted endpoint has none to name.
+ * Every other error relays verbatim, because a credential hint on any other
+ * type sends the agent after a problem it does not have.
  *
- * They are ARGUMENTS rather than constants because they are the one part of
- * the mapping that legitimately differs per transport: stdio can name the
- * environment variable it owns, and the hosted endpoint deliberately cannot
- * (it has no configuration of its own, and naming another package's variable
- * is how this pair silently desynchronised once already).
- *
- * A third arm — maintenance — is hinted too, but it is NOT a member here: a
- * closed platform is closed identically on every transport, so its text is a
- * module constant (`MAINTENANCE_HINT`) rather than a per-transport argument.
- * The membership test for this interface is "does the text differ per
- * transport?", not "does the arm get a hint?".
+ * Membership is "does the text differ per transport?", so maintenance, which
+ * is hinted too, is a constant below and not a member.
  */
-/**
- * The maintenance hint — a CONSTANT, for the reason stated on `ErrorHints`:
- * this text does not differ per transport, so making it an argument would ask
- * two callers to agree on one sentence forever.
- *
- * The instruction to an agent matters more here than on any other arm. A tool
- * failure normally invites a retry, and retrying is exactly wrong against a
- * platform that is closed on purpose: the loop cannot succeed, and it spends
- * the caller's budget discovering that. So the hint leads with the refusal to
- * retry and closes with the reassurance the agent should relay to its user.
- */
-const MAINTENANCE_HINT =
-  'The platform is temporarily closed for scheduled maintenance. Do not retry in a loop: wait and try again later. Deployed sites are unaffected and stay online.';
-
 export interface ErrorHints {
   /** Appended after `Hint: ` when the SDK rejects the credential. */
   authentication: string;
-  /** Appended after `Hint: ` when the platform refuses an authenticated call. */
+  /**
+   * Appended after `Hint: ` when the platform refuses an authenticated call
+   * for a reason no new consent can fix. A missing scope takes no hint.
+   */
   forbidden: string;
 }
 
 /**
- * The wrapper every tool handler delegates to. Named because the shared
- * toolset takes it as an argument: the tools are identical across transports,
- * the hints inside `call` are not.
+ * The maintenance hint, the same on every transport. A tool failure normally
+ * invites a retry, which cannot succeed against a platform that is closed on
+ * purpose, so the hint leads with the refusal to retry and ends with what the
+ * agent should tell its user.
+ */
+const MAINTENANCE_HINT =
+  'The platform is temporarily closed for scheduled maintenance. Do not retry in a loop: wait and try again later. Deployed sites are unaffected and stay online.';
+
+/**
+ * The wrapper every tool handler delegates to. The shared toolset takes it as
+ * an argument: the tools are identical across transports, the hints inside
+ * `call` are not.
  */
 export type CallFn = <T>(fn: () => Promise<T>) => Promise<CallToolResult>;
 
 export interface CallOptions {
   hints: ErrorHints;
   /**
-   * Called when the API refuses on CREDENTIAL grounds — and only then.
+   * Called when the API refuses on credential grounds, and only then.
    *
-   * An HTTP transport has an obligation stdio does not: a client learns it
-   * must authenticate from a real `401` with a `WWW-Authenticate` header, and
-   * ignores that header entirely on a `200`. So a tool error saying "please
-   * authenticate" is, on that transport, a dead end — the caller is told
-   * something it has no way to act on.
+   * An HTTP transport needs it: a client learns it must authenticate from a
+   * real `401` with `WWW-Authenticate` and ignores that header on a `200`, so
+   * a tool error saying "please authenticate" is a dead end there. What counts
+   * as a credential failure is decided here, beside the hints, once:
    *
-   * This is the seam that lets the transport answer properly, and the
-   * decision of WHAT counts as a credential failure stays here, beside the
-   * hints, rather than being made a second time by each consumer:
+   * - **Authentication** always reports: the credential was absent,
+   *   malformed, unknown or expired.
+   * - **Forbidden reports only when it carries `requiredScope`**, the API's
+   *   signal that a valid grant lacks a permission, which a new consent can
+   *   fix. Plan limits, a terminated account and an action no scope can
+   *   authorize are answers to the question asked, and stay in-band.
    *
-   * - **Authentication** always reports. The credential was absent, malformed,
-   *   unknown, or expired — the transport cannot tell which, and does not
-   *   need to.
-   * - **Forbidden reports only when it carries `requiredScope`.** That field
-   *   is the API's own signal that a valid grant simply lacks a permission,
-   *   which re-consent can fix. Every other refusal on that arm — plan limits,
-   *   a terminated account, an action no scope can authorize — is a genuine
-   *   answer to the question asked, and stays an ordinary in-band tool error.
-   *
-   * The result is unchanged either way: the agent still receives the full
-   * text envelope, hints included. This is a notification, not a substitution.
-   *
-   * Why an observer at all, rather than the transport inspecting the request:
-   * peeking at a JSON-RPC body to guess whether a call needs a credential
-   * means parsing it twice — on the deploy path, that is tens of megabytes of
-   * base64 re-parsed before the size caps run — and it can only ever guess at
-   * PRESENCE, so an EXPIRED token would answer in-band and a connected client
-   * would never refresh. Reporting what the API actually answered costs
-   * nothing and is correct for both.
+   * It is a notification, never a substitution: the agent receives the same
+   * result either way. The transport is told what the API answered because
+   * guessing from the request means parsing the body twice, and can only
+   * guess at presence, so an expired token would never drive a refresh.
    */
   onAuthFailure?: (failure: AuthFailure) => void;
 }
 
 /**
- * What a credential refusal was, in the only two shapes a transport acts on
- * differently.
- *
- * Deliberately not an HTTP status or an RFC 6750 error code: those are the
- * consuming transport's vocabulary, and stdio — which also builds a `call` —
- * has neither. The presence of `requiredScope` is the whole discriminator, so
- * there is no second field restating it.
+ * What a credential refusal was. The presence of `requiredScope` is the whole
+ * discriminator. It carries no HTTP status and no RFC 6750 code: those are
+ * the consuming transport's vocabulary, and stdio has neither.
  */
 export interface AuthFailure {
   /**
    * The scope the grant is missing, from the API's `details.requiredScope`.
-   * Absent when the credential itself was refused rather than its permissions.
+   * Absent when the credential itself was refused.
    */
   requiredScope?: string;
 }
 
-/**
- * Builds the `call()` wrapper both transports use: SDK promise in, MCP
- * `CallToolResult` out.
- *
- * The success envelope, the `'Done.'` sentinel for a void result, the order
- * the error arms are tested in, and the `Details:` appendix are all wire
- * facts an agent observes — so they live here once, rather than in two files
- * kept equal by review.
- */
+/** Builds a transport's `call` from its hints. */
 export function createCall(options: CallOptions): CallFn {
   const { hints, onAuthFailure } = options;
 
   return async function call<T>(fn: () => Promise<T>): Promise<CallToolResult> {
     try {
       const result = await fn();
-      // A void SDK method has nothing to serialize; every other result is the
-      // wire shape verbatim, because an agent reads exactly what the API sent.
+      // A void SDK method has nothing to serialize.
       if (result === undefined) {
         return { content: [{ type: 'text', text: 'Done.' }] };
       }
       // The wire shape rides twice: as the text every client reads, and as
-      // `structuredContent` for the tool's `outputSchema` (every tool declares
-      // one, imported from the constitution; the SDK validates the result
-      // against it and refuses a result that carries none). A non-object has
-      // no schema to satisfy and rides the text channel alone.
+      // `structuredContent` for the tool's `outputSchema`, which the SDK
+      // validates on every success. A non-object has no schema to satisfy and
+      // rides the text alone.
       const text = JSON.stringify(result, null, 2);
       return {
         content: [{ type: 'text', text }],
@@ -139,11 +110,9 @@ export function createCall(options: CallOptions): CallFn {
 }
 
 /**
- * Read the API's `details.requiredScope`, if this refusal carries one.
- *
- * `details` is `unknown` on the wire by design — every arm shapes it
- * differently — so the read is a narrowing rather than a cast, and anything
- * that is not a non-empty string means "no scope was named".
+ * The API's `details.requiredScope`, if this refusal carries one. `details`
+ * is `unknown` on the wire, so the read narrows, and anything but a non-empty
+ * string means no scope was named.
  */
 function requiredScopeOf(details: unknown): string | undefined {
   if (!details || typeof details !== 'object') return undefined;
@@ -156,35 +125,26 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 }
 
 /**
- * Where an error result carries the wire's own `ErrorResponse`: a key of the
- * result's `_meta`, named under the platform's domain as the specification
- * asks of a `_meta` key.
+ * The `_meta` key an error result carries the wire's own `ErrorResponse`
+ * under, named under the platform's domain as the specification asks.
  *
- * Not `structuredContent`, because that field belongs to the tool's
- * `outputSchema`, which describes a SUCCESS. The specification's error example
- * carries no structure, and the TypeScript SDK's client validates
- * `structuredContent` against the output schema even on an `isError` result
- * (modelcontextprotocol/typescript-sdk#1943, fix open as #1945), so a client
- * built on it shows "Structured content does not match the tool's output
- * schema" instead of the refusal. `_meta` is read by whoever asks for it and
- * validated by nobody, and the deploy card reads its notice from here.
+ * It is not `structuredContent`: that field belongs to the tool's
+ * `outputSchema`, which describes a success, and the TypeScript SDK's client
+ * validates it even on an `isError` result
+ * (modelcontextprotocol/typescript-sdk#1943), so a host would show a schema
+ * mismatch in place of the refusal. `_meta` is validated by nobody.
  */
 export const ERROR_META_KEY = 'com.shipstatic/error';
 
 /**
- * The failure envelope: authoritative prose, with the wire's own structure
- * riding beside it.
+ * The failure envelope: the text is the contract, hints included, and the
+ * structure rides beside it.
  *
- * The TEXT is the contract, hints included. The API authors its messages for
- * the end user at the throw site (`cloudflare/api/CLAUDE.md`, "Message
- * authoring law"), so the sentence always contains what the agent needs, and
- * a client that reads nothing else still works.
- *
- * `_meta[ERROR_META_KEY]` carries `ShipError.toResponse()` verbatim, the same
- * `ErrorResponse` the wire uses, so a client that branches on error type and
- * status (the platform's law: never on message strings) reads exactly what
- * every other client sees, `details` included: a 429's `details.expires` is
- * the precise backoff its sentence rounds into words.
+ * The API writes its messages for the end user, so a client that reads only
+ * the text still works. `_meta[ERROR_META_KEY]` carries
+ * `ShipError.toResponse()`, the same `ErrorResponse` every other client sees,
+ * for a client that branches on error type and status: a 429's
+ * `details.expires` is the exact backoff its sentence rounds into words.
  */
 function toErrorResult(
   error: unknown,
@@ -194,9 +154,8 @@ function toErrorResult(
   if (isShipError(error)) {
     let message = error.message;
 
-    // First, because it is the one arm that is not about this caller at all:
-    // the platform is closed, nothing the agent sends can succeed, and the
-    // useful instruction is to stop rather than to fix something.
+    // Not a credential problem, so it never notifies `onAuthFailure`: a
+    // challenge would send a client round a sign-in against a closed door.
     if (error.isType(ErrorType.Maintenance)) {
       message += `\n\nHint: ${MAINTENANCE_HINT}`;
     }
@@ -207,12 +166,11 @@ function toErrorResult(
     }
 
     if (error.isType(ErrorType.Forbidden)) {
-      message += `\n\nHint: ${hints.forbidden}`;
-      // Only a MISSING SCOPE is a credential problem. The same arm carries
-      // plan limits and terminated accounts, which re-consenting cannot fix
-      // and which the caller should read as the answer it is.
+      // A missing scope is reported and takes no hint: the hint says to stop,
+      // and a new consent is what fixes this one.
       const requiredScope = requiredScopeOf(error.details);
       if (requiredScope) onAuthFailure?.({ requiredScope });
+      else message += `\n\nHint: ${hints.forbidden}`;
     }
 
     if (error.isType(ErrorType.Validation) && error.details) {
@@ -227,7 +185,7 @@ function toErrorResult(
   }
 
   // No structure for a non-ShipError: there is no wire shape to report, and
-  // inventing one would tell an agent this failure came from the platform.
+  // inventing one would say the failure came from the platform.
   const fallback = error instanceof Error ? error.message : 'An unexpected error occurred';
   return {
     content: [{ type: 'text', text: fallback }],
@@ -242,20 +200,3 @@ function safeStringify(value: unknown): string {
     return String(value);
   }
 }
-
-/**
- * stdio's hints: this package owns `SHIP_TOKEN` and is the only side that may
- * name it. The authentication hint carries the whole chain on purpose — the
- * variable, what its value IS (the API key; the console and the config use two
- * words for one credential, and this sentence is where an agent learns they
- * are the same), and where it is minted. It fires at exactly the moment a
- * user is missing one, so a hint that names the slot without naming the value
- * strands them holding an "API key" a config asks for as a "token".
- */
-const STDIO_HINTS: ErrorHints = {
-  authentication: `Set the SHIP_TOKEN environment variable in your MCP server configuration. Its value is the user's API key, free at ${MY_API_KEY_URL}.`,
-  forbidden:
-    'This action is not permitted. Likely cause: plan limits reached or the account is terminated. Stop retrying: the user needs to upgrade or contact support at https://my.shipstatic.com.',
-};
-
-export const call = createCall({ hints: STDIO_HINTS });

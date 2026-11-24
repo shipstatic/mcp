@@ -1,16 +1,8 @@
 #!/usr/bin/env node
 /**
- * THE EXECUTABLE — `dist/bin.js`, the file `npx @shipstatic/mcp` runs. It is
- * the only module here with side effects on import.
- *
- * `index.ts` beside it is a library and stays inert, which is what lets the
- * hosted transport import this package's vocabulary instead of re-authoring
- * it. The two used to be one file: `main` and `bin` in `package.json` both
- * pointed at `index.ts`, so importing the package started a stdio server and,
- * on failure, called `process.exit` in its consumer. Nothing could be shared
- * because there was nothing importable to share. `npm/ship` split the same
- * knot the same way (`bin.ts` executable, `index.ts` library) — a module
- * boundary says the same thing to every caller.
+ * The executable: `dist/bin.js`, the file `npx @shipstatic/mcp` runs, and the
+ * only module here with side effects on import. `index.ts` beside it is the
+ * library and stays inert.
  */
 import { createRequire } from 'node:module';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
@@ -18,26 +10,19 @@ import Ship from '@shipstatic/ship';
 import { normalizeVia, SHIP_ENV, SHIP_VIA_ENV } from '@shipstatic/types';
 import { createServer } from './server.js';
 
-// The executable knows its own manifest; the library it drives does not have
-// to. `createServer` takes the version as an argument precisely so no module
-// below this one needs `node:module` in its import graph.
+// The executable knows its own manifest; the library takes the version as an
+// argument, so nothing it exports needs `node:module`.
 const { version } = createRequire(import.meta.url)('../package.json') as { version: string };
 
 async function main() {
-  // SHIP_TOKEN is optional — without it, deployments are public (3-day expiry).
-  // The SDK coerces empty strings to undefined, so we can pass through directly.
-  //
-  // One credential slot, any platform token: the value's prefix says what it
-  // is (`ship-` API key, `deploy-` deploy token, anything else an opaque
-  // bearer) and the server classifies it. MCP never has to know which kind it
-  // holds.
+  // `SHIP_TOKEN` is optional: without it, deployments are public and expire.
+  // One slot, any platform token. The value's prefix says what it is (`ship-`
+  // API key, `deploy-` deploy token, `oauth-` access token, anything else an
+  // opaque bearer) and the API classifies it; this server never looks.
   const ship = new Ship({ token: process.env[SHIP_ENV.TOKEN] });
-  // Unset, this executable IS the `mcp` origin, which is the default. A
-  // first-party wrapper that composes this invocation relabels it through
-  // the subprocess slot the CLI shares (`SHIP_VIA_ENV` in types); only Gemini
-  // extension installs older than plugin 3.1 still send `gmn`. An unrecognized label is dropped rather than
-  // forwarded: the server silently ignores what the vocabulary does not
-  // name, so a typo records the honest default instead of nothing.
+  // Unset, this executable is the `mcp` origin. A wrapper that composes this
+  // invocation names its own surface through `SHIP_VIA_ENV`, the slot the CLI
+  // shares. An unrecognized label is dropped, so a typo records `mcp`.
   const server = createServer(ship, { version, via: normalizeVia(process.env[SHIP_VIA_ENV]) });
   const transport = new StdioServerTransport();
   await server.connect(transport);

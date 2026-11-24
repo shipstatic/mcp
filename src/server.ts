@@ -1,9 +1,16 @@
+/**
+ * The stdio server: the one tool this transport authors (`deployments_upload`,
+ * whose input is a filesystem path), the shared fourteen, and the two things
+ * only stdio says, which are how files arrive and how a caller authenticates
+ * (`SHIP_TOKEN`).
+ */
+
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type Ship from '@shipstatic/ship';
 import { DeploymentVia, type DeploymentViaType, MY_API_KEY_URL } from '@shipstatic/types';
 import { DeploymentCreateResponseSchema } from '@shipstatic/types/schemas';
 import { z } from 'zod';
-import { call } from './call.js';
+import { createCall, type ErrorHints } from './call.js';
 import { registerAccountTools, TOOLS } from './tools.js';
 import {
   annotate,
@@ -20,17 +27,14 @@ import {
 const B = INSTRUCTION_BLOCKS;
 const D = DESCRIPTION_BLOCKS;
 
-// Composed from the shared blocks plus the two sentences that are genuinely
-// stdio's: how files arrive (a filesystem path) and how a caller
-// authenticates (`SHIP_TOKEN`). The hosted transport composes the same blocks
-// around its own two.
+// The shared blocks, around stdio's own two sentences.
 const INSTRUCTIONS = `${B.opening} ${B.accountLater}
 
 To deploy: call ${UPLOAD_TOOL_NAME} with the build output directory path. ${B.home} ${B.live} ${B.routes} ${B.password}
 
 Without SHIP_TOKEN, deployments are public and expire in ${PUBLIC_EXPIRY}. ${B.claim}
 
-With SHIP_TOKEN configured — its value is the user's API key, free at ${MY_API_KEY_URL} — deployments go to the user's account and never expire; pass \`ttl\` (seconds) to ${UPLOAD_TOOL_NAME} for one that expires on its own. Listing, managing, and domain operations also require SHIP_TOKEN.
+With SHIP_TOKEN configured (its value is the user's API key, free at ${MY_API_KEY_URL}), deployments go to the user's account and never expire; pass \`ttl\` (seconds) to ${UPLOAD_TOOL_NAME} for one that expires on its own. Listing, managing, and domain operations also require SHIP_TOKEN.
 
 ${B.conceptsHeader}
 ${B.deploymentConcept}
@@ -39,61 +43,50 @@ ${B.domainConcept}
 ${B.domainWorkflow}`;
 
 /**
- * What the HOST knows about itself and this library must not assume.
- *
- * Both fields are the same category of fact, which is why they travel together
- * rather than as a growing positional tail: a library has no manifest to read
- * and no idea which product it was installed inside.
+ * stdio's hints. The authentication hint carries the whole chain: the
+ * variable, what its value is (the console says "API key" and the config says
+ * "token" for one credential, and this sentence is where an agent learns they
+ * are the same), and where to get one. It is read at the moment a user is
+ * missing one.
+ */
+const STDIO_HINTS: ErrorHints = {
+  authentication: `Set the SHIP_TOKEN environment variable in your MCP server configuration. Its value is the user's API key, free at ${MY_API_KEY_URL}.`,
+  forbidden:
+    'This action is not permitted. Likely cause: plan limits reached or the account is terminated. Stop retrying: the user needs to upgrade or contact support at https://my.shipstatic.com.',
+};
+
+const call = createCall({ hints: STDIO_HINTS });
+
+/**
+ * What the host knows about itself: a library has no manifest to read and no
+ * idea which product it is installed inside.
  */
 export interface ServerOptions {
   /**
-   * The server's reported `serverInfo.version`. A parameter rather than
-   * something this module reads for itself: the executable knows its own
-   * package manifest, a library must not assume it has one, and reaching for
-   * `node:module` here would put a Node builtin in the import graph of a
-   * module the Workers-hosted transport also loads.
+   * The reported `serverInfo.version`. An argument, because reading a
+   * manifest here would put `node:module` in the import graph the hosted
+   * transport also loads.
    */
   version: string;
   /**
-   * The deploy origin this server's uploads are attributed to. Defaults to
-   * `mcp` — an npx install in some MCP client, which is what this package is
-   * on its own.
-   *
-   * It is a parameter because `via` names the DISTRIBUTION SURFACE, not the
-   * protocol: the GitHub Action reports `git` whatever invoked the workflow,
-   * and the web apps report `web`. The VS Code extension bundles this server
-   * into its `.vsix`, so its agent-mode deploys are the extension's — it
-   * passes `vsc`, and `mcp` goes back to meaning what it says.
+   * The origin this server's uploads are attributed to. `via` names the
+   * distribution surface, never the protocol, so a host that bundles this
+   * server passes its own, and the default `mcp` means an npx install in
+   * some MCP client.
    */
   via?: DeploymentViaType;
 }
 
-/**
- * Builds the stdio server's full 15-tool surface over an injected client.
- */
+/** Builds the stdio server's fifteen tools over an injected client. */
 export function createServer(ship: Ship, options: ServerOptions): McpServer {
   const { version, via = DeploymentVia.MCP } = options;
 
-  const server = new McpServer(
-    {
-      ...SERVER_INFO,
-      version,
-    },
-    {
-      instructions: INSTRUCTIONS,
-    },
-  );
-
-  // Deployments
+  const server = new McpServer({ ...SERVER_INFO, version }, { instructions: INSTRUCTIONS });
 
   server.registerTool(
     UPLOAD_TOOL_NAME,
     titled({
       title: UPLOAD_TOOL_TITLE,
-      // Describes the tool and instructs nobody: what an agent should DO with
-      // the claim URL and a password is the INSTRUCTIONS' job, stated once
-      // above. The annotations come from the registry row this transport
-      // shares with the hosted one; only the input schema is this door's own.
       description: `Deploy a static site instantly: ${D.free}. Returns the live URL, file count, and size. Without SHIP_TOKEN, the response also includes a one-time claim URL, and the site expires in ${PUBLIC_EXPIRY} unless claimed. ${D.password}`,
       annotations: annotate(TOOLS[UPLOAD_TOOL_NAME]),
       outputSchema: DeploymentCreateResponseSchema,
@@ -106,12 +99,9 @@ export function createServer(ship: Ship, options: ServerOptions): McpServer {
         labels: z.array(z.string()).optional().describe(PARAM_DESCRIPTIONS.labels),
         password: z.string().optional().describe(PARAM_DESCRIPTIONS.password),
         idempotencyKey: z.string().optional().describe(PARAM_DESCRIPTIONS.idempotencyKey),
-        // A bare `z.number()`, and the absences are the point. `.min()`/`.max()`
-        // would restate `TTL_CONSTRAINTS`, and `.int()` would restate the
-        // fraction rule — all three owned by `validateTtl`, which the SDK runs
-        // in-process before a byte is uploaded and which answers in the
-        // constitution's own words. A second validator here could only ever
-        // disagree with the first, silently; its absence fails loudly instead.
+        // A bare number: the range and the fraction rule are `validateTtl`'s,
+        // which the SDK runs before a byte is uploaded. A second validator
+        // here could only disagree with it.
         ttl: z.number().optional().describe(PARAM_DESCRIPTIONS.ttl),
       },
     }),
@@ -119,9 +109,6 @@ export function createServer(ship: Ship, options: ServerOptions): McpServer {
       call(() => ship.deployments.upload(path, { labels, password, idempotencyKey, ttl, via })),
   );
 
-  // The other fourteen. Identical on every transport, so they live in the
-  // shared package rather than here — see tools.ts for why upload is not
-  // among them.
   registerAccountTools(server, ship, call);
 
   return server;

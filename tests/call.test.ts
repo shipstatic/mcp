@@ -1,6 +1,6 @@
-import { ErrorType, MY_API_KEY_URL, ShipError } from '@shipstatic/types';
+import { ErrorType, ShipError } from '@shipstatic/types';
 import { describe, expect, it } from 'vitest';
-import { type AuthFailure, call, createCall, ERROR_META_KEY } from '../src/call.js';
+import { type AuthFailure, createCall, ERROR_META_KEY } from '../src/call.js';
 import { textOf } from './harness.js';
 
 /**
@@ -24,7 +24,14 @@ import { textOf } from './harness.js';
  * The through-line: an agent cannot see an exception, only text. So every arm
  * below is judged by what the text lets the agent DO next — retry with a
  * credential, stop retrying, or fix its arguments.
+ *
+ * The hints are planted, so every expectation states a literal this file
+ * chose. What stdio's own hints say is asserted where an agent reads them,
+ * through the protocol, in `server-calls.test.ts`.
  */
+
+const HINTS = { authentication: 'PLANTED AUTH HINT', forbidden: 'PLANTED FORBIDDEN HINT' };
+const call = createCall({ hints: HINTS });
 
 describe('successful results', () => {
   it('serializes data as indented JSON', async () => {
@@ -53,33 +60,20 @@ describe('successful results', () => {
 });
 
 describe('ShipError mapping', () => {
-  it('appends the credential hint to authentication failures — the variable, the key, the mint', async () => {
-    // The hint fires at exactly the moment a user is missing a credential, so
-    // it must carry the whole chain: the slot (`SHIP_TOKEN`), what its value
-    // IS (the console mints an "API key", the config asks for a "token" — one
-    // credential, two words, and this sentence is where they meet), and where
-    // to get one. A hint naming the slot alone strands the user who is
-    // holding a key and being asked for a token.
+  it('appends the transport’s authentication hint to authentication failures', async () => {
     const result = await call(() => Promise.reject(ShipError.authentication('Invalid API key')));
 
     expect(result.isError).toBe(true);
-    expect(textOf(result)).toContain('Invalid API key');
-    expect(textOf(result)).toContain('SHIP_TOKEN');
-    expect(textOf(result)).toContain("Its value is the user's API key");
-    expect(textOf(result)).toContain(MY_API_KEY_URL);
+    expect(textOf(result)).toBe('Invalid API key\n\nHint: PLANTED AUTH HINT');
   });
 
-  it('appends a stop-retrying hint to forbidden failures', async () => {
-    // Forbidden means a plan limit or a terminated account — state no retry
-    // can change. Without this, an agent loops until it exhausts its budget.
+  it('appends the transport’s forbidden hint to forbidden failures', async () => {
     const result = await call(() =>
       Promise.reject(ShipError.forbidden('Deployment limit reached')),
     );
 
     expect(result.isError).toBe(true);
-    expect(textOf(result)).toContain('Deployment limit reached');
-    expect(textOf(result)).toContain('Stop retrying');
-    expect(textOf(result)).toContain('upgrade or contact support');
+    expect(textOf(result)).toBe('Deployment limit reached\n\nHint: PLANTED FORBIDDEN HINT');
   });
 
   it('appends a do-not-loop hint to maintenance failures', async () => {
@@ -96,9 +90,9 @@ describe('ShipError mapping', () => {
     expect(textOf(result)).toContain('ShipStatic is briefly down for scheduled maintenance.');
     expect(textOf(result)).toContain('Do not retry in a loop');
     expect(textOf(result)).toContain('Deployed sites are unaffected');
-    // Not a credential problem — the auth hint would send the agent to
-    // reconnect against a door that is closed for everyone.
-    expect(textOf(result)).not.toContain('Authenticate');
+    // Not a credential problem: the authentication hint would send the agent
+    // to reconnect against a door that is closed for everyone.
+    expect(textOf(result)).not.toContain(HINTS.authentication);
   });
 
   it('appends field-level details to validation failures', async () => {
@@ -144,8 +138,8 @@ describe('ShipError mapping', () => {
    * that distinction, only about which arms speak.
    */
   const HINTED: Partial<Record<ErrorType, string>> = {
-    [ErrorType.Authentication]: 'SHIP_TOKEN',
-    [ErrorType.Forbidden]: 'Stop retrying',
+    [ErrorType.Authentication]: 'PLANTED AUTH HINT',
+    [ErrorType.Forbidden]: 'PLANTED FORBIDDEN HINT',
     [ErrorType.Maintenance]: 'Do not retry in a loop',
   };
 
@@ -204,7 +198,7 @@ describe('ShipError mapping', () => {
       Promise.reject(ShipError.authentication('Authentication required')),
     );
 
-    expect(textOf(result)).toContain('SHIP_TOKEN');
+    expect(textOf(result)).toContain('Hint: PLANTED AUTH HINT');
     expect(result._meta?.[ERROR_META_KEY]).toMatchObject({
       error: ErrorType.Authentication,
       status: 401,
@@ -219,13 +213,13 @@ describe('onAuthFailure — the credential-refusal seam', () => {
    * real `401`, and ignores a `WWW-Authenticate` header on a `200` — so
    * "please authenticate" as tool TEXT is a dead end there.
    *
-   * The hints are stdio's own; what is under test is which arms report, and
-   * that the reporting changes nothing the agent receives.
+   * What is under test is which arms report, and that the reporting changes
+   * nothing the agent receives.
    */
   function recording() {
     const failures: AuthFailure[] = [];
     const recordingCall = createCall({
-      hints: { authentication: 'auth hint', forbidden: 'forbidden hint' },
+      hints: HINTS,
       onAuthFailure: (failure) => failures.push(failure),
     });
     return { failures, call: recordingCall };
@@ -257,6 +251,22 @@ describe('onAuthFailure — the credential-refusal seam', () => {
     );
 
     expect(failures).toEqual([{ requiredScope: 'domains:write' }]);
+  });
+
+  it('gives a scope refusal no hint: the forbidden hint says to stop, and consent fixes this', async () => {
+    // One result must not carry two next steps. The refusal is reported, so
+    // a transport can ask for consent, and the text is the API's own.
+    const { call: c } = recording();
+
+    const result = await c(
+      reject(
+        new ShipError(ErrorType.Forbidden, 'The connected app was not granted access', 403, {
+          requiredScope: 'domains:write',
+        }),
+      ),
+    );
+
+    expect(textOf(result)).toBe('The connected app was not granted access');
   });
 
   it('stays SILENT on a forbidden refusal that no scope could fix', async () => {
@@ -312,16 +322,14 @@ describe('onAuthFailure — the credential-refusal seam', () => {
     const plain = await call(reject(ShipError.authentication('Authentication required')));
 
     expect(observed.isError).toBe(true);
-    expect(observed._meta).toEqual(plain._meta);
-    expect(textOf(observed)).toContain('Authentication required');
-    expect(textOf(observed)).toContain('Hint: auth hint');
+    expect(observed).toEqual(plain);
   });
 
   it('is optional — a call without it behaves exactly as before', async () => {
     const result = await call(reject(ShipError.authentication('Authentication required')));
 
     expect(result.isError).toBe(true);
-    expect(textOf(result)).toContain('SHIP_TOKEN');
+    expect(textOf(result)).toContain('Hint: PLANTED AUTH HINT');
   });
 });
 

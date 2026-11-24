@@ -1,4 +1,4 @@
-import { ShipError } from '@shipstatic/types';
+import { MY_API_KEY_URL, ShipError } from '@shipstatic/types';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   CUSTOM_DOMAIN,
@@ -582,9 +582,15 @@ describe('error surfaces', () => {
 
     const result = await harness.client.callTool({ name: 'deployments_list', arguments: {} });
 
+    // The hint is read at the moment a user is missing a credential, so it
+    // carries the whole chain: the slot, what its value is (the console says
+    // "API key", the config says "token", one credential), and where to get
+    // one.
     expect(result.isError).toBe(true);
     expect(textOf(result)).toContain('Invalid API key');
     expect(textOf(result)).toContain('SHIP_TOKEN');
+    expect(textOf(result)).toContain("Its value is the user's API key");
+    expect(textOf(result)).toContain(MY_API_KEY_URL);
   });
 
   it('a not-found does not suggest credentials — the agent must not retry with a key', async () => {
@@ -623,7 +629,9 @@ describe('error surfaces', () => {
       .callTool({ name: 'deployments_upload', arguments: { path: ABS_PATH } })
       .then(textOf);
 
+    expect(text).toContain('Deployment limit reached');
     expect(text).toContain('Stop retrying');
+    expect(text).toContain('upgrade or contact support');
   });
 
   it('a refusal reaches a client that has read the catalogue, as its own sentence', async () => {

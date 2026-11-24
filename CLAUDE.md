@@ -38,9 +38,9 @@ Keep the public surface coherent: one ShipStatic MCP, two doors in.
 src/
 ├── bin.ts        # THE EXECUTABLE (dist/bin.js): env read, Ship construction, stdio transport
 ├── index.ts      # The LIBRARY entry: curated exports, no side effects
-├── server.ts     # createServer(ship, {version, via}): stdio's own upload tool + INSTRUCTIONS
+├── server.ts     # createServer(ship, {version, via}): stdio's own upload tool, INSTRUCTIONS, hints and `call`
 ├── tools.ts      # TOOLS (the registry: one row per tool) + registerAccountTools(), the 14 identical on EVERY transport
-├── call.ts       # createCall(): the result envelope + error mapping, parameterised by hints
+├── call.ts       # createCall(): the result envelope + error mapping every transport shares, parameterised by hints
 └── vocabulary.ts # What BOTH transports say: annotate() + shared param descriptions
 ```
 
@@ -135,7 +135,7 @@ ESM-only, so a CJS consumer produces `CJSResolvesToESM` by construction; the
 
 ## Core Patterns
 
-### SDK Wrapper — No Business Logic
+### SDK Wrapper: No Business Logic
 
 Every MCP tool maps 1:1 to a single `@shipstatic/ship` SDK method. The MCP layer handles only:
 - Tool registration (name, schema, description)
@@ -143,10 +143,14 @@ Every MCP tool maps 1:1 to a single `@shipstatic/ship` SDK method. The MCP layer
 - Error mapping (ShipError → `{ content, isError: true }` with hints)
 
 Three arms earn a hint, and they split on ONE question: does the text differ
-per transport? The two credential arms (authentication, forbidden) do, so they
+per transport? A Forbidden that names a missing scope earns none: it is
+reported to `onAuthFailure`, and the forbidden hint's advice (stop) is wrong
+for a refusal a new consent fixes. The two credential arms (authentication, forbidden) do, so they
 are `ErrorHints` arguments: stdio can name the environment variable it owns and
-the hosted endpoint cannot. **Maintenance does not**, so it is a module
-constant, `MAINTENANCE_HINT`, which the hosted transport inherits. It also does
+the hosted endpoint cannot. stdio's pair lives in `server.ts` beside the
+`call` built from it, so `call.ts` holds only what every transport shares.
+**Maintenance does not**, so it is a module constant, `MAINTENANCE_HINT`,
+which the hosted transport inherits. It also does
 NOT notify `onAuthFailure`: a maintenance window is not a credential problem,
 and a 401 challenge would send a client round a consent flow against a door
 closed for everyone.
@@ -166,7 +170,8 @@ beats the rule. Every other tool obeys.
 `TOOLS` in `tools.ts` is the one owner of what is true of a tool on the
 three axes a host reads: `auth` (`optional` works without an account),
 `mutation` (`none` | `add` | `replace` | `remove`) and `reach` (`account` |
-`public`). Fifteen rows, upload included even though each transport authors
+`public`). `add` is additive: it creates something or starts work, and
+overwrites nothing, which is why `domains_verify` is one. Fifteen rows, upload included even though each transport authors
 that registration: its INPUT differs per transport, its contract does not.
 `annotate(row)` is every registration's `annotations`; `ACCOUNT_TOOL_NAMES` is
 the rows whose `auth` is `required`, and the hosted door reads the same column
@@ -213,13 +218,15 @@ contact. Revisit only if a real user asks why `whoami` did not warn them.
 Every tool handler is a one-liner that delegates to the SDK through `call()`:
 
 ```typescript
-server.registerTool('deployments_get', {
+server.registerTool('deployments_get', titled({
+  title: 'Get Deployment',
   description: 'Get deployment details including URL, status, file count, size, labels, and password protection state.',
   annotations: annotate(TOOLS.deployments_get),
+  outputSchema: DeploymentSchema,
   inputSchema: {
     deployment: z.string().describe('Deployment hostname (e.g. "happy-cat-abc1234.shipstatic.com"). Returned by deployments_upload or deployments_list.'),
   },
-}, ({ deployment }) => call(() => ship.deployments.get(deployment)));
+}), ({ deployment }) => call(() => ship.deployments.get(deployment)));
 ```
 
 `call()` handles try/catch, JSON serialization, void→"Done.", and ShipError→MCP error conversion.
@@ -306,12 +313,12 @@ tests/
 ├── mocks/ship.ts                # the one fake, typed against the SDK contract
 ├── harness.ts                   # real Client ↔ real server, InMemoryTransport
 ├── setup.ts                     # SHIP_* scrub + no-network guard
-├── call.test.ts                 # call() → CallToolResult, every error arm
+├── call.test.ts                 # createCall() → CallToolResult, every error arm, on planted hints
 ├── bin.test.ts                  # the process boundary + credential isolation
 ├── index.test.ts                # the PUBLIC SURFACE: curated exports, both directions
 ├── vocabulary.test.ts           # the shared values: numbers stay derived, CREATE withholds its hint
 ├── server.test.ts               # the tool CATALOGUE (tools/list, instructions)
-└── server-calls.test.ts         # tool CALLS (wiring, payloads, claim, errors)
+└── server-calls.test.ts         # tool CALLS (wiring, payloads, claim, errors, stdio's own hints)
 ```
 
 **Recorded mirror-axis exception: `src/tools.ts` has no `tools.test.ts`.** Its
@@ -594,9 +601,6 @@ asserted live in `smoke.mjs`.
 - **Not agent knobs:** `signal` (process-level cancellation), `pathDetect` (a
   local path default) and `spaDetect` (the SDK asks the single-page question by
   default, so an agent's app gets its routing config without choosing).
-
-**Open, not refused: a labels tool.** `GET /labels` has no tool. Unlike
-`tokens_*` this is undecided rather than closed; decide before wiring.
 
 ---
 

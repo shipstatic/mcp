@@ -1,48 +1,32 @@
 /**
- * The account-tied toolset — fourteen tools, identical on every transport.
+ * The account-tied toolset: fourteen tools, identical on every transport.
  *
- * `deployments_upload` is not here, and the split is exactly the product's
- * own shape rather than a convenience:
+ * `deployments_upload` is not here, and the split is the product's own shape:
  *
  *   - **Upload is the anonymous door.** It is the one operation that works
- *     with no account, and it is the one whose INPUT differs by transport —
- *     a filesystem path over stdio, inline bytes over HTTP, because a Worker
- *     has no filesystem. It also carries the Apps-SDK widget hosted-side.
- *     So it is authored per transport, in each `server.ts`.
- *   - **Everything else needs an identity**, and once a transport has one,
- *     nothing about these fourteen depends on how the bytes arrived. Same
- *     names, same schemas, same prose, same 1:1 SDK calls.
+ *     with no account, and the one whose input differs by transport: a
+ *     filesystem path over stdio, inline bytes over HTTP. Each transport
+ *     authors it.
+ *   - **Everything else needs an identity**, and nothing about these fourteen
+ *     depends on how the bytes arrived: same names, same schemas, same prose,
+ *     same 1:1 SDK calls. A transport registers them with one call.
  *
- * That is why they live in the shared package: when the hosted transport
- * gains OAuth it registers this function and has the complete toolset, rather
- * than someone copying fourteen definitions into a second repo — which is the
- * moment the two surfaces would begin to drift. The cost of doing it after
- * the copy is a de-duplication under deadline; the cost of doing it before is
- * this file.
+ * **The catalogue is static; identity decides what succeeds.** The tools are
+ * registered whether or not a credential is present. An anonymous caller sees
+ * them and gets a typed authentication error naming how to authenticate on
+ * its transport, which is `createCall`'s one per-transport argument. A tool
+ * list that changed shape under the caller would be a second contract, and
+ * MCP clients cache catalogues.
  *
- * **The catalogue is static; identity decides what SUCCEEDS.** These are
- * registered whether or not a credential is present — an anonymous caller
- * sees them and gets a typed authentication error naming how to authenticate
- * on *this* transport (the hint is `createCall`'s one per-transport argument).
- * A tool list that changes shape under the caller would be a second, dynamic
- * contract for an agent to track, and MCP clients cache the catalogue.
+ * **Every tool carries a `title`.** The Claude connectors directory refuses a
+ * tool without one. Titles are short Title Case verb phrases naming what the
+ * user gets ("List Deployments", "Set Domain"): the name is `resource_action`
+ * for the agent, the title reads as English for a person.
  *
- * **Every tool carries a `title`, and it is a gate rather than a nicety.** The
- * Claude connectors directory refuses submission for a tool that lacks one, so
- * a titleless tool is not a shabby tool — it is an unlistable product. The
- * style is short Title Case verb phrases naming what the USER gets ("List
- * Deployments", "Set Domain"); the name obeys `resource_action` for
- * the agent, the title reads as English for the human, and the description
- * carries every precision neither can. Both catalogue pins assert a title on
- * every tool, so the next one cannot be added without one.
- *
- * **Every tool publishes an `outputSchema`, imported from the constitution**
- * (`@shipstatic/types/schemas`), never written here: a schema written beside
- * a tool is a twin of a published type, and the SDK enforces it on every
- * success, so a twin that drifts fails a call that succeeded. The constitution
- * fences its schemas to its interfaces at compile time; this file only names
- * which one each tool answers with, and `call` attaches the result as
- * `structuredContent` so the schema has something to validate.
+ * **Every tool names its `outputSchema` from the constitution**
+ * (`@shipstatic/types/schemas`), never writes one here. The SDK enforces the
+ * schema on every success, so a twin that drifted would fail a call that
+ * succeeded. `call` attaches the result as `structuredContent`.
  */
 
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -67,27 +51,24 @@ import type { CallFn } from './call.js';
 import { annotate, type ToolContract, titled, UPLOAD_TOOL_NAME } from './vocabulary.js';
 
 /**
- * THE REGISTRY: one row per tool, every fact about it that a host reads.
+ * The registry: one row per tool, every fact about it that a host reads.
  *
- * Fifteen rows, in registration order, `deployments_upload` included even
- * though each transport authors that registration itself: its INPUT differs
- * per transport, its contract does not. Everything else is derived from
- * here. `annotate(row)` is every registration's `annotations`;
- * `ACCOUNT_TOOL_NAMES` is the rows whose `auth` is `required`, and the
- * hosted door reads the same column for `securitySchemes`; the listing
- * repo's justifications are held to the hints these rows produce.
+ * Fifteen rows, in registration order, `deployments_upload` included: each
+ * transport authors that registration, and its contract is the same on both.
+ * `annotate(row)` is every registration's `annotations`, and
+ * `ACCOUNT_TOOL_NAMES` is the rows whose `auth` is `required`.
  *
- * The rows are DATA the registrations read, not a table they are generated
- * from, and that is deliberate: a `Record<name, factory>` would cost the
- * zod→handler inference every one-liner below relies on (`({ deployment })
- * => …` is typed from the `inputSchema` literal in the same call). A row
- * without a registration, a registration without a row, and a typo in
- * either all turn `tests/server.test.ts` red, through a real `tools/list`.
+ * The rows are data the registrations read, not a table they are generated
+ * from: a `Record<name, factory>` would lose the handler types each
+ * registration infers from its own `inputSchema`. A row without a
+ * registration, or a registration without a row, turns `tests/server.test.ts`
+ * red through a real `tools/list`.
  *
- * Two rows are worth a second look, because their names suggest otherwise:
- * `domains_dns` READS the provider the platform recorded when the domain
- * was created (nothing is looked up on call), and `domains_validate` and
- * `domains_share` persist nothing.
+ * Three rows read differently from their names. `domains_dns` reads the
+ * provider the platform recorded when the domain was created, and looks
+ * nothing up. `domains_validate` and `domains_share` persist nothing.
+ * `domains_verify` is an `add`: it starts a verification and overwrites
+ * nothing.
  */
 export const TOOLS = {
   [UPLOAD_TOOL_NAME]: { auth: 'optional', mutation: 'add', reach: 'public' },
@@ -115,30 +96,20 @@ export type AccountToolName = {
 }[ToolName];
 
 /**
- * The fourteen, derived from the registry rather than listed beside it.
- *
- * Exported so a second transport can state its expected catalogue as
- * `[UPLOAD_TOOL_NAME, ...ACCOUNT_TOOL_NAMES]` instead of counting to fifteen
- * in a second repo. It was a hand-written list until 1.11.0, which made the
- * auth need a second owner beside the annotations; a row is now the only
- * place a tool's account requirement is stated.
+ * The fourteen, derived from the registry. A second transport states its
+ * catalogue as `[UPLOAD_TOOL_NAME, ...ACCOUNT_TOOL_NAMES]`.
  */
 export const ACCOUNT_TOOL_NAMES = (Object.keys(TOOLS) as ToolName[]).filter(
   (name): name is AccountToolName => TOOLS[name].auth === 'required',
 );
 
 /**
- * What `whoami` answers: exactly the keys its description names, and the
- * schema IS the projection.
- *
- * `Account` also carries billing state, the API-key hint, the picture and
- * timestamps, none of which the description mentions and none of which an
- * agent acts on. A tool's result is the shape its description states, so the
- * result is the constitution's `AccountSchema` narrowed to five keys, and
- * parsing the wire through it is what drops the rest: one declaration owns
- * both the published `outputSchema` and the projection. `suspended` is
- * deliberately out: it means every write is refused, and the refusal says so
- * itself at the moment it matters.
+ * What `whoami` answers: exactly the keys its description names. The schema
+ * is the projection: parsing the wire's `Account` through this pick drops
+ * the rest (billing state, the picture, timestamps), which an agent does not
+ * act on, so one declaration owns the `outputSchema` and the result.
+ * `suspended` is left out on purpose: it means every write is refused, and
+ * the refusal says so itself when it matters.
  */
 export const ACCOUNT_SUMMARY = AccountSchema.pick({
   email: true,
@@ -149,15 +120,12 @@ export const ACCOUNT_SUMMARY = AccountSchema.pick({
 });
 
 /**
- * The pagination surface, shared by every list tool because it is one
- * contract, not two. A list answers `{<collection>, cursor}` and nothing
- * else — `cursor` carries the whole has-more signal and is null on the last
- * page, so there is no `total` to ask for and no has-more boolean.
+ * The paging input every list tool takes. A list answers
+ * `{<collection>, cursor}`: `cursor` is the whole has-more signal and is null
+ * on the last page, so there is no `total` and no boolean.
  *
- * No upper bound is stated here on purpose. The API clamps an unusable
- * `limit` server-side and owns that number; restating a cap in the tool
- * schema would give one fact two owners and let them drift. `min(1)` is not
- * a cap — it rejects a value that could never mean anything.
+ * No upper bound is stated: the API clamps `limit` and owns that number.
+ * `min(1)` is not a cap, it rejects a value that could never mean anything.
  */
 const PAGINATION_INPUT = {
   limit: z
@@ -174,11 +142,11 @@ const PAGINATION_INPUT = {
     ),
 };
 
-/** Appended to every list tool's description — the paging contract, stated once. */
+/** Appended to every list tool's description: the paging contract, stated once. */
 const PAGING_NOTE =
   " The response's `cursor` is null on the last page; pass it back as `cursor` to fetch the next.";
 
-/** The deployment argument, described identically wherever it is accepted. */
+/** The example hostname every deployment argument shows. */
 const DEPLOYMENT_EXAMPLE = 'happy-cat-abc1234.shipstatic.com';
 
 export function registerAccountTools(server: McpServer, ship: Ship, call: CallFn): void {

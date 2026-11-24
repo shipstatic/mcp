@@ -2,30 +2,27 @@
  * The vocabulary both transports speak.
  *
  * `@shipstatic/mcp` (stdio) and the hosted Streamable-HTTP server are one
- * product with two doors in. Everything an agent observes that is NOT forced
- * apart by the transport lives here and is IMPORTED by both — because a fact
- * with two owners is a fact that drifts. This pair kept ten such strings
- * byte-identical by hand for a year, and the hand slipped: a tool description
- * diverged unnoticed, a one-word correction had to be applied at three sites,
- * and a test mock invented constraint numbers production never used. A
- * coordination table written in prose is a specification for drift, not a
- * defence against it.
+ * product with two doors in. Everything an agent observes that the transport
+ * does not force apart lives here and is imported by both, because a fact
+ * with two owners drifts.
  *
- * What belongs here: anything true of a ShipStatic deploy regardless of how
- * the bytes arrived. What does not, and why:
+ * What belongs here is anything true of a ShipStatic deploy however the bytes
+ * arrived. Three things do not:
  *
- *   - **The file-input schema.** A filesystem path here, inline content there:
- *     Workers has no filesystem. Structurally forced apart.
- *   - **Tool descriptions**, as whole strings. They are deliberately rewritten
- *     hosted-side for an Apps-SDK caller that must be told not to base64-encode
- *     text — a failure mode the filesystem path does not have. What genuinely
- *     overlaps is exported as `DESCRIPTION_BLOCKS` and composed per transport.
- *   - **Anything Apps-SDK** (widget, `_meta`, `outputSchema`): hosted-only by
- *     nature.
+ *   - **The file-input schema.** A filesystem path here, inline content on
+ *     the hosted transport, which has no filesystem.
+ *   - **Tool descriptions as whole strings.** The hosted one tells its caller
+ *     not to base64-encode text, a mistake a filesystem path cannot make.
+ *     What the two share is `DESCRIPTION_BLOCKS`, composed per transport.
+ *   - **Anything Apps-SDK** (the card, its `_meta`): hosted-only by nature.
  *
- * Each of those is recorded in `cloudflare/mcp/CLAUDE.md`'s divergence table.
- * Everything else should be here, and adding a shared fact anywhere else is
- * how the next year's drift starts.
+ * **A constant is read from whatever acts on it.** The label, password and
+ * idempotency-key constraints come from `@shipstatic/ship`, because the SDK
+ * validates a value against them before it reaches the wire, and ship bundles
+ * its own copy of them: read from `@shipstatic/types`, a describe could
+ * advertise a limit the validator beside it rejects. The public-deploy
+ * lifetime comes from `@shipstatic/types`: ship never reads it, the API
+ * stamps it, so there is no validator to agree with.
  */
 
 import type { Implementation } from '@modelcontextprotocol/sdk/types.js';
@@ -37,52 +34,30 @@ import {
 import { formatDuration, PUBLIC_DEPLOYMENT_TTL_SECONDS } from '@shipstatic/types';
 
 /**
- * Two packages, and the split is a rule rather than an accident: **read a
- * constant from whatever will act on it.**
- *
- * The label, password and idempotency-key constraints come from
- * `@shipstatic/ship` because the SDK is what validates a value against them
- * before it reaches the wire — describing a bound the client in the same
- * process will not honour is the drift that matters, and reading both from one
- * module makes it impossible. `@shipstatic/types` declares them, but ship
- * bundles its own copy, so importing them from types here would let a describe
- * advertise a limit the validator beside it rejects.
- *
- * The public-deploy lifetime is the other kind of fact. Ship never reads it —
- * the API stamps it — so there is no validator to agree with, and taking it
- * from the package that merely forwards it would mean a ship release every
- * time the platform's own vocabulary grows.
- */
-
-/**
- * The server name every transport reports in `serverInfo`.
- *
- * Shared because it is not only prose: the Apps-SDK widget's bridge handshake
- * sends `appInfo.name`, which the HOST correlates against `serverInfo.name` to
- * tie the rendered view to the connector. Two literals kept equal by comment
- * is exactly the shape this package exists to delete.
+ * The server name every transport reports in `serverInfo`. It is more than
+ * prose: the deploy card's handshake sends it as `appInfo.name`, and the host
+ * ties the card to its connector by comparing the two.
  */
 export const SERVER_NAME = 'shipstatic';
 
 /**
- * Who the server is, as every transport reports it in `serverInfo`: the
- * fields a client shows a person when they connect. Everything but the
- * version, which each transport reads from its own manifest.
+ * Who the server is, as every transport reports it in `serverInfo`: what a
+ * client shows a person when they connect. Everything but the version, which
+ * each transport reads from its own manifest.
  *
- * - **`title`** is the product's name as people read it (CANON §1).
- * - **`description`** is this package's root sentence (CANON §2) with no
- *   qualifier. The hosted server reports it on every door, and on an
- *   auth-first door "no account needed" is false.
+ * - **`title`** is the product's name as people read it.
+ * - **`description`** is the product's root sentence, the same on every
+ *   transport and every hosted door: it states the product's promise, never
+ *   how one door is entered.
  * - **`websiteUrl`** and the **icons** name the product, so they are
- *   production values in every environment, as in any published package.
- * - **The icons** are the brand mark the marketing site serves, on our own
- *   domain: `logo.svg` at `any` size, and `logo.png` rendered from it at
- *   512x512, because a client that renders icons must support PNG and need
- *   not support SVG.
+ *   production values in every environment.
+ * - **The icons** are the brand mark on our own domain: `logo.svg` at `any`
+ *   size, and `logo.png` at 512x512, because a client that renders icons must
+ *   support PNG and need not support SVG.
  *
  * The MCP Registry entry (`server.json`) states the same title, description,
  * website and icons, and `package.json`'s description opens with the same
- * sentence; the docs contract holds both to this object.
+ * sentence. The docs contract holds both to this object.
  */
 export const SERVER_INFO: Omit<Implementation, 'version'> = {
   name: SERVER_NAME,
@@ -97,76 +72,43 @@ export const SERVER_INFO: Omit<Implementation, 'version'> = {
 };
 
 /**
- * The one tool authored per transport — its INPUT differs (a filesystem path
- * over stdio, inline bytes over HTTP), its NAME must not. Exported so the
- * hosted parity fence can build the expected catalogue as
- * `[UPLOAD_TOOL_NAME, ...ACCOUNT_TOOL_NAMES]` rather than counting to fifteen.
+ * The one tool each transport authors for itself: its input differs, its name
+ * must not. A second transport states its catalogue as
+ * `[UPLOAD_TOOL_NAME, ...ACCOUNT_TOOL_NAMES]`.
  */
 export const UPLOAD_TOOL_NAME = 'deployments_upload';
 
 /**
- * The upload tool's human-readable `title`, shared for the same reason the
- * name is — and NOT for the reason the description is not.
- *
- * A title names the OPERATION, and the operation is identical on both doors:
- * a user reading "Deploy Static Site" in a client's tool list learns nothing
- * about how the bytes got there. The description is the opposite — hosted
- * spends a paragraph telling an Apps-SDK caller not to base64-encode text, a
- * hazard a filesystem path cannot have — which is why one is exported whole
- * and the other only in fragments.
- *
- * The other fourteen titles live inline in `tools.ts`: one definition, both
- * transports, nothing to keep in agreement. This one is authored per transport
- * (upload is the tool each door writes for itself), so without an owner it
- * would be two literals in two repos with nothing comparing them.
- *
- * Titles are not decoration here: the Claude connectors directory refuses
- * submission for a tool that lacks one.
+ * The upload tool's `title`. A title names the operation, which is the same
+ * on both transports, so it is shared whole where the description is shared
+ * only in fragments. The other fourteen titles are inline in `tools.ts`,
+ * which both transports register.
  */
 export const UPLOAD_TOOL_TITLE = 'Deploy Static Site';
 
 /**
- * How long an anonymous deployment lives, in the words an agent reads.
- *
- * **Derived, since `@shipstatic/types@2.5.0-beta.19`.** It was a restatement
- * until then, and deliberately the only one — the duration had appeared in
- * eight places across the two servers and the widget, so a TTL change had to
- * find all eight. Both halves of the fix landed together: types declares the
- * number and `cloudflare/api` imports it back, because exporting without the
- * import-back would have given the fact two owners instead of ending the
- * duplication.
- *
- * A phrase rather than a number because every consumer is prose: the value has
- * to carry its own unit, and dividing by 86400 at eight sites would restate the
- * unit eight times instead of the number.
- *
- * Spelled by `formatDuration`, the platform's one way of saying a span of
- * time, so the lifetime an agent is promised and the time a fresh deployment's
- * card and CLI note say it has left are one spelling. It rounds a lifetime
- * that is not a whole number of its unit (84 hours reads "4 days"), which no
- * lifetime the platform has had needs.
+ * How long an anonymous deployment lives, in the words an agent reads:
+ * derived from the number the API stamps, and spelled by `formatDuration`,
+ * the platform's one way of saying a span of time. A phrase, because every
+ * consumer is prose and the value has to carry its own unit. `formatDuration`
+ * rounds a lifetime that is not a whole number of its unit (84 hours reads
+ * "4 days").
  */
 export const PUBLIC_EXPIRY = formatDuration(PUBLIC_DEPLOYMENT_TTL_SECONDS);
 
 /**
- * What is true of one tool, on the three axes a host reads.
- *
- * One row per tool lives in the registry (`tools.ts`, `TOOLS`), and every
- * other statement about the tool is derived from it: the MCP annotations
- * (`annotate`), the account-tool set (and so the hosted door's
- * `securitySchemes` and challenge scope), the hint table
- * `integrations/gpt`'s preflight checks, and the catalogue tests. Until 1.11.0 these facts had
- * three owners: four annotation classes here, a hand-written name list for
- * the auth need, and the upload tool annotated by hand on both transports.
- * Three owners for facts about one tool is how the classes came to spread
- * `openWorldHint: true` over ten reads that touch nothing public.
+ * What is true of one tool, on the three axes a host reads. One row per tool
+ * lives in the registry (`TOOLS` in `tools.ts`), and every other statement
+ * about the tool derives from its row: the annotations (`annotate`), the
+ * account-tool set, and what the hosted transport declares each tool needs.
  */
 export interface ToolContract {
   /** `optional`: works without an account, does more with one. */
   auth: 'optional' | 'required';
   /**
-   * What a call does to the platform's state. `add` creates something new
-   * on every call; `replace` overwrites what is there; `remove` deletes it.
+   * What a call does to the platform's state. `add` is additive: it creates
+   * something or starts work, and overwrites nothing. `replace` overwrites
+   * what is there. `remove` deletes it.
    */
   mutation: 'none' | 'add' | 'replace' | 'remove';
   /** Whether the call changes public internet state, or only the account's. */
@@ -174,23 +116,18 @@ export interface ToolContract {
 }
 
 /**
- * The MCP annotations a tool's contract implies. An agent reads them to
- * decide whether it may call speculatively (`readOnlyHint`), whether it must
- * confirm with the user first (`destructiveHint`), whether a retry is free
- * (`idempotentHint`), and whether the call reaches beyond the account
- * (`openWorldHint`). Both hosts read the same four: Anthropic's review asks
- * for an accurate `readOnlyHint` and `destructiveHint`, OpenAI additionally
- * reads `openWorldHint` as "can change public state".
+ * The MCP annotations a tool's contract implies. A host reads them to decide
+ * whether a call may run speculatively (`readOnlyHint`), whether to confirm
+ * with the user first (`destructiveHint`), whether a retry is free
+ * (`idempotentHint`), and whether the call changes public state
+ * (`openWorldHint`).
  *
  * **`idempotentHint` is promised only for a remove**, the one mutation where
- * a repeat is MEASURED to have no further effect (both deletes are fenced in
- * the API: a repeat neither flips state nor writes an audit row). A replace
- * writes an activity row per call, and `domains_set` notifies and may enqueue
- * DNS work besides, so it is not claimed. An add creates on every call, and
- * `idempotencyKey` cannot rescue the claim: that property is conditional on
- * an argument the caller may not pass, while the annotation is static per
- * tool. Reads carry none because the spec defines the hint only for tools
- * that mutate.
+ * a repeat has no further effect. A replace records an activity per call, and
+ * `domains_set` may start DNS work besides. An add acts on every call, and
+ * `idempotencyKey` cannot rescue the claim: it depends on an argument the
+ * caller may not pass, and the annotation is static. Reads carry none,
+ * because the specification defines the hint only for tools that mutate.
  */
 export function annotate({ mutation, reach }: ToolContract) {
   return {
@@ -202,85 +139,63 @@ export function annotate({ mutation, reach }: ToolContract) {
 }
 
 /**
- * One title, two wire slots: project a tool config's top-level `title` into
- * `annotations.title` at registration.
+ * One title, two wire slots: copies a tool config's top-level `title` into
+ * `annotations.title`.
  *
- * The MCP spec carries a tool title in two places. The 2025-06-18 revision
- * put it top-level on the Tool object (where every registration here states
- * it), and `ToolAnnotations.title` is the older 2025-03-26 slot that some
- * readers still key on. The Claude connectors portal is one of them, measured
- * on submission day 2026-08-31: its Tools step rendered every top-level title
- * as the heading and simultaneously flagged all fifteen tools with "Missing
- * annotations: title". So both slots must be populated, and they must agree.
- *
- * The top-level `title` stays the single owner. This projection is the only
- * writer of the annotations copy, applied at every registration on both
- * transports, and the catalogue fences hold the two slots equal off a real
- * `tools/list` so a registration that bypasses it goes red rather than
- * shipping a bare slot back to the portal.
+ * The specification carries a tool title in both places. The top-level one
+ * is current (2025-06-18) and `annotations.title` is the older slot some
+ * readers still key on: the Claude connectors portal shows the first as the
+ * heading and flags a tool whose second is missing. The top-level `title` is
+ * the owner, this is the only writer of the copy, and the catalogue tests
+ * hold the two slots equal on every tool.
  */
 export function titled<C extends { title: string; annotations?: object }>(config: C): C {
   return { ...config, annotations: { ...config.annotations, title: config.title } };
 }
 
 /**
- * INSTRUCTIONS sentences both transports say.
- *
- * `initialize`'s instructions are the other half of what an agent reads
- * before acting (the catalogue is the first). Each transport composes its own
- * from these blocks plus the two things that are genuinely its own: how files
- * arrive, and how a caller authenticates.
- *
- * Three of these are duplicated prose TODAY, kept equal by review. The last
- * two are stdio-only only because the hosted transport has no domain tools
- * yet — when it gains them with OAuth they become shared too, which is
- * precisely when someone would otherwise copy them across.
+ * The instruction sentences both transports say. `initialize`'s instructions
+ * are what an agent reads before acting, beside the catalogue. Each transport
+ * composes its own from these blocks and adds the two things that are its
+ * own: how files arrive, and how a caller authenticates.
  */
 export const INSTRUCTION_BLOCKS = {
   opening: 'ShipStatic deploys static websites instantly. Free, no account needed.',
   /**
-   * Publishing first, on every door. The no-account promise holds only if
-   * nothing stands between a person and their first link, so the agent
-   * publishes what it was asked to and raises an account when the user asks
-   * for something only an account holds.
+   * Publishing first: the no-account promise holds only if nothing stands
+   * between a person and their first link.
    */
   accountLater:
     'Deploy straight away, and bring up an account only when the user asks to see or manage their sites, or to use their own domain.',
   live: 'The site is live immediately.',
   /**
-   * The platform refuses a deployment with no `index.html` at its root (the
-   * deploy rules in `@shipstatic/types`). The refusal says so too; this
-   * sentence is here so an agent shapes the files right the first time,
-   * above all the one-file publish, which is where the rule is easiest to miss.
+   * The platform refuses a deployment with no `index.html` at its root. The
+   * refusal says so too; this sentence lets an agent shape the files right
+   * the first time, above all the one-file publish.
    */
   home: "The files need an `index.html` at the top: it's the page visitors see first, and a site without one is refused. To publish one page, name it `index.html`. To publish another kind of file, like a PDF, add a small `index.html` that links to it.",
   /**
    * The platform sets up a single-page app's routing by itself, and misses
-   * some apps: a shell with words in it, or one beside a second HTML file.
-   * The agent that built the app is the one caller that knows it routes, so
-   * it is told the sign of a miss and the one file that fixes it. Written as
-   * a remedy, never as a default: a catch-all on a site of plain pages answers
-   * every mistyped URL with the home page.
+   * some apps. The agent that built the app knows it routes, so it is told
+   * the sign of a miss and the one file that fixes it. A remedy, never a
+   * default: a catch-all on a site of plain pages answers every mistyped URL
+   * with the home page. A site with a `ship.json` of its own is one the
+   * platform leaves alone, so the rewrite joins that file, last, because the
+   * first matching rewrite wins.
    */
   routes:
-    'Single-page apps are detected, and their routes are set up for you. If the app has its own routes (like `/dashboard`) and reloading one shows a 404, add a `ship.json` at the top with `{"rewrites":[{"source":"/(.*)","destination":"/index.html"}]}` and deploy again.',
+    'Single-page apps are detected, and their routes are set up for you. If the app has its own routes (like `/dashboard`) and reloading one shows a 404, add a `ship.json` at the top with `{"rewrites":[{"source":"/(.*)","destination":"/index.html"}]}` and deploy again. If the site already has a `ship.json`, add that rewrite last in its `rewrites` instead.',
   /**
-   * A block of its own rather than a clause of `live`: two sentences, two
-   * facts, and a door may compose them independently.
-   *
-   * It names the feature the way every page and mail does ("built-in password
-   * protection") and keeps the agent from writing a password page or script
-   * of its own, which anyone can read past in the page's source. The read-back
-   * rule lives here and not in the upload description: a password the user
-   * never sees locks them out, and `instructions` is the one place a server
-   * may say what an agent should do. A tool description describes the tool;
-   * both listing reviews reject one that instructs the model, and the
-   * catalogue tests grep for it.
+   * Names the feature and keeps the agent from writing a password page of its
+   * own, which anyone can read past in the page's source. The rule to tell
+   * the user the password lives here and never in the upload description:
+   * `instructions` is where a server says what an agent should do, and
+   * listing reviews reject a description that instructs the model.
    */
   password:
     "To make the site private, pass `password`: that is ShipStatic's built-in password protection, checked before any file is served. When the user asks for a password or a private site, use it, and do not build a password page or script into the site itself. Visitors must unlock before viewing, including on any custom domains pointing at it. Tell the user any password you set, since one they never see locks them out.",
   claim:
-    'The response includes a claim URL — always show the deployment URL and the claim URL to the user so they can keep the site permanently.',
+    'The response includes a claim URL. Always show the deployment URL and the claim URL to the user, so they can keep the site permanently.',
   conceptsHeader: 'Concepts:',
   deploymentConcept:
     '- Deployment: an immutable set of files with an instant URL (e.g. happy-cat-abc1234.shipstatic.com). No setup needed.',
@@ -292,61 +207,38 @@ export const INSTRUCTION_BLOCKS = {
 
 /**
  * The fragments of the upload tool's description that both transports say.
- *
- * The surrounding descriptions diverge on purpose — hosted opens for an
- * Apps-SDK caller and spends a paragraph on plain-text-vs-base64, stdio takes
- * a filesystem path and has no such hazard — so what is shared is smaller than
- * a sentence in one case and exactly a sentence in the other. Both were pinned
- * by a `toContain` on each side, which meant three copies of each fragment
- * (two sources and a test literal) held equal by nobody.
- *
- * Same reasoning as `INSTRUCTION_BLOCKS`, one altitude down: blocks are shared,
- * composition is per transport.
+ * The descriptions around them differ on purpose, so what is shared is
+ * smaller than a sentence in one case and exactly a sentence in the other.
  */
 export const DESCRIPTION_BLOCKS = {
   /** The no-account promise, mid-sentence in both openings. */
   free: 'free, no account or API key required',
-  /**
-   * The option, stated as a capability. The read-back rule that used to
-   * follow it ("always show the password to the user") is behavioural
-   * guidance, which belongs to `INSTRUCTION_BLOCKS.password`.
-   */
+  /** The option, stated as a capability. What to do with it is `INSTRUCTION_BLOCKS.password`. */
   password: 'Pass `password` to make the site private.',
 } as const;
 
 /**
- * Deploy-parameter descriptions shared by both transports.
+ * The deploy-parameter descriptions both transports say. Every number is
+ * interpolated from its owner, never typed out.
  *
- * The numbers interpolate from `@shipstatic/types` rather than being written
- * out, so a platform constraint change reaches every agent-facing string
- * without anyone editing prose — the same reason the API and the SDK import
- * them instead of restating them.
+ * No member names a credential: stdio owns `SHIP_TOKEN` and the hosted
+ * transport owns "connect an account", and a shared string naming either
+ * would put one door's fact in the other's mouth. `tests/vocabulary.test.ts`
+ * holds every shared string to that.
  */
 export const PARAM_DESCRIPTIONS = {
   labels: `Labels for organizing deployments (e.g. ["env:production", "v1.2"]). Each is a word, or a key and a value split by one ":". Lowercase, ${LABEL_CONSTRAINTS.MIN_LENGTH}-${LABEL_CONSTRAINTS.MAX_LENGTH} chars, allows . _ - inside a word. Up to ${LABEL_CONSTRAINTS.MAX_COUNT}.`,
-  password: `Optional password to gate the deployment behind an unlock prompt (${PASSWORD_CONSTRAINTS.MIN_LENGTH}–${PASSWORD_CONSTRAINTS.MAX_LENGTH} characters; whitespace significant). Visitors must enter this password before viewing the site, including on any custom domains pointing at it.`,
+  password: `Optional password to gate the deployment behind an unlock prompt (${PASSWORD_CONSTRAINTS.MIN_LENGTH} to ${PASSWORD_CONSTRAINTS.MAX_LENGTH} characters; spaces at the start and end are trimmed). Visitors must enter this password before viewing the site, including on any custom domains pointing at it.`,
   /**
-   * Spoken by both doors, whole: the API keeps one rule for every caller (a
-   * key names the live deployment it made, within the account that sent it,
-   * and an anonymous key is ignored), so no door appends a clause of its own.
-   * The law it teaches, key the ATTEMPT and never the try, is the same on
-   * both. The window is derived, never typed out.
+   * The API keeps one rule for every caller: a key names the live deployment
+   * it made, within the account that sent it, and an anonymous key is
+   * ignored. So no door appends a clause of its own.
    */
   idempotencyKey: `Makes this deploy replayable instead of repeatable. A deploy is not naturally idempotent: if a call times out you cannot tell "it never landed" from "it landed and the response was lost", and retrying creates a second deployment. Send the same key on the retry and you get back the deployment the first try made, if it went live in the last ${IDEMPOTENCY_KEY_CONSTRAINTS.WINDOW_SECONDS / 3600} hours. A key works only within the account that sent it: without an account it is ignored, and a retry deploys again. Key the ATTEMPT (a run id, a commit sha, a uuid minted before the first try), never one minted fresh on each retry, which would defeat the point.`,
   /**
-   * Shared and spoken by BOTH doors — stdio declared it first (2026-08-13)
-   * and the hosted door converged the same day, importing this describe
-   * verbatim (its catalogue fence holds it to the import). The two refusals
-   * this teaches belong to the platform, so they read identically on every
-   * door.
-   *
-   * **Two things are deliberately absent, and both are the same rule.** The
-   * RANGE, because `@shipstatic/ship` validates it in-process before a byte is
-   * uploaded and relays the constitution's own sentence — a second copy here
-   * could only ever disagree with it. And the name of any credential: stdio
-   * owns `SHIP_TOKEN`, the hosted door owns "connect an account", and a SHARED
-   * string that named either would put one door's fact in the other's mouth.
-   * `tests/vocabulary.test.ts` fences the second half for every member.
+   * States no range: `@shipstatic/ship` validates it before a byte is
+   * uploaded and relays the platform's own sentence, which a second copy
+   * here could only disagree with.
    */
-  ttl: "Seconds until this deployment expires and the platform reclaims it; omit for one that never does. Only for authenticated deploys — an anonymous deployment already expires on the platform's schedule, and a requested ttl on one is refused. A deployment carrying a ttl cannot be linked to any domain: deploy without one if the site needs a domain.",
+  ttl: "Seconds until this deployment expires and the platform reclaims it; omit for one that never does. Only for authenticated deploys: an anonymous deployment already expires on the platform's schedule, and a requested ttl on one is refused. A deployment carrying a ttl cannot be linked to any domain: deploy without one if the site needs a domain.",
 } as const;

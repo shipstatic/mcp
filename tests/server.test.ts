@@ -9,7 +9,7 @@ import * as S from '@shipstatic/types/schemas';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { ACCOUNT_TOOL_NAMES } from '../src/tools.js';
-import { UPLOAD_TOOL_NAME } from '../src/vocabulary.js';
+import { INSTRUCTION_BLOCKS, UPLOAD_TOOL_NAME } from '../src/vocabulary.js';
 import { connect, type Harness, textOf } from './harness.js';
 
 /**
@@ -165,7 +165,7 @@ const CATALOGUE: Record<string, ToolSurface> = {
         false,
       ),
       password: str(
-        `Optional password to gate the deployment behind an unlock prompt (${PASSWORD_CONSTRAINTS.MIN_LENGTH}–${PASSWORD_CONSTRAINTS.MAX_LENGTH} characters; whitespace significant). Visitors must enter this password before viewing the site, including on any custom domains pointing at it.`,
+        `Optional password to gate the deployment behind an unlock prompt (${PASSWORD_CONSTRAINTS.MIN_LENGTH} to ${PASSWORD_CONSTRAINTS.MAX_LENGTH} characters; spaces at the start and end are trimmed). Visitors must enter this password before viewing the site, including on any custom domains pointing at it.`,
         false,
       ),
       // The window is interpolated from the SDK constant for the same reason
@@ -179,7 +179,7 @@ const CATALOGUE: Record<string, ToolSurface> = {
       // teaches the two REFUSALS (anonymous, domain-linked) and leaves the
       // bounds to the validator that owns them.
       ttl: num(
-        "Seconds until this deployment expires and the platform reclaims it; omit for one that never does. Only for authenticated deploys — an anonymous deployment already expires on the platform's schedule, and a requested ttl on one is refused. A deployment carrying a ttl cannot be linked to any domain: deploy without one if the site needs a domain.",
+        "Seconds until this deployment expires and the platform reclaims it; omit for one that never does. Only for authenticated deploys: an anonymous deployment already expires on the platform's schedule, and a requested ttl on one is refused. A deployment carrying a ttl cannot be linked to any domain: deploy without one if the site needs a domain.",
         false,
       ),
     },
@@ -517,7 +517,7 @@ describe('server instructions', () => {
 
   it('tells the agent to relay the claim URL — the anonymous deploy is worthless to the user otherwise', () => {
     expect(instructions).toContain('claim URL');
-    expect(instructions).toMatch(/always show the deployment URL and the claim URL to the user/);
+    expect(instructions).toMatch(/Always show the deployment URL and the claim URL to the user/);
   });
 
   it('asks for an index.html at the top, and says how to publish one file', () => {
@@ -537,6 +537,23 @@ describe('server instructions', () => {
     expect(instructions).toContain(
       '`{"rewrites":[{"source":"/(.*)","destination":"/index.html"}]}`',
     );
+  });
+
+  it('keeps an existing ship.json: the rewrite joins it, last', () => {
+    // A site with its own `ship.json` is one the platform leaves alone, so
+    // it is a miss by design. Replacing the file would drop its other rules,
+    // and the first matching rewrite wins, so the catch-all goes last.
+    expect(instructions).toContain(
+      'If the site already has a `ship.json`, add that rewrite last in its `rewrites` instead.',
+    );
+  });
+
+  it('says every shared block', () => {
+    // The blocks are the sentences both transports say. One this server left
+    // out would be a sentence only the other says.
+    for (const block of Object.values(INSTRUCTION_BLOCKS)) {
+      expect(instructions).toContain(block);
+    }
   });
 
   it('names built-in password protection and keeps the agent from building its own', () => {
