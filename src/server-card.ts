@@ -73,7 +73,8 @@ export function serverCard({ version, url }: ServerCardOptions) {
 
 /**
  * The AI Catalog that points at a card: one entry, and nothing a client can
- * read from the card itself, so the two cannot drift.
+ * read from the card itself, so the two cannot drift. `specVersion` is the
+ * one MCP's discovery specification writes in its catalogs.
  */
 export function aiCatalog(cardUrl: string) {
   return {
