@@ -5,7 +5,6 @@
  * library and stays inert.
  */
 import { createRequire } from 'node:module';
-import { isAbsolute } from 'node:path';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import Ship from '@shipstatic/ship';
 import { normalizeVia, SHIP_ENV, SHIP_VIA_ENV } from '@shipstatic/types';
@@ -27,8 +26,7 @@ async function main() {
   const server = createServer(ship, {
     version,
     via: normalizeVia(process.env[SHIP_VIA_ENV]),
-    // This machine's own reading of an absolute path, for the upload's `path`.
-    isAbsolute,
+    platform: process.platform,
   });
   const transport = new StdioServerTransport();
   await server.connect(transport);

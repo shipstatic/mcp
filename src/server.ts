@@ -75,22 +75,32 @@ export interface ServerOptions {
    */
   via?: DeploymentViaType;
   /**
-   * How this machine tells an absolute path: `isAbsolute` from `node:path`,
-   * which the executable passes. Only the machine knows, since `C:/site` is
-   * absolute on Windows and relative everywhere else, and this module cannot
-   * ask it without a Node builtin in the graph the hosted transport loads.
-   * Left out, only a path that starts with `/` is taken, which is absolute on
-   * every system.
+   * The system this server runs on, as `process.platform` names it. It
+   * decides what an absolute path is for the upload's `path`: `C:/site` is
+   * one on Windows and a folder under the working directory anywhere else.
+   * An argument, because only the host can ask the machine. Left out, a path
+   * is read the way every system but Windows reads it.
    */
-  isAbsolute?: (path: string) => boolean;
+  platform?: string;
 }
 
-/** Absolute on every system, so the safe reading when the host says nothing. */
-const startsAtRoot = (path: string) => path.startsWith('/');
+/**
+ * A path that names one place wherever the server was started, per system.
+ * Windows takes a drive or a share: `\site` alone lands on whichever drive
+ * the server was started from.
+ */
+const ABSOLUTE_PATH = {
+  windows: {
+    pattern: /^(?:[a-z]:[\\/]|[\\/]{2}[^\\/]+[\\/]+[^\\/])/i,
+    example: 'C:\\Users\\me\\project\\dist',
+  },
+  posix: { pattern: /^\//, example: '/Users/me/project/dist' },
+};
 
 /** Builds the stdio server's fifteen tools over an injected client. */
 export function createServer(ship: Ship, options: ServerOptions): McpServer {
-  const { version, via = DeploymentVia.MCP, isAbsolute = startsAtRoot } = options;
+  const { version, via = DeploymentVia.MCP, platform } = options;
+  const absolute = platform === 'win32' ? ABSOLUTE_PATH.windows : ABSOLUTE_PATH.posix;
 
   const server = new McpServer({ ...SERVER_INFO, version }, { instructions: INSTRUCTIONS });
 
@@ -108,9 +118,12 @@ export function createServer(ship: Ship, options: ServerOptions): McpServer {
         // `dist` is there.
         path: z
           .string()
-          .refine(isAbsolute, 'Pass an absolute path, like "/Users/me/project/dist".')
+          .refine(
+            (path) => absolute.pattern.test(path),
+            `Pass an absolute path, like ${JSON.stringify(absolute.example)}.`,
+          )
           .describe(
-            'Absolute path to the build output directory to deploy (e.g. "/Users/me/project/dist")',
+            `Absolute path to the build output directory to deploy (e.g. ${JSON.stringify(absolute.example)})`,
           ),
         labels: z.array(z.string()).optional().describe(PARAM_DESCRIPTIONS.labels),
         password: z.string().optional().describe(PARAM_DESCRIPTIONS.password),

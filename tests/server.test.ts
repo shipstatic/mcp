@@ -1,5 +1,4 @@
 import { createRequire } from 'node:module';
-import { posix, win32 } from 'node:path';
 import {
   IDEMPOTENCY_KEY_CONSTRAINTS,
   LABEL_CONSTRAINTS,
@@ -702,18 +701,17 @@ describe('tool doctrine', () => {
   });
 });
 
-describe('the upload’s path, read by the machine that runs the server', () => {
-  // The host hands the server its own reading of an absolute path. The two
-  // readings below are Node's, each planted, so both systems are held on any
-  // machine that runs this suite.
-  const upload = async (isAbsolute: (path: string) => boolean, path: string) => {
-    const harness = await connect(undefined, { isAbsolute });
+describe('the upload’s path, read as the system the server runs on reads it', () => {
+  // Each expectation is what Node's own resolver does with the path: taken
+  // means it resolves to one place from any working directory on any drive.
+  const upload = async (platform: string | undefined, path: string) => {
+    const harness = await connect(undefined, { platform });
     try {
       const result = await harness.client.callTool({
         name: 'deployments_upload',
         arguments: { path },
       });
-      return { refused: result.isError === true, reached: harness.ship.deployments.upload };
+      return { result, reached: harness.ship.deployments.upload };
     } finally {
       await harness.close();
     }
@@ -723,12 +721,18 @@ describe('the upload’s path, read by the machine that runs the server', () => 
     ['C:\\Users\\me\\dist', true],
     ['C:/Users/me/dist', true],
     ['\\\\server\\share\\dist', true],
+    ['//server/share/dist', true],
+    // Rooted, but on whichever drive the server was started from.
+    ['\\site\\dist', false],
+    ['/site/dist', false],
+    ['/c/Users/me/dist', false],
+    ['//server', false],
     ['C:dist', false],
     ['dist', false],
   ])('on Windows, %s is taken: %s', async (path, taken) => {
-    const { refused, reached } = await upload(win32.isAbsolute, path);
+    const { result, reached } = await upload('win32', path);
 
-    expect(refused).toBe(!taken);
+    expect(result.isError === true).toBe(!taken);
     expect(reached).toHaveBeenCalledTimes(taken ? 1 : 0);
   });
 
@@ -736,12 +740,33 @@ describe('the upload’s path, read by the machine that runs the server', () => 
     ['/Users/me/project/dist', true],
     ['C:/project/dist', false],
     ['C:\\Users\\me\\dist', false],
+    ['./dist', false],
+    ['../site', false],
+    ['~/project/dist', false],
     ['dist', false],
-  ])('on POSIX, %s is taken: %s', async (path, taken) => {
-    const { refused, reached } = await upload(posix.isAbsolute, path);
+  ])('on any other system, %s is taken: %s', async (path, taken) => {
+    const { result, reached } = await upload('darwin', path);
 
-    expect(refused).toBe(!taken);
+    expect(result.isError === true).toBe(!taken);
     expect(reached).toHaveBeenCalledTimes(taken ? 1 : 0);
+  });
+
+  it('reads a path as every system but Windows does when the host names none', async () => {
+    const taken = await upload(undefined, '/Users/me/project/dist');
+    const refused = await upload(undefined, 'C:\\Users\\me\\dist');
+
+    expect(taken.reached).toHaveBeenCalledTimes(1);
+    expect(refused.result.isError).toBe(true);
+  });
+
+  it('shows the agent a path of the system it is on', async () => {
+    const windows = await upload('win32', 'dist');
+    const other = await upload('linux', 'dist');
+
+    expect(textOf(windows.result)).toContain(
+      'Pass an absolute path, like "C:\\\\Users\\\\me\\\\project\\\\dist".',
+    );
+    expect(textOf(other.result)).toContain('Pass an absolute path, like "/Users/me/project/dist".');
   });
 });
 
@@ -768,25 +793,6 @@ describe('input validation', () => {
     expect(textOf(result)).toContain('Invalid arguments for tool deployments_upload');
     expect(harness.ship.deployments.upload).not.toHaveBeenCalled();
   });
-
-  it.each(['dist', './dist', '../site', '~/project/dist', 'C:dist', 'C:/project/dist'])(
-    'refuses the path %s when the host says nothing: only a path from the root is absolute everywhere',
-    async (path) => {
-      // The SDK resolves any other path against this process's working
-      // directory, which a desktop client chooses. A bare `dist` would then
-      // publish whichever `dist` is there, in public. `C:/project/dist` is
-      // absolute on Windows and a folder under the working directory
-      // anywhere else, so without the machine's word it is refused.
-      const result = await harness.client.callTool({
-        name: 'deployments_upload',
-        arguments: { path },
-      });
-
-      expect(result.isError).toBe(true);
-      expect(textOf(result)).toContain('Pass an absolute path, like "/Users/me/project/dist".');
-      expect(harness.ship.deployments.upload).not.toHaveBeenCalled();
-    },
-  );
 
   it('takes a path from the root', async () => {
     harness.ship.deployments.upload.mockClear();

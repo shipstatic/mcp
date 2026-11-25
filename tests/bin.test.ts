@@ -243,15 +243,11 @@ describe('the upload’s path', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
-  it('hands the server this machine’s own reading of an absolute path', async () => {
-    // Only the machine knows: `C:/site` is absolute on Windows and a folder
-    // under the working directory anywhere else. The executable is the one
-    // module that may ask Node, so it passes Node's answer on.
+  it('names the system it runs on, which decides what an absolute path is', async () => {
     await boot();
 
     const { createServer } = await import('../src/server.js');
-    const { isAbsolute } = await import('node:path');
-    expect(vi.mocked(createServer).mock.calls.at(-1)?.[1]?.isAbsolute).toBe(isAbsolute);
+    expect(vi.mocked(createServer).mock.calls.at(-1)?.[1]?.platform).toBe(process.platform);
   });
 });
 

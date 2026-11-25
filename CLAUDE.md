@@ -168,15 +168,18 @@ directory, which the client chooses and nobody sees, and an anonymous deploy
 is public: a bare `dist` would publish whichever `dist` is there. `~` is
 refused too, since nothing here expands it.
 
-**The machine says what is absolute, and the host passes its answer in.**
-`C:/site` is absolute on Windows and a folder under the working directory
-anywhere else, so no pattern can decide. `ServerOptions.isAbsolute` is the
-host's third fact beside `version` and `via`: `bin.ts` passes `isAbsolute`
-from `node:path`, which this module cannot import (`worker-safety.test.ts`).
-A host that passes nothing gets the reading that is safe everywhere: only a
-path that starts with `/`. Held by `tests/server.test.ts` through the
-protocol, on Node's Windows and POSIX readings, each planted, and by
-`tests/bin.test.ts` for what the executable passes.
+**Absolute means one place wherever the server was started, and the system
+decides it.** `C:/site` is absolute on Windows and a folder under the working
+directory anywhere else, so the host names its system:
+`ServerOptions.platform` is its third fact beside `version` and `via`, and
+`bin.ts` passes `process.platform`. A host that names none is read as every
+system but Windows. On Windows the path needs a drive or a share: Node's
+`isAbsolute` also takes `\site`, which lands on whichever drive the server
+was started from. That is why the rule is this module's own two patterns
+(`ABSOLUTE_PATH`) and not Node's function. The refusal and the parameter's
+description show a path of the system the server is on. Held by
+`tests/server.test.ts` through the protocol, each row what Node's resolver
+does with it, and by `tests/bin.test.ts` for what the executable passes.
 
 ### Tool Naming
 
@@ -407,8 +410,9 @@ answering differently than those types promise.
   skips the domain block. Every skip names what went unverified and exits 0.
   A skip is granted only for the platform's own answer of the expected type
   (`authentication_failed` for the token, `forbidden` for the plan), read from
-  the result's structure. Anything else that fails at those points, a protocol
-  error or a broken tool, fails the run: it is what the gate exists to catch.
+  the result's structure. Any other tool error at those points fails the run,
+  and a protocol error ends it wherever it happens: the client throws on one,
+  so no check can read it as an answer.
 - **Two processes, because the credential is process-scoped.** `bin.ts` reads
   `SHIP_TOKEN` once. Every `SHIP_*` is scrubbed from the child and only the two
   the run means to set are put back, so an exported credential or `SHIP_VIA`

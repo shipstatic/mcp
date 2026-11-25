@@ -50,7 +50,7 @@ export interface Harness {
 
 export async function connect(
   ship: ShipFake = createShipFake(),
-  /** Host facts a caller wants to vary — today only `via`; `version` defaults. */
+  /** Host facts a caller wants to vary; `version` defaults. */
   options: Partial<ServerOptions> = {},
 ): Promise<Harness> {
   // `ShipSurface` proves the fake covers everything `createServer` consumes;
