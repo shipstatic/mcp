@@ -77,6 +77,12 @@ const API_URL = FLAGS.get('api') ?? process.env.SHIP_API_URL ?? DEFAULT_API;
 /** Pagination and `idempotencyKey` arrived in this release; earlier ones skip that block. */
 const HAS_PAGING = compareVersions(VERSION, '1.0.0-beta.1') >= 0;
 
+/**
+ * An error result carries the wire's own `ErrorResponse` since this release.
+ * Earlier ones give only prose, so they cannot tell a refusal from a fault.
+ */
+const HAS_ERROR_TYPE = compareVersions(VERSION, '2.8.0-beta.5') >= 0;
+
 /** `ttl` on `deployments_upload` arrived in this one; earlier ones skip its block. */
 const HAS_TTL = compareVersions(VERSION, '1.2.0-beta.1') >= 0;
 
@@ -195,10 +201,15 @@ class StdioClient {
     return response.result;
   }
 
-  /** A tool result is TEXT. Parse it when it is JSON; keep the prose either way. */
+  /**
+   * A tool result is TEXT. Parse it when it is JSON; keep the prose either
+   * way, and the platform's own error type when the result is a refusal. A
+   * protocol error carries none: it is a fault, never a refusal.
+   */
   async call(name, args) {
     const response = await this.send('tools/call', { name, arguments: args ?? {} });
     if (response.error) return { isError: true, text: JSON.stringify(response.error) };
+    const errorType = response.result?._meta?.['com.shipstatic/error']?.error;
     const text = response.result?.content?.[0]?.text ?? '';
     let data;
     try {
@@ -206,7 +217,7 @@ class StdioClient {
     } catch {
       /* prose, not JSON — the error arms answer this way */
     }
-    return { isError: response.result?.isError === true, text, data };
+    return { isError: response.result?.isError === true, text, data, errorType };
   }
 
   /** ALWAYS call, pass or fail — an unkilled npx child outlives the run. */
@@ -261,10 +272,18 @@ const isUrl = (value) => typeof value === 'string' && /^https?:\/\//.test(value)
 
 /**
  * A refusal is not a failure. The platform can legitimately decline a whole
- * block — no credential, a credential for another environment, a plan without
- * custom domains — and the honest verdict then is "not verified", exit 0.
+ * block — a credential for another environment, a plan without custom
+ * domains — and the honest verdict then is "not verified", exit 0.
+ *
+ * Only the platform's own answer of the expected TYPE is a refusal. Anything
+ * else that fails there (a protocol error, a broken tool, a fault upstream) is
+ * what this gate exists to catch, so it fails the run. The type is read from
+ * the result's structure, never guessed from its prose.
  */
-const REFUSAL = /not authorized|authentication|forbidden|not permitted|plan|billing|upgrade/i;
+const AUTHENTICATION = 'authentication_failed';
+const FORBIDDEN = 'forbidden';
+const refused = (result, type) =>
+  result.isError && (HAS_ERROR_TYPE ? result.errorType === type : true);
 const refusalReason = (result) =>
   result.isError ? result.text.split('\n')[0].slice(0, 140) : null;
 
@@ -413,11 +432,15 @@ async function authenticatedHalf() {
     await client.handshake();
 
     const who = await client.call('whoami');
-    if (who.isError) {
+    if (refused(who, AUTHENTICATION)) {
       // A token refused by `whoami` is the wrong-environment case: the
       // credential is fine, it simply does not belong to this API.
       skip('authenticated checks', `SHIP_TOKEN refused (${refusalReason(who)})`);
       unverified('the account-tied 14 tools, the acknowledgement law and the list shapes are');
+      return;
+    }
+    if (who.isError) {
+      fail('whoami', `it failed, and not as a refused credential: ${refusalReason(who)}`);
       return;
     }
     check(
@@ -600,9 +623,13 @@ async function ttlBlock(client) {
 /** validate → set → get → records → dns → share → verify → list → delete. */
 async function domainBlock(client) {
   const validated = await client.call('domains_validate', { domain: testDomain });
-  if (validated.isError) {
+  if (refused(validated, FORBIDDEN)) {
     skip('domain block', `domains_validate refused (${refusalReason(validated)})`);
     unverified('the nine domain tools are');
+    return;
+  }
+  if (validated.isError) {
+    fail('domains_validate', `it failed, and not as a refusal: ${refusalReason(validated)}`);
     return;
   }
   const v = validated.data ?? {};
@@ -622,7 +649,7 @@ async function domainBlock(client) {
     // The custom-domain gate is a plan/billing decision, and declining it is a
     // legitimate answer rather than a broken contract.
     const reason = refusalReason(created);
-    if (REFUSAL.test(reason ?? '')) {
+    if (refused(created, FORBIDDEN)) {
       skip('domain block', `domains_set refused (${reason})`);
       unverified('domains_set/get/records/dns/share/verify/list/delete are');
       return;

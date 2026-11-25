@@ -1,5 +1,5 @@
 import { MY_API_KEY_URL, ShipError } from '@shipstatic/types';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   CUSTOM_DOMAIN,
   deploymentId,
@@ -59,6 +59,9 @@ interface WiringCase {
   received: unknown[];
 }
 
+/** The upload is handed the call's own signal, whatever else it is given. */
+const SIGNAL = expect.any(AbortSignal);
+
 const WIRING: WiringCase[] = [
   // ---------------------------------------------------------------- deployments
   {
@@ -67,7 +70,10 @@ const WIRING: WiringCase[] = [
     method: (s) => s.deployments.upload,
     // `via: 'mcp'` is origin tracking — the MCP analogue of the CLI's
     // `via: 'cli'`. It is the only value MCP adds to any call.
-    received: [ABS_PATH, { labels: ['production', 'v1.2'], password: 'hunter22', via: 'mcp' }],
+    received: [
+      ABS_PATH,
+      { labels: ['production', 'v1.2'], password: 'hunter22', via: 'mcp', signal: SIGNAL },
+    ],
   },
   {
     tool: 'deployments_upload',
@@ -83,6 +89,7 @@ const WIRING: WiringCase[] = [
         idempotencyKey: undefined,
         ttl: undefined,
         via: 'mcp',
+        signal: SIGNAL,
       },
     ],
   },
@@ -103,6 +110,7 @@ const WIRING: WiringCase[] = [
         idempotencyKey: 'run-2026-08-06-a1b2c3',
         ttl: undefined,
         via: 'mcp',
+        signal: SIGNAL,
       },
     ],
   },
@@ -117,7 +125,14 @@ const WIRING: WiringCase[] = [
     // agent did not choose is not the agent's lease.
     received: [
       ABS_PATH,
-      { labels: undefined, password: undefined, idempotencyKey: undefined, ttl: 3600, via: 'mcp' },
+      {
+        labels: undefined,
+        password: undefined,
+        idempotencyKey: undefined,
+        ttl: 3600,
+        via: 'mcp',
+        signal: SIGNAL,
+      },
     ],
   },
   {
@@ -560,6 +575,45 @@ describe('the anonymous claim story', () => {
 
     expect(payload.expires).toBe(timestamps.jan2022 + 3600);
     expect(payload).not.toHaveProperty('claim');
+  });
+});
+
+describe('a cancelled upload', () => {
+  let harness: Harness;
+
+  beforeEach(async () => {
+    harness = await connect();
+  });
+  afterEach(() => harness.close());
+
+  it('stops: the SDK is handed the call’s signal, and cancelling aborts it', async () => {
+    // A cancelled call must not go on to publish. The SDK stops at its next
+    // request when the signal it was given aborts, so the handler has to
+    // hand over the call's own signal, and the protocol's cancellation has
+    // to reach it.
+    let handed: AbortSignal | undefined;
+    let started!: () => void;
+    const uploading = new Promise<void>((resolve) => {
+      started = resolve;
+    });
+    harness.ship.deployments.upload.mockImplementation((_path, options) => {
+      handed = (options as { signal?: AbortSignal }).signal;
+      started();
+      return new Promise(() => {});
+    });
+
+    const cancel = new AbortController();
+    const call = harness.client.callTool(
+      { name: 'deployments_upload', arguments: { path: ABS_PATH } },
+      undefined,
+      { signal: cancel.signal },
+    );
+    await uploading;
+    expect(handed?.aborted).toBe(false);
+
+    cancel.abort();
+    await expect(call).rejects.toThrow();
+    await vi.waitFor(() => expect(handed?.aborted).toBe(true));
   });
 });
 

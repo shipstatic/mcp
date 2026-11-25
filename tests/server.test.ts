@@ -157,9 +157,17 @@ const CATALOGUE: Record<string, ToolSurface> = {
       'Deploy a static site instantly: free, no account or API key required. Returns the live URL, file count, and size. Without SHIP_TOKEN, the response also includes a one-time claim URL, and the site expires in 3 days unless claimed. Pass `password` to make the site private.',
     annotations: ADD_PUBLIC,
     params: {
-      path: str(
-        'Absolute path to the build output directory to deploy (e.g. "/Users/me/project/dist")',
-      ),
+      // The pattern is the contract the description states: an absolute
+      // path, POSIX, a Windows drive or a network share.
+      path: {
+        required: true,
+        schema: {
+          type: 'string',
+          pattern: '^(\\/|[A-Za-z]:[\\\\/]|\\\\\\\\)',
+          description:
+            'Absolute path to the build output directory to deploy (e.g. "/Users/me/project/dist")',
+        },
+      },
       labels: strArray(
         `Labels for organizing deployments (e.g. ["env:production", "v1.2"]). Each is a word, or a key and a value split by one ":". Lowercase, ${LABEL_CONSTRAINTS.MIN_LENGTH} to ${LABEL_CONSTRAINTS.MAX_LENGTH} characters, allows . _ - inside a word. Up to ${LABEL_CONSTRAINTS.MAX_COUNT}.`,
         false,
@@ -723,6 +731,36 @@ describe('input validation', () => {
     expect(result.isError).toBe(true);
     expect(textOf(result)).toContain('Invalid arguments for tool deployments_upload');
     expect(harness.ship.deployments.upload).not.toHaveBeenCalled();
+  });
+
+  it.each(['dist', './dist', '../site', '~/project/dist', 'C:dist'])(
+    'refuses the path %s: only an absolute path names one folder',
+    async (path) => {
+      // The SDK resolves any other path against this process's working
+      // directory, which a desktop client chooses. A bare `dist` would then
+      // publish whichever `dist` is there, in public.
+      const result = await harness.client.callTool({
+        name: 'deployments_upload',
+        arguments: { path },
+      });
+
+      expect(result.isError).toBe(true);
+      expect(textOf(result)).toContain('Pass an absolute path, like "/Users/me/project/dist".');
+      expect(harness.ship.deployments.upload).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([
+    '/Users/me/project/dist',
+    'C:\\Users\\me\\dist',
+    'C:/Users/me/dist',
+    '\\\\server\\share\\dist',
+  ])('takes the absolute path %s', async (path) => {
+    harness.ship.deployments.upload.mockClear();
+    await harness.client.callTool({ name: 'deployments_upload', arguments: { path } });
+
+    expect(harness.ship.deployments.upload).toHaveBeenCalledTimes(1);
+    expect(harness.ship.deployments.upload.mock.calls[0]?.[0]).toBe(path);
   });
 
   it('rejects a missing required argument', async () => {

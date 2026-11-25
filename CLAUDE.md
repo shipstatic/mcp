@@ -160,6 +160,16 @@ closed for everyone.
 
 No HTTP calls, no auth logic, no domain validation. The SDK handles everything.
 
+### The upload's path is absolute
+
+`deployments_upload` refuses a `path` that is not absolute (POSIX, a Windows
+drive, or a network share), in the schema, so the catalogue says it and the
+SDK is never reached. The SDK resolves any other path against this process's
+working directory, which the client chooses and nobody sees, and an anonymous
+deploy is public: a bare `dist` would publish whichever `dist` is there. `~`
+is refused too, since nothing here expands it. Held by `tests/server.test.ts`
+through the protocol.
+
 ### Tool Naming
 
 `resource_action` matches the SDK's `ship.resource.action()` and the CLI's `ship resource action`.
@@ -384,9 +394,13 @@ answering differently than those types promise.
   defaults to this repo's `package.json`, so run after a publish it asserts
   *what I am is what the registry serves*, and the exact pin defeats a stale
   npx cache.
-- **Refusals skip, they never fail.** No `SHIP_TOKEN` runs the anonymous half
+- **A refusal skips, a fault fails.** No `SHIP_TOKEN` runs the anonymous half
   alone; a token for another environment says so; a plan without custom domains
   skips the domain block. Every skip names what went unverified and exits 0.
+  A skip is granted only for the platform's own answer of the expected type
+  (`authentication_failed` for the token, `forbidden` for the plan), read from
+  the result's structure. Anything else that fails at those points, a protocol
+  error or a broken tool, fails the run: it is what the gate exists to catch.
 - **Two processes, because the credential is process-scoped.** `bin.ts` reads
   `SHIP_TOKEN` once. Every `SHIP_*` is scrubbed from the child and only the two
   the run means to set are put back, so an exported credential or `SHIP_VIA`
@@ -635,9 +649,14 @@ asserted live in `smoke.mjs`.
 - **No `getLimits` tool.** The platform teaches caps *reactively*: an over-cap
   deploy fails with a validation error naming the limit, and the SDK already
   fetches limits for its own pre-validation.
-- **Not agent knobs:** `signal` (process-level cancellation), `pathDetect` (a
-  local path default) and `spaDetect` (the SDK asks the single-page question by
-  default, so an agent's app gets its routing config without choosing).
+- **Not agent knobs:** `signal`, `pathDetect` and `spaDetect`. None is an
+  input an agent chooses. `signal` is the call's own: the upload handler hands
+  the SDK the signal the protocol gives it, so a cancelled call stops and
+  publishes nothing further. `pathDetect` stays on here, since a folder picked
+  from disk is what it is for (the hosted transport, whose caller names every
+  path, turns it off). `spaDetect` stays on: the SDK asks the single-page
+  question by default, so an agent's app gets its routing config without
+  choosing.
 
 ---
 

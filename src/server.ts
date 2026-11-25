@@ -57,6 +57,14 @@ const STDIO_HINTS: ErrorHints = {
 const call = createCall({ hints: STDIO_HINTS });
 
 /**
+ * An absolute path: POSIX (`/…`), a Windows drive (`C:\…`) or a network
+ * share (`\\…`). The SDK resolves any other path against this process's
+ * working directory, which is the client's to choose and nobody's to know,
+ * so a bare `dist` would publish whichever `dist` happens to be there.
+ */
+const ABSOLUTE_PATH = /^(\/|[A-Za-z]:[\\/]|\\\\)/;
+
+/**
  * What the host knows about itself: a library has no manifest to read and no
  * idea which product it is installed inside.
  */
@@ -92,6 +100,7 @@ export function createServer(ship: Ship, options: ServerOptions): McpServer {
       inputSchema: {
         path: z
           .string()
+          .regex(ABSOLUTE_PATH, 'Pass an absolute path, like "/Users/me/project/dist".')
           .describe(
             'Absolute path to the build output directory to deploy (e.g. "/Users/me/project/dist")',
           ),
@@ -104,8 +113,12 @@ export function createServer(ship: Ship, options: ServerOptions): McpServer {
         ttl: z.number().optional().describe(PARAM_DESCRIPTIONS.ttl),
       },
     }),
-    ({ path, labels, password, idempotencyKey, ttl }) =>
-      call(() => ship.deployments.upload(path, { labels, password, idempotencyKey, ttl, via })),
+    // The call's own signal goes with the upload, so a cancelled call stops
+    // it and publishes nothing further.
+    ({ path, labels, password, idempotencyKey, ttl }, { signal }) =>
+      call(() =>
+        ship.deployments.upload(path, { labels, password, idempotencyKey, ttl, via, signal }),
+      ),
   );
 
   registerAccountTools(server, ship, call);
