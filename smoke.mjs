@@ -208,7 +208,7 @@ class StdioClient {
    */
   async call(name, args) {
     const response = await this.send('tools/call', { name, arguments: args ?? {} });
-    if (response.error) return { isError: true, text: JSON.stringify(response.error) };
+    if (response.error) return { isError: true, fault: true, text: JSON.stringify(response.error) };
     const errorType = response.result?._meta?.['com.shipstatic/error']?.error;
     const text = response.result?.content?.[0]?.text ?? '';
     let data;
@@ -278,12 +278,14 @@ const isUrl = (value) => typeof value === 'string' && /^https?:\/\//.test(value)
  * Only the platform's own answer of the expected TYPE is a refusal. Anything
  * else that fails there (a protocol error, a broken tool, a fault upstream) is
  * what this gate exists to catch, so it fails the run. The type is read from
- * the result's structure, never guessed from its prose.
+ * the result's structure, never guessed from its prose. A release older than
+ * the typed result cannot say which refusal it gave, so any tool error skips
+ * there, but a protocol error is a fault on every release.
  */
 const AUTHENTICATION = 'authentication_failed';
 const FORBIDDEN = 'forbidden';
 const refused = (result, type) =>
-  result.isError && (HAS_ERROR_TYPE ? result.errorType === type : true);
+  result.isError && !result.fault && (HAS_ERROR_TYPE ? result.errorType === type : true);
 const refusalReason = (result) =>
   result.isError ? result.text.split('\n')[0].slice(0, 140) : null;
 

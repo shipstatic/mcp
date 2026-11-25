@@ -5,6 +5,7 @@
  * library and stays inert.
  */
 import { createRequire } from 'node:module';
+import { isAbsolute } from 'node:path';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import Ship from '@shipstatic/ship';
 import { normalizeVia, SHIP_ENV, SHIP_VIA_ENV } from '@shipstatic/types';
@@ -23,7 +24,12 @@ async function main() {
   // Unset, this executable is the `mcp` origin. A wrapper that composes this
   // invocation names its own surface through `SHIP_VIA_ENV`, the slot the CLI
   // shares. An unrecognized label is dropped, so a typo records `mcp`.
-  const server = createServer(ship, { version, via: normalizeVia(process.env[SHIP_VIA_ENV]) });
+  const server = createServer(ship, {
+    version,
+    via: normalizeVia(process.env[SHIP_VIA_ENV]),
+    // This machine's own reading of an absolute path, for the upload's `path`.
+    isAbsolute,
+  });
   const transport = new StdioServerTransport();
   await server.connect(transport);
   console.error('ShipStatic MCP Server running on stdio');

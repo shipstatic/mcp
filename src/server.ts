@@ -57,14 +57,6 @@ const STDIO_HINTS: ErrorHints = {
 const call = createCall({ hints: STDIO_HINTS });
 
 /**
- * An absolute path: POSIX (`/…`), a Windows drive (`C:\…`) or a network
- * share (`\\…`). The SDK resolves any other path against this process's
- * working directory, which is the client's to choose and nobody's to know,
- * so a bare `dist` would publish whichever `dist` happens to be there.
- */
-const ABSOLUTE_PATH = /^(\/|[A-Za-z]:[\\/]|\\\\)/;
-
-/**
  * What the host knows about itself: a library has no manifest to read and no
  * idea which product it is installed inside.
  */
@@ -82,11 +74,23 @@ export interface ServerOptions {
    * some MCP client.
    */
   via?: DeploymentViaType;
+  /**
+   * How this machine tells an absolute path: `isAbsolute` from `node:path`,
+   * which the executable passes. Only the machine knows, since `C:/site` is
+   * absolute on Windows and relative everywhere else, and this module cannot
+   * ask it without a Node builtin in the graph the hosted transport loads.
+   * Left out, only a path that starts with `/` is taken, which is absolute on
+   * every system.
+   */
+  isAbsolute?: (path: string) => boolean;
 }
+
+/** Absolute on every system, so the safe reading when the host says nothing. */
+const startsAtRoot = (path: string) => path.startsWith('/');
 
 /** Builds the stdio server's fifteen tools over an injected client. */
 export function createServer(ship: Ship, options: ServerOptions): McpServer {
-  const { version, via = DeploymentVia.MCP } = options;
+  const { version, via = DeploymentVia.MCP, isAbsolute = startsAtRoot } = options;
 
   const server = new McpServer({ ...SERVER_INFO, version }, { instructions: INSTRUCTIONS });
 
@@ -98,9 +102,13 @@ export function createServer(ship: Ship, options: ServerOptions): McpServer {
       annotations: annotate(TOOLS[UPLOAD_TOOL_NAME]),
       outputSchema: DeploymentCreateResponseSchema,
       inputSchema: {
+        // The SDK resolves any other path against this process's working
+        // directory, which the client chooses and nobody sees, and an
+        // anonymous deploy is public: a bare `dist` would publish whichever
+        // `dist` is there.
         path: z
           .string()
-          .regex(ABSOLUTE_PATH, 'Pass an absolute path, like "/Users/me/project/dist".')
+          .refine(isAbsolute, 'Pass an absolute path, like "/Users/me/project/dist".')
           .describe(
             'Absolute path to the build output directory to deploy (e.g. "/Users/me/project/dist")',
           ),

@@ -237,6 +237,24 @@ describe('origin relabeling', () => {
   });
 });
 
+describe('the upload’s path', () => {
+  beforeEach(() => {
+    mocks.constructorError = null;
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  it('hands the server this machine’s own reading of an absolute path', async () => {
+    // Only the machine knows: `C:/site` is absolute on Windows and a folder
+    // under the working directory anywhere else. The executable is the one
+    // module that may ask Node, so it passes Node's answer on.
+    await boot();
+
+    const { createServer } = await import('../src/server.js');
+    const { isAbsolute } = await import('node:path');
+    expect(vi.mocked(createServer).mock.calls.at(-1)?.[1]?.isAbsolute).toBe(isAbsolute);
+  });
+});
+
 describe('stdio startup', () => {
   beforeEach(() => {
     mocks.constructorError = null;

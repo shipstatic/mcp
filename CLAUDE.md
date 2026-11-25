@@ -162,13 +162,21 @@ No HTTP calls, no auth logic, no domain validation. The SDK handles everything.
 
 ### The upload's path is absolute
 
-`deployments_upload` refuses a `path` that is not absolute (POSIX, a Windows
-drive, or a network share), in the schema, so the catalogue says it and the
-SDK is never reached. The SDK resolves any other path against this process's
-working directory, which the client chooses and nobody sees, and an anonymous
-deploy is public: a bare `dist` would publish whichever `dist` is there. `~`
-is refused too, since nothing here expands it. Held by `tests/server.test.ts`
-through the protocol.
+`deployments_upload` refuses a `path` that is not absolute, before the SDK is
+reached. The SDK resolves any other path against this process's working
+directory, which the client chooses and nobody sees, and an anonymous deploy
+is public: a bare `dist` would publish whichever `dist` is there. `~` is
+refused too, since nothing here expands it.
+
+**The machine says what is absolute, and the host passes its answer in.**
+`C:/site` is absolute on Windows and a folder under the working directory
+anywhere else, so no pattern can decide. `ServerOptions.isAbsolute` is the
+host's third fact beside `version` and `via`: `bin.ts` passes `isAbsolute`
+from `node:path`, which this module cannot import (`worker-safety.test.ts`).
+A host that passes nothing gets the reading that is safe everywhere: only a
+path that starts with `/`. Held by `tests/server.test.ts` through the
+protocol, on Node's Windows and POSIX readings, each planted, and by
+`tests/bin.test.ts` for what the executable passes.
 
 ### Tool Naming
 
@@ -652,7 +660,8 @@ asserted live in `smoke.mjs`.
 - **Not agent knobs:** `signal`, `pathDetect` and `spaDetect`. None is an
   input an agent chooses. `signal` is the call's own: the upload handler hands
   the SDK the signal the protocol gives it, so a cancelled call stops and
-  publishes nothing further. `pathDetect` stays on here, since a folder picked
+  publishes nothing further (the hosted transport, which is stateless, ties
+  its calls to the request instead). `pathDetect` stays on here, since a folder picked
   from disk is what it is for (the hosted transport, whose caller names every
   path, turns it off). `spaDetect` stays on: the SDK asks the single-page
   question by default, so an agent's app gets its routing config without

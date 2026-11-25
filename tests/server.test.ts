@@ -1,4 +1,5 @@
 import { createRequire } from 'node:module';
+import { posix, win32 } from 'node:path';
 import {
   IDEMPOTENCY_KEY_CONSTRAINTS,
   LABEL_CONSTRAINTS,
@@ -157,17 +158,9 @@ const CATALOGUE: Record<string, ToolSurface> = {
       'Deploy a static site instantly: free, no account or API key required. Returns the live URL, file count, and size. Without SHIP_TOKEN, the response also includes a one-time claim URL, and the site expires in 3 days unless claimed. Pass `password` to make the site private.',
     annotations: ADD_PUBLIC,
     params: {
-      // The pattern is the contract the description states: an absolute
-      // path, POSIX, a Windows drive or a network share.
-      path: {
-        required: true,
-        schema: {
-          type: 'string',
-          pattern: '^(\\/|[A-Za-z]:[\\\\/]|\\\\\\\\)',
-          description:
-            'Absolute path to the build output directory to deploy (e.g. "/Users/me/project/dist")',
-        },
-      },
+      path: str(
+        'Absolute path to the build output directory to deploy (e.g. "/Users/me/project/dist")',
+      ),
       labels: strArray(
         `Labels for organizing deployments (e.g. ["env:production", "v1.2"]). Each is a word, or a key and a value split by one ":". Lowercase, ${LABEL_CONSTRAINTS.MIN_LENGTH} to ${LABEL_CONSTRAINTS.MAX_LENGTH} characters, allows . _ - inside a word. Up to ${LABEL_CONSTRAINTS.MAX_COUNT}.`,
         false,
@@ -709,6 +702,49 @@ describe('tool doctrine', () => {
   });
 });
 
+describe('the upload’s path, read by the machine that runs the server', () => {
+  // The host hands the server its own reading of an absolute path. The two
+  // readings below are Node's, each planted, so both systems are held on any
+  // machine that runs this suite.
+  const upload = async (isAbsolute: (path: string) => boolean, path: string) => {
+    const harness = await connect(undefined, { isAbsolute });
+    try {
+      const result = await harness.client.callTool({
+        name: 'deployments_upload',
+        arguments: { path },
+      });
+      return { refused: result.isError === true, reached: harness.ship.deployments.upload };
+    } finally {
+      await harness.close();
+    }
+  };
+
+  it.each([
+    ['C:\\Users\\me\\dist', true],
+    ['C:/Users/me/dist', true],
+    ['\\\\server\\share\\dist', true],
+    ['C:dist', false],
+    ['dist', false],
+  ])('on Windows, %s is taken: %s', async (path, taken) => {
+    const { refused, reached } = await upload(win32.isAbsolute, path);
+
+    expect(refused).toBe(!taken);
+    expect(reached).toHaveBeenCalledTimes(taken ? 1 : 0);
+  });
+
+  it.each([
+    ['/Users/me/project/dist', true],
+    ['C:/project/dist', false],
+    ['C:\\Users\\me\\dist', false],
+    ['dist', false],
+  ])('on POSIX, %s is taken: %s', async (path, taken) => {
+    const { refused, reached } = await upload(posix.isAbsolute, path);
+
+    expect(refused).toBe(!taken);
+    expect(reached).toHaveBeenCalledTimes(taken ? 1 : 0);
+  });
+});
+
 describe('input validation', () => {
   // These pass only because the suite goes through the protocol. The previous
   // tests invoked handler callbacks directly, so zod never ran and every
@@ -733,12 +769,14 @@ describe('input validation', () => {
     expect(harness.ship.deployments.upload).not.toHaveBeenCalled();
   });
 
-  it.each(['dist', './dist', '../site', '~/project/dist', 'C:dist'])(
-    'refuses the path %s: only an absolute path names one folder',
+  it.each(['dist', './dist', '../site', '~/project/dist', 'C:dist', 'C:/project/dist'])(
+    'refuses the path %s when the host says nothing: only a path from the root is absolute everywhere',
     async (path) => {
       // The SDK resolves any other path against this process's working
       // directory, which a desktop client chooses. A bare `dist` would then
-      // publish whichever `dist` is there, in public.
+      // publish whichever `dist` is there, in public. `C:/project/dist` is
+      // absolute on Windows and a folder under the working directory
+      // anywhere else, so without the machine's word it is refused.
       const result = await harness.client.callTool({
         name: 'deployments_upload',
         arguments: { path },
@@ -750,17 +788,14 @@ describe('input validation', () => {
     },
   );
 
-  it.each([
-    '/Users/me/project/dist',
-    'C:\\Users\\me\\dist',
-    'C:/Users/me/dist',
-    '\\\\server\\share\\dist',
-  ])('takes the absolute path %s', async (path) => {
+  it('takes a path from the root', async () => {
     harness.ship.deployments.upload.mockClear();
-    await harness.client.callTool({ name: 'deployments_upload', arguments: { path } });
+    await harness.client.callTool({
+      name: 'deployments_upload',
+      arguments: { path: '/Users/me/project/dist' },
+    });
 
-    expect(harness.ship.deployments.upload).toHaveBeenCalledTimes(1);
-    expect(harness.ship.deployments.upload.mock.calls[0]?.[0]).toBe(path);
+    expect(harness.ship.deployments.upload.mock.calls[0]?.[0]).toBe('/Users/me/project/dist');
   });
 
   it('rejects a missing required argument', async () => {
