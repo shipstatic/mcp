@@ -28,11 +28,25 @@ Add the [ShipStatic plugin](https://chatgpt.com/plugins/plugin_asdk_app_6a06f62b
 claude mcp add --transport http shipstatic https://mcp.shipstatic.com
 ```
 
-### Cursor, Antigravity, Devin Desktop, n8n, Zed, and anywhere with `mcp.json`
+### Cursor, Antigravity, Devin Desktop, and anywhere with `mcp.json`
 
 ```json
 {
   "mcpServers": {
+    "shipstatic": {
+      "url": "https://mcp.shipstatic.com"
+    }
+  }
+}
+```
+
+### Zed
+
+In Zed's settings file:
+
+```json
+{
+  "context_servers": {
     "shipstatic": {
       "url": "https://mcp.shipstatic.com"
     }
@@ -56,7 +70,7 @@ Want the site private? Say "publish this with ShipStatic's built-in password pro
 
 Everything above works with no account. A free account keeps your sites for good, gives you a ShipStatic domain like `yourname.shipstatic.com`, and shows you everything you've published in one place. A custom domain like `www.example.com` needs a paid plan.
 
-Connect one when your client offers to sign you in, and the same URL answers with the rest. There's nothing to install and no key to paste: your client starts the sign-in itself.
+Connect one when your client offers to sign you in, and the same URL answers with the rest. There's nothing to install and no key to paste: your client starts the sign-in itself. Cursor doesn't offer this sign-in yet, so in Cursor use the claim link.
 
 ## Tools
 
